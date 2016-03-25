@@ -1,0 +1,119 @@
+#include "QImageTools.h"
+using QTools::QImageTools;
+#include <QFileDialog>
+#include <cassert>
+typedef unsigned char byte;
+
+
+// Returns the image in RGB888 format
+QImage QImageTools::copyOpenCV2QImage( const cv::Mat &img)
+{
+    assert( img.depth() == CV_8U);
+    const int numChannels = img.channels();
+    assert( numChannels == 1 || numChannels == 3);
+    int c0 = 0, c1 = 0, c2 = 0;
+    if ( numChannels == 3)
+    {
+        c1 = 1;
+        c2 = 2;
+    }   // end if
+
+    QImage qimg( img.cols, img.rows, QImage::Format_RGB888);
+
+    for ( int i = 0; i < img.rows; ++i)
+    {
+        const byte* inScanline = img.ptr(i);
+        byte* outScanline = qimg.scanLine(i);
+
+        for ( int j = 0; j < img.cols; ++j)
+        {
+            // BGR (OpenCV) --> RGB (Qt)
+            outScanline[3*j+2] = inScanline[j*numChannels+c0];
+            outScanline[3*j+1] = inScanline[j*numChannels+c1];
+            outScanline[3*j+0] = inScanline[j*numChannels+c2];
+        }   // end for
+    }   // end for
+
+    return qimg;
+}   // end copyOpenCV2QImage
+
+
+
+cv::Mat QImageTools::copyQImage2OpenCV( const QImage &qimg)
+{
+    const int qDepth = qimg.depth()/8; // Step size in bytes
+    int boffset = 0;
+    int goffset = 1;
+    int roffset = 2;
+    if ( qDepth == 1)
+    {
+        boffset = 0;
+        goffset = 0;
+    }   // end if
+
+    cv::Size sz( qimg.width(), qimg.height());
+    cv::Mat img( sz, CV_8UC3);
+
+    for ( int i = 0; i < sz.height; ++i)
+    {
+        const byte* inScanline = qimg.scanLine(i);   // Source scanline
+        byte* outScanline = img.ptr(i); // Destination scanline
+
+        for ( int j = 0; j < sz.width; ++j)
+        {
+            // RGB (Qt) --> BGR (OpenCV)
+            const int ch = 3*j;
+            outScanline[ch+0] = *(inScanline + boffset);
+            outScanline[ch+1] = *(inScanline + goffset);
+            outScanline[ch+2] = *(inScanline + roffset);
+
+            inScanline += qDepth;
+        }   // end for
+    }   // end for
+
+    return img;
+}   // end copyQImage2OpenCV
+
+
+
+
+QString getSaveImageFilename( const QString savefname)
+{
+    QString fname = QFileDialog::getSaveFileName( NULL, "Save Image", savefname, "Image Files (*.jpg *.jpeg *.png *.gif *.bmp)");
+    if ( !fname.isEmpty())
+    {
+        // Ensure fname has a valid image extension, otherwise set
+        // the default format (jpeg)
+        if  ( !fname.endsWith( ".jpg", Qt::CaseInsensitive)
+            && !fname.endsWith( ".jpeg", Qt::CaseInsensitive)
+            && !fname.endsWith( ".png", Qt::CaseInsensitive)
+            && !fname.endsWith( ".gif", Qt::CaseInsensitive)
+            && !fname.endsWith( ".bmp", Qt::CaseInsensitive))
+            fname += ".jpg";
+    }   // end if
+    return fname;
+}   // end getSaveImageFilename
+
+
+
+// static
+bool QImageTools::saveImage( const cv::Mat &img, const QString savefname)
+{
+    bool saved = false;
+    const QString fname = getSaveImageFilename( savefname);
+    if ( !fname.isEmpty())
+        saved = cv::imwrite( fname.toStdString(), img);
+    return saved;
+}   // end saveImage
+
+
+
+// static
+bool QImageTools::saveImage( const QImage& img, const QString savefname)
+{
+    bool saved = false;
+    const QString fname = getSaveImageFilename( savefname);
+    if ( !fname.isEmpty())
+        saved = img.save( fname);
+    return saved;
+}   // end saveImage
