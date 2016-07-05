@@ -1,4 +1,5 @@
 #include "VtkActorViewer.h"
+#include <VtkTools.h>   // RVTK
 using QTools::VtkActorViewer;
 #include <cassert>
 #include <iostream>
@@ -30,12 +31,33 @@ void VtkActorViewer::setInteractor( vtkSmartPointer<vtkInteractorStyle> intStyle
 
 
 // public
+vtkSmartPointer<vtkRenderer> VtkActorViewer::getRenderer() const
+{
+    return _viewer->getRenderer();
+}   // end getRenderer
+
+
+// public
 void VtkActorViewer::setSize( int w, int h)
 {
     this->resize(w,h);
     this->setMinimumSize(w,h);
     this->setMaximumSize(w,h);
 }   // end setSize
+
+
+// public
+cv::Mat_<float> VtkActorViewer::getRawZBuffer() const
+{
+    return RVTK::extractZBuffer( _viewer->getRenderWindow());
+}   // end getRawZBuffer
+
+
+// public
+cv::Mat_<cv::Vec3b> VtkActorViewer::getColourImg() const
+{
+    return RVTK::extractImage( _viewer->getRenderWindow());
+}   // end getColourImg
 
 
 // public
@@ -102,13 +124,6 @@ void VtkActorViewer::setCameraViewUp( const cv::Vec3f& up)
 
 
 // public
-cv::Mat_<cv::Vec3b> VtkActorViewer::grabImage() const
-{
-    return _viewer->extractImage();
-}   // end grabImage
-
-
-// public
 void VtkActorViewer::setBackgroundWhite( bool on)
 {
     _viewer->changeBackground( on ? 255 : 0);
@@ -126,7 +141,6 @@ void VtkActorViewer::setStereoRendering( bool on)
 }	// end setStereoRendering
 
 
-
 // public
 void VtkActorViewer::setOrthogonal( bool on)
 {
@@ -141,7 +155,6 @@ void VtkActorViewer::setOrthogonal( bool on)
 }	// end setPerspective
 
 
-
 // public
 void VtkActorViewer::setResetCamera( const cv::Vec3f &pos, const cv::Vec3f &foc, const cv::Vec3f &up)
 {
@@ -150,7 +163,6 @@ void VtkActorViewer::setResetCamera( const cv::Vec3f &pos, const cv::Vec3f &foc,
     _camUp = up;
     resetCamera();
 }   // end setResetCamera
-
 
 
 // public
@@ -178,13 +190,11 @@ void VtkActorViewer::setHeadlight( bool enabled)
 }   // end setHeadlight
 
 
-
 // public
 void VtkActorViewer::resetCamera()
 {
     adjustCamera( _camPos, _camFocus, _camUp);
 }   // end resetCamera
-
 
 
 // public

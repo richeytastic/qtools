@@ -7,7 +7,6 @@
 using std::vector;
 #include "QImageTools.h"
 #include "QTools_Export.h"
-
 #include <QVTKWidget.h>
 
 
@@ -20,20 +19,28 @@ public:
     explicit VtkActorViewer( QWidget *parent = NULL);
     ~VtkActorViewer();
 
-    void setInteractor( vtkSmartPointer<vtkInteractorStyle>);
+    virtual void setInteractor( vtkSmartPointer<vtkInteractorStyle>);
+
+    vtkSmartPointer<vtkRenderer> getRenderer() const;
 
     // Auto rendering of updates to the viewer is off by default.
     // It can be useful to set this on for simple view use cases (adding and removing single objects).
     // Otherwise, for more complicated scenarios, the client probably wants greater control over how
     // often the viewer re-renders the scene - and updateRender() should be called explicitly.
-    inline void setAutoUpdateRender( bool autoRenderOn) { _autoUpdateRender = autoRenderOn;}
-    inline bool isAutoUpdateRenderOn() const { return _autoUpdateRender;}
+    void setAutoUpdateRender( bool autoRenderOn) { _autoUpdateRender = autoRenderOn;}
+    bool isAutoUpdateRenderOn() const { return _autoUpdateRender;}
     virtual void updateRender() { _viewer->updateRender();}   // Render - CALL AFTER ALL CHANGES TO SEE UPDATES!
 
     // Reset the view window size.
     void setSize( int width, int height);
     int getWidth() const { return _viewer->getWidth();}
     int getHeight() const { return _viewer->getHeight();}
+    cv::Size getSize() const { return cv::Size( _viewer->getWidth(), _viewer->getHeight());}
+
+    // Grab a snapshot of the raw Z buffer from the viewer.
+    cv::Mat_<float> getRawZBuffer() const;
+    // Grab a snapshot of whatever's currently displayed (3 byte BGR order)
+    cv::Mat_<cv::Vec3b> getColourImg() const;
 
     // Adding and removing actors will cause a re-rendering of the scene if auto-rendering is on.
     void addActor( vtkActor*);
@@ -66,9 +73,6 @@ public:
     // Set the lighting array for the scene - each light must have a corresponding focal point.
     void setLighting( const vector<cv::Vec3f>& lightPositions, const vector<cv::Vec3f>& lightFocalPoints, bool headlightEnabled=false);
     void setHeadlight( bool enabled);
-
-    // Grab a snapshot of whatever's currently displayed (3 byte BGR order)
-    cv::Mat_<cv::Vec3b> grabImage() const;
 
     // Given a 2D render window (with TOP LEFT origin), find the actor from the given list being pointed to.
     // If no actors from the list are being pointed to, returns NULL.
