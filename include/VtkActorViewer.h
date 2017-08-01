@@ -1,13 +1,19 @@
-#pragma once
 #ifndef QTOOLS_VTK_ACTOR_VIEWER_H
 #define QTOOLS_VTK_ACTOR_VIEWER_H
 
-#include <Viewer.h>         // RVTK
+#include <iostream>
 #include <vector>
-using std::vector;
 #include "QImageTools.h"
 #include "QTools_Export.h"
+#include <CameraParams.h>   // RFeatures
 #include <QVTKWidget.h>
+#include <vtkSmartPointer.h>
+#include <vtkInteractorStyle.h>
+#include <vtkActor.h>
+#include <vtkRenderer.h>
+#include <vtkRenderWindow.h>
+
+namespace RVTK { class RendererPicker;}
 
 
 namespace QTools
@@ -16,12 +22,11 @@ namespace QTools
 class QTools_EXPORT VtkActorViewer : public QVTKWidget
 { Q_OBJECT
 public:
-    explicit VtkActorViewer( QWidget *parent = NULL);
-    ~VtkActorViewer();
+    VtkActorViewer( QWidget *parent = NULL, bool offscreenRendering=false);
+    virtual ~VtkActorViewer();
 
+    vtkRenderer* getRenderer() { return _ren;}
     virtual void setInteractor( vtkSmartPointer<vtkInteractorStyle>);
-
-    vtkSmartPointer<vtkRenderer> getRenderer() const;
 
     // Auto rendering of updates to the viewer is off by default.
     // It can be useful to set this on for simple view use cases (adding and removing single objects).
@@ -29,18 +34,16 @@ public:
     // often the viewer re-renders the scene - and updateRender() should be called explicitly.
     void setAutoUpdateRender( bool autoRenderOn) { _autoUpdateRender = autoRenderOn;}
     bool isAutoUpdateRenderOn() const { return _autoUpdateRender;}
-    virtual void updateRender() { _viewer->updateRender();}   // Render - CALL AFTER ALL CHANGES TO SEE UPDATES!
+    virtual void updateRender();   // Render - CALL AFTER ALL CHANGES TO SEE UPDATES!
 
     // Reset the view window size.
     void setSize( int width, int height);
-    int getWidth() const { return _viewer->getWidth();}
-    int getHeight() const { return _viewer->getHeight();}
-    cv::Size getSize() const { return cv::Size( _viewer->getWidth(), _viewer->getHeight());}
+    int getWidth() const;
+    int getHeight() const;
+    cv::Size getSize() const;
 
-    // Grab a snapshot of the raw Z buffer from the viewer.
-    cv::Mat_<float> getRawZBuffer() const;
-    // Grab a snapshot of whatever's currently displayed (3 byte BGR order)
-    cv::Mat_<cv::Vec3b> getColourImg() const;
+    cv::Mat_<float> getRawZBuffer() const; // Grab snapshot of the raw Z buffer from the viewer.
+    cv::Mat_<cv::Vec3b> getColourImg() const; // Grab snapshot of whatever's currently displayed (3 byte BGR order)
 
     // Adding and removing actors will cause a re-rendering of the scene if auto-rendering is on.
     void addActor( vtkActor*);
@@ -54,33 +57,25 @@ public:
 
     // All camera adjustments will cause a re-rendering if auto-rendering is on.
     // Sets the parameters to reset the camera to when calling reset camera.
-    // Default values are all zero'd out which probably isn't what you want.
-    void setResetCamera( const cv::Vec3f &pos, const cv::Vec3f &focus, const cv::Vec3f &up);
-    void resetCamera(); // Reset camera parameters
-    // Move the camera parameters to a new position
-    void adjustCamera( const cv::Vec3f &pos, const cv::Vec3f &focus, const cv::Vec3f &up);
-    void printCameraParams() const;
+    // See CameraParams default ctor for default initial reset camera params.
+    void setResetCamera( const RFeatures::CameraParams&);
+    void resetCamera(); // Reset camera parameters to those set in last call to setResetCamera
 
-    void setCameraFocus( const cv::Vec3f& focus); // Set the focus only
-    void setCameraPosition( const cv::Vec3f& pos);  // Set the position only
-    void setCameraViewUp( const cv::Vec3f& up); // Set the up vector only
-
-    cv::Vec3f getCameraFocus() const { return _viewer->getCameraFocus();}
-    cv::Vec3f getCameraPosition() const { return _viewer->getCameraPosition();}
-    cv::Vec3f getCameraViewUp() const { return _viewer->getCameraViewUp();}
-    double getCameraFieldOfView() const { return _viewer->getFieldOfView();}
+    void getCamera( RFeatures::CameraParams&) const;
+    void setCamera( const RFeatures::CameraParams&);   // Move camera to given position
 
     // Set the lighting array for the scene - each light must have a corresponding focal point.
-    void setLighting( const vector<cv::Vec3f>& lightPositions, const vector<cv::Vec3f>& lightFocalPoints, bool headlightEnabled=false);
-    void setHeadlight( bool enabled);
+    void setSceneLights( const std::vector<cv::Vec3f>& lightPositions, const std::vector<cv::Vec3f>& lightFocalPoints);
+    void setHeadlight();    // Replace scene lights (if present) with a camera headlight
 
     // Given a 2D render window (with TOP LEFT origin), find the actor from the given list being pointed to.
     // If no actors from the list are being pointed to, returns NULL.
-    vtkSmartPointer<vtkActor> pickActor( const cv::Point& point, const vector<vtkSmartPointer<vtkActor> >& pactors) const;
+    vtkActor* pickActor( const cv::Point& point, const std::vector<vtkActor*>& pactors) const;
+    vtkSmartPointer<vtkActor> pickActor( const cv::Point& point, const std::vector<vtkSmartPointer<vtkActor> >& pactors) const;
 
     // Given a 2D render window (with TOP LEFT origin), find the actor being pointed to
     // If no actor is found, return NULL.
-    vtkSmartPointer<vtkActor> pickActor( const cv::Point& point) const;
+    vtkActor* pickActor( const cv::Point& point) const;
 
     // Find an actor's cell addressed by a 2D point (using TOP LEFT origin).
     // If no actor cell is found (no actor is pointed to), -1 is returned.
@@ -89,20 +84,16 @@ public:
     // Given a vector of 2D points (using TOP LEFT origin) and an actor (cannot be NULL), set cellIds with
     // the indices of the cells intercepted by the points. Duplicate cellIds are ignored. Returns the number
     // of cell IDs appended to cellIds.
-    int pickActorCells( const vector<cv::Point>& points, const vtkActor* actor, vector<int>& cellIds) const;
+    int pickActorCells( const std::vector<cv::Point>& points, vtkActor* actor, std::vector<int>& cellIds) const;
 
     // As above but selects cells where the corresponding 2D mask values > 0.
-    int pickActorCells( const cv::Mat& mask, const vtkActor* actor, vector<int>& cellIds) const;
+    int pickActorCells( const cv::Mat& mask, vtkActor* actor, std::vector<int>& cellIds) const;
 
     // Find the position in 3D world space from a 2D point using TOP LEFT origin.
     cv::Vec3f pickWorldPosition( const cv::Point& p) const;
 
     // As above, but specify view coordinates from top left as a proportion of the window dimensions.
     cv::Vec3f pickWorldPosition( const cv::Point2f& p) const;
-
-    // As above, but look at a pixel neighbourhood that's a 4-connected cross including 4.
-    // Nowhere near as fast, but better if possible holes to contend with.
-    cv::Vec3f pickWorldMeanPosition( const cv::Point& p) const;
 
     // Pick the surface normal at the given 2D point having TOP LEFT origin.
     // If no surface is picked at p, (0,0,0) is returned.
@@ -114,17 +105,12 @@ public:
     // As above, but return the coordinates from the top left of the display as a proportion of the display pane.
     cv::Point2f projectToDisplayProportion( const cv::Vec3f& v) const;
 
-protected:
-    RVTK::Viewer::Ptr getViewer() const { return _viewer;}
-
 private:
-    RVTK::Viewer::Ptr _viewer;
     bool _autoUpdateRender;
-
-    // Reset camera params
-    cv::Vec3f _camPos;
-    cv::Vec3f _camFocus;
-    cv::Vec3f _camUp;
+    mutable vtkRenderer* _ren;
+    mutable vtkRenderWindow* _rwindow;
+    RVTK::RendererPicker *_rpicker;
+    RFeatures::CameraParams _resetCamera;
 };	// end class
 
 }	// end namespace

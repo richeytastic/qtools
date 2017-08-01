@@ -1,25 +1,26 @@
-#ifndef QTOOLS_PLUGINS_POOL_H__
-#define QTOOLS_PLUGINS_POOL_H__
+#ifndef QTOOLS_PLUGINS_LOADER_H
+#define QTOOLS_PLUGINS_LOADER_H
 
 #include <QDir>
-#include "PluginInterface.h"
 #include "QTools_Export.h"
 
 namespace QTools
 {
 
-class QTools_EXPORT PluginsPool : public QObject
+class PluginInterface;
+
+class QTools_EXPORT PluginsLoader : public QObject
 { Q_OBJECT
 public:
-    PluginsPool();  // Finds all plugins in plugins directory - does not load them!
-    virtual ~PluginsPool(){}
+    PluginsLoader();  // Finds all plugins in plugins directory - does not load them!
+    virtual ~PluginsLoader(){}
 
     // Loads all plugins (static + dynamic) returns number loaded.
     // Fires onLoadedPlugin for each new plugin loaded.
     size_t loadPlugins();
 
-    const QDir& getPluginsDir() const { return _pluginsDir;}
-    const QStringList& getDynamicPluginFileNames() const { return _pluginFileNames;}
+    const QDir& getPluginsDir() const { return _pluginsDir;}    // The dynamic library location
+    const QStringList& getDynamicPluginFileNames() const { return _pluginFileNames;}    // Dynamic libraries
 
 signals:
     void onLoadedPlugin( QTools::PluginInterface*);

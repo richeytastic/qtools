@@ -1,5 +1,6 @@
-#include "PluginsPool.h"
-using QTools::PluginsPool;
+#include "PluginsLoader.h"
+#include "PluginInterface.h"
+using QTools::PluginsLoader;
 using QTools::PluginInterface;
 #include <QPluginLoader>
 #include <QApplication>
@@ -24,30 +25,30 @@ QDir findPluginsDir()
 #endif
     */
     pluginsDir.cd("plugins");
-    const QString pluginsPath = pluginsDir.absolutePath();
-    std::cout << "Plugins path: " << pluginsPath.toStdString() << std::endl;
+    //const QString pluginsPath = pluginsDir.absolutePath();
     return pluginsDir;
 }   // end findPluginsDir
 
 
-PluginsPool::PluginsPool()
+PluginsLoader::PluginsLoader()
 {
     _pluginsDir = findPluginsDir();
     _pluginFileNames = _pluginsDir.entryList(QDir::Files);
 }   // end ctor
 
 
-size_t PluginsPool::loadPlugins()
+size_t PluginsLoader::loadPlugins()
 {
     size_t numLoaded = 0;
     // Load the static plugins
     foreach ( QObject *plugin, QPluginLoader::staticInstances())
     {
         QString cname = plugin->metaObject()->className();
+        std::cerr << "[STATUS] QTools::PluginsLoader::loadPlugins(): Found static library " << cname.toStdString() << std::endl;
         QTools::PluginInterface* pluginInterface = qobject_cast<QTools::PluginInterface*>( plugin);
         if ( !pluginInterface)
         {
-            std::cerr << "[ERROR] QTools::PluginsPool::loadPlugins: "
+            std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins(): "
                 << "Qt statically loaded plugin does not implement QTools::PluginInterface so skipping it!" << std::endl;
             std::cerr << "Tried to load plugin: " + cname.toStdString() << std::endl;
             emit onLoadedPlugin( NULL, cname);
@@ -66,7 +67,7 @@ size_t PluginsPool::loadPlugins()
         QObject *plugin = loader.instance();
         if ( !plugin)
         {
-            std::cerr << "[ERROR] QTools::PluginsPool::loadPlugins: Qt dynamically loaded plugin is not a QObject (Qt issue?)!" << std::endl;
+            std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins: Qt dynamically loaded plugin is not a QObject (Qt issue?)!" << std::endl;
             std::cerr << "Tried to load plugin: " << filePath.toStdString();
             emit onLoadedPlugin( NULL, fileName);
             continue;
@@ -75,7 +76,7 @@ size_t PluginsPool::loadPlugins()
         QTools::PluginInterface* pluginInterface = qobject_cast<QTools::PluginInterface*>( plugin);
         if ( !pluginInterface)
         {
-            std::cerr << "[ERROR] QTools::PluginsPool::loadPlugins: "
+            std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins: "
                 << "Qt dynamically loaded plugin does not implement QTools::PluginInterface so skipping it!" << std::endl;
             std::cerr << "Tried to load plugin: " << fileName.toStdString();
             emit onLoadedPlugin( NULL, fileName);

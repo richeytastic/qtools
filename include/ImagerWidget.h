@@ -1,6 +1,5 @@
-#pragma once
-#ifndef QTOOLS_IMAGER_WIDGET_H
-#define QTOOLS_IMAGER_WIDGET_H
+#ifndef QTOOLS_IMAGER_WIDGET_H__
+#define QTOOLS_IMAGER_WIDGET_H__
 
 #include <vector>
 using std::vector;

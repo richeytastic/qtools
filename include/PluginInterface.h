@@ -1,5 +1,5 @@
-#ifndef QTOOLS_PLUGIN_INTERFACE_H__
-#define QTOOLS_PLUGIN_INTERFACE_H__
+#ifndef QTOOLS_PLUGIN_INTERFACE_H
+#define QTOOLS_PLUGIN_INTERFACE_H
 
 /**
  * Standard plugin interface for use with QTools::PluginsPool.

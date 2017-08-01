@@ -1,0 +1,5 @@
+<RCC>
+    <qresource>
+        <file alias="HANDLE_IMG">res/images/TwoHandleSlider_handle.png</file>
+    </qresource>
+</RCC>

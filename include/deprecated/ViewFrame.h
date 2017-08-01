@@ -1,6 +1,5 @@
-#pragma once
-#ifndef QTOOLS_VIEW_FRAME_H
-#define QTOOLS_VIEW_FRAME_H
+#ifndef QTOOLS_VIEW_FRAME_H__
+#define QTOOLS_VIEW_FRAME_H__
 
 #include <QFrame>
 #include "QTools_Export.h"

@@ -1,40 +1,67 @@
 #include "VtkActorViewer.h"
-#include <VtkTools.h>   // RVTK
-using QTools::VtkActorViewer;
+#include <VtkTools.h>       // RVTK
+#include <RendererPicker.h> // RVTK
+#include <FeatureUtils.h>   // RFeatures
 #include <cassert>
 #include <iostream>
+#include <vtkLight.h>
+#include <vtkRendererCollection.h>
+#include <vtkOpenGLRenderer.h>
+//#include <vtkGraphicsFactory.h>
+using QTools::VtkActorViewer;
+using RFeatures::CameraParams;
 
 
-VtkActorViewer::VtkActorViewer( QWidget *parent) : QVTKWidget( parent),
-    _viewer( RVTK::Viewer::create()), _autoUpdateRender(false)
+VtkActorViewer::VtkActorViewer( QWidget *parent, bool offscreen)
+    : QVTKWidget( parent), _autoUpdateRender(false),
+     _ren( vtkOpenGLRenderer::New()), _rwindow( NULL), _rpicker(NULL), _resetCamera()
 {
+    /*
+    // Check if vtkGraphicsFactory is really needed...
+    vtkSmartPointer<vtkGraphicsFactory> gf;
+    if ( offscreen)
+    {
+        //gf = vtkSmartPointer<vtkGraphicsFactory>::New();
+        //gf->SetOffScreenOnlyMode(true);
+        //gf->SetUseMesaClasses(true);
+    }   // end if
+    */
+        
     //QWidget::setWindowFlags(Qt::Window);
-    vtkSmartPointer<vtkRenderWindow> renderWindow = _viewer->getRenderWindow();
-    this->SetRenderWindow( renderWindow);
-    _viewer->getCamera( _camPos, _camFocus, _camUp); // Set initial camera parameters
-}	// end ctor
+    _ren->SetBackground( 0., 0., 0.);
+    _ren->SetTwoSidedLighting( true);   // Don't light occluded sides
+    _ren->SetAutomaticLightCreation( false);
 
+    _rwindow = this->GetRenderWindow();
+    _rwindow->SetPointSmoothing( false);
+    _rwindow->SetOffScreenRendering( offscreen);
+    _rwindow->AddRenderer( _ren);
+
+    _rpicker = new RVTK::RendererPicker( _ren, RVTK::RendererPicker::TOP_LEFT);
+}	// end ctor
 
 
 VtkActorViewer::~VtkActorViewer()
 {
-    //_connections->Delete();
-}	// end dtor
+    _ren->Delete();
+    delete _rpicker;
+}   // end dtor
 
 
 // public
 void VtkActorViewer::setInteractor( vtkSmartPointer<vtkInteractorStyle> intStyle)
 {
-    _viewer->getRenderWindow()->GetInteractor()->SetInteractorStyle( intStyle);
-    intStyle->GetInteractor()->SetRenderWindow( _viewer->getRenderWindow());
+    _rwindow->GetInteractor()->SetInteractorStyle( intStyle);
+    intStyle->GetInteractor()->SetRenderWindow( _rwindow);
 }   // end setInteractor
 
 
 // public
-vtkSmartPointer<vtkRenderer> VtkActorViewer::getRenderer() const
+void VtkActorViewer::updateRender()
 {
-    return _viewer->getRenderer();
-}   // end getRenderer
+    _ren->ResetCameraClippingRange();
+    _rwindow->Render();
+}   // end updateRender
 
 
 // public
@@ -47,23 +74,45 @@ void VtkActorViewer::setSize( int w, int h)
 
 
 // public
+int VtkActorViewer::getWidth() const
+{
+    return _ren->GetSize()[0];
+}   // end getWidth
+
+
+// public
+int VtkActorViewer::getHeight() const
+{
+    return _ren->GetSize()[1];
+}   // end getHeight
+
+
+// public
+cv::Size VtkActorViewer::getSize() const
+{
+    const int* wsz = _ren->GetSize();
+    return cv::Size( wsz[0], wsz[1]);
+}   // end getSize
+
+
+// public
 cv::Mat_<float> VtkActorViewer::getRawZBuffer() const
 {
-    return RVTK::extractZBuffer( _viewer->getRenderWindow());
+    return RVTK::extractZBuffer( _rwindow);
 }   // end getRawZBuffer
 
 
 // public
 cv::Mat_<cv::Vec3b> VtkActorViewer::getColourImg() const
 {
-    return RVTK::extractImage( _viewer->getRenderWindow());
+    return RVTK::extractImage( _rwindow);
 }   // end getColourImg
 
 
 // public
-void VtkActorViewer::addActor( vtkActor* obj)
+void VtkActorViewer::addActor( vtkActor* actor)
 {
-    _viewer->addActor( obj);
+    _ren->AddActor( actor);
     if ( _autoUpdateRender)
         updateRender();
 }   // end addActor
@@ -72,7 +121,7 @@ void VtkActorViewer::addActor( vtkActor* obj)
 // public
 void VtkActorViewer::removeActor( vtkActor* obj)
 {
-    _viewer->removeActor( obj);
+    _ren->RemoveActor( obj);
     if ( _autoUpdateRender)
         updateRender();
 }   // end removeActor
@@ -81,52 +130,65 @@ void VtkActorViewer::removeActor( vtkActor* obj)
 // public
 void VtkActorViewer::clear()
 {
-    _viewer->clear();
+    _ren->RemoveAllViewProps();
     if ( _autoUpdateRender)
         updateRender();
 }   // end clear
 
 
 // public
-void VtkActorViewer::adjustCamera( const cv::Vec3f &pos, const cv::Vec3f &foc, const cv::Vec3f &up)
+void VtkActorViewer::setResetCamera( const CameraParams& cp)
 {
-    _viewer->resetCamera( pos, foc, up, 30);
-    if ( _autoUpdateRender)
-        updateRender();
-}   // end adjustCamera
+    _resetCamera = cp;
+    resetCamera();
+}   // end setResetCamera
 
 
 // public
-void VtkActorViewer::setCameraFocus( const cv::Vec3f& focus)
+void VtkActorViewer::resetCamera()
 {
-    _viewer->setCameraFocus( focus);
-    if ( _autoUpdateRender)
-        updateRender();
-}   // end setCameraFocus
+    setCamera( _resetCamera);
+}   // end resetCamera
 
 
 // public
-void VtkActorViewer::setCameraPosition( const cv::Vec3f& pos)
+void VtkActorViewer::getCamera( CameraParams& cp) const
 {
-    _viewer->setCameraPosition( pos);
-    if ( _autoUpdateRender)
-        updateRender();
-}   // end setCameraPosition
+    vtkCamera* cam = _ren->GetActiveCamera();
+
+    const double *arr = cam->GetPosition();
+    cp.pos = cv::Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
+
+    arr = cam->GetFocalPoint();
+    cp.focus = cv::Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
+
+    arr = cam->GetViewUp();
+    cp.up = cv::Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
+
+    cp.fov = cam->GetViewAngle();
+}   // end getCamera
 
 
 // public
-void VtkActorViewer::setCameraViewUp( const cv::Vec3f& up)
+void VtkActorViewer::setCamera( const CameraParams& cp)
 {
-    _viewer->setCameraViewUp( up);
+    vtkCamera* cam = _ren->GetActiveCamera();
+    cam->SetFocalPoint( cp.focus[0], cp.focus[1], cp.focus[2]);
+    cam->SetPosition( cp.pos[0], cp.pos[1], cp.pos[2]);
+    cam->ComputeViewPlaneNormal();
+    cam->SetViewUp( cp.up[0], cp.up[1], cp.up[2]);
+    cam->SetViewAngle( cp.fov);
+    _ren->ResetCameraClippingRange();
     if ( _autoUpdateRender)
         updateRender();
-}   // end setCameraViewUp
+}   // end setCamera
 
 
 // public
 void VtkActorViewer::setBackgroundWhite( bool on)
 {
-    _viewer->changeBackground( on ? 255 : 0);
+    const double c = on ? 255 : 0;
+    _ren->SetBackground( c, c, c);
     if ( _autoUpdateRender)
         updateRender();
 }	// end setBackgroundWhite
@@ -135,7 +197,7 @@ void VtkActorViewer::setBackgroundWhite( bool on)
 // public
 void VtkActorViewer::setStereoRendering( bool on)
 {
-    _viewer->setStereoRendering( on);
+    _rwindow->SetStereoRender( on);
     if ( _autoUpdateRender)
         updateRender();
 }	// end setStereoRendering
@@ -144,244 +206,142 @@ void VtkActorViewer::setStereoRendering( bool on)
 // public
 void VtkActorViewer::setOrthogonal( bool on)
 {
-    _viewer->setPerspective( !on);
+    vtkCamera* cam = _ren->GetActiveCamera();
     if ( on)
-        _viewer->setParallelScale( 10.0);    // For parallel projection
+    {
+        cam->ParallelProjectionOn();
+        cam->SetParallelScale( 10.0); // For parallel projection
+    }   // end if
     else
-        _viewer->setFieldOfView( 90.0);  // For perspective projection
+    {
+        cam->ParallelProjectionOff();
+        cam->SetViewAngle( _resetCamera.fov);   // For perspective
+    }   // end else
 
+    _ren->ResetCameraClippingRange();
     if ( _autoUpdateRender)
         updateRender();
-}	// end setPerspective
+}	// end setOrthogonal
 
 
 // public
-void VtkActorViewer::setResetCamera( const cv::Vec3f &pos, const cv::Vec3f &foc, const cv::Vec3f &up)
-{
-    _camPos = pos;
-    _camFocus = foc;
-    _camUp = up;
-    resetCamera();
-}   // end setResetCamera
-
-
-// public
-void VtkActorViewer::setLighting( const vector<cv::Vec3f>& lpos, const vector<cv::Vec3f>& lfoc, bool headlight)
+void VtkActorViewer::setSceneLights( const std::vector<cv::Vec3f>& lpos, const std::vector<cv::Vec3f>& lfoc)
 {
     const int numLights = (int)lpos.size();
     assert( numLights == lfoc.size());
-    double* intensities = (double*)cv::fastMalloc(numLights * sizeof(double));
+
+    _ren->RemoveAllLights();
     for ( int i = 0; i < numLights; ++i)
-        intensities[i] = 1;
-    _viewer->resetSceneLights( numLights, &lpos[0], &lfoc[0], intensities);
-    _viewer->setHeadlightEnabled( headlight);
-    cv::fastFree(intensities);
+    {
+        vtkSmartPointer<vtkLight> light = vtkSmartPointer<vtkLight>::New();
+        light->SetLightTypeToSceneLight();
+        light->SetColor(1,1,1);
+        light->SetAmbientColor(1,1,1);
+        light->SetIntensity( 1);
+        light->SetPosition( lpos[i][0], lpos[i][1], lpos[i][2]);
+        light->SetFocalPoint( lfoc[i][0], lfoc[i][1], lfoc[i][2]);
+        _ren->AddLight( light);
+    }   // end for
+
     if ( _autoUpdateRender)
         updateRender();
-}   // end setLighting
+}   // end setSceneLights
 
 
 // public
-void VtkActorViewer::setHeadlight( bool enabled)
+void VtkActorViewer::setHeadlight()
 {
-    _viewer->setHeadlightEnabled( enabled);
+    _ren->RemoveAllLights();
+    vtkSmartPointer<vtkLight> hlight = vtkSmartPointer<vtkLight>::New();
+    hlight->SetLightTypeToHeadlight();
+    _ren->AddLight( hlight);
+    _ren->SetLightFollowCamera(true);
+    hlight->SetSwitch( true);
+
     if ( _autoUpdateRender)
         updateRender();
 }   // end setHeadlight
 
 
 // public
-void VtkActorViewer::resetCamera()
+vtkActor* VtkActorViewer::pickActor( const cv::Point& p, const std::vector<vtkActor*>& pactors) const
 {
-    adjustCamera( _camPos, _camFocus, _camUp);
-}   // end resetCamera
-
-
-// public
-void VtkActorViewer::printCameraParams() const
-{
-    _viewer->printCameraDetails( std::cerr);
-}   // end printCameraParams
-
-
-// public
-vtkSmartPointer<vtkActor> VtkActorViewer::pickActor( const cv::Point& pt, const vector<vtkSmartPointer<vtkActor> >& pactors) const
-{
-    cv::Point p( pt.x, size().height() - pt.y - 1); // Make point using the BOTTOM LEFT as origin for VTK render window
-    return _viewer->pickActor(p, pactors);
+    return _rpicker->pickActor( p, pactors);
 }   // end pickActor
 
 
 // public
-vtkSmartPointer<vtkActor> VtkActorViewer::pickActor( const cv::Point& pt) const
+vtkSmartPointer<vtkActor> VtkActorViewer::pickActor( const cv::Point& p,
+                                                     const std::vector<vtkSmartPointer<vtkActor> >& pactors) const
 {
-    cv::Point p( pt.x, size().height() - pt.y - 1); // Make point using the BOTTOM LEFT as origin for VTK render window
-    return _viewer->pickActor(p);
+    return _rpicker->pickActor( p, pactors);
 }   // end pickActor
 
 
+// public
+vtkActor* VtkActorViewer::pickActor( const cv::Point& p) const
+{
+    return _rpicker->pickActor( p);
+}   // end pickActor
+
 
 // public
-int VtkActorViewer::pickCell(const cv::Point &topLeftPoint) const
+int VtkActorViewer::pickCell(const cv::Point &p) const
 {
-    cv::Point p( topLeftPoint.x, size().height() - topLeftPoint.y - 1); // Make point using the BOTTOM LEFT as origin for VTK render window
-    return _viewer->pickCell(p);
+    return _rpicker->pickCell( p);
 }   // end pickCell
 
 
-
 // public
-int VtkActorViewer::pickActorCells( const vector<cv::Point>& points, const vtkActor* actor, vector<int>& cellIds) const
+int VtkActorViewer::pickActorCells( const std::vector<cv::Point>& points, vtkActor* actor, std::vector<int>& cellIds) const
 {
-    if ( actor == NULL)
-        return 0;
-
-    // Convert points to use BOTTOM LEFT as origin for VTK.
-    const int numPoints = (int)points.size();
-    const int winHeight = size().height() - 1;
-    vector<cv::Point> bottomLeftPoints( numPoints);
-    for ( int i = 0; i < numPoints; ++i)
-    {
-        const cv::Point& p = points[i];
-        bottomLeftPoints[i] = cv::Point(p.x, winHeight - p.y);
-    }   // end for
-
-    return _viewer->pickActorCells( bottomLeftPoints, actor, cellIds);
+    return _rpicker->pickActorCells( points, actor, cellIds);
 }   // end pickActorCells
 
 
 // public
-int VtkActorViewer::pickActorCells( const cv::Mat& inmask, const vtkActor* actor, vector<int>& cellIds) const
+int VtkActorViewer::pickActorCells( const cv::Mat& inmask, vtkActor* actor, std::vector<int>& cellIds) const
 {
     if ( actor == NULL)
         return 0;
 
-    assert( inmask.rows == size().height() && inmask.cols == size().width());
+    assert( inmask.rows == getHeight() && inmask.cols == getWidth());
     assert( inmask.channels() == 1);
 
-    typedef unsigned char byte;
     cv::Mat_<byte> mask;
     inmask.convertTo( mask, CV_8U);
-
-    // Convert points to use BOTTOM LEFT as origin for VTK.
-    const int winHeight = size().height() - 1;
-    vector<cv::Point> bottomLeftPoints;
-
-    for ( int i = 0; i < mask.rows; ++i)
-    {
-        const byte* maskrow = mask.ptr<byte>(i);
-        for ( int j = 0; j < mask.cols; ++j)
-        {
-            if ( maskrow[j])
-                bottomLeftPoints.push_back( cv::Point(j, winHeight - i));
-        }   // end for - cols
-    }   // end for - rows
-
-    return _viewer->pickActorCells( bottomLeftPoints, actor, cellIds);
+    std::vector<cv::Point> pts;
+    RFeatures::nonZeroToPoints( mask, pts);
+    return pickActorCells( pts, actor, cellIds);
 }   // end pickActorCells
 
 
 // public
 cv::Vec3f VtkActorViewer::pickWorldPosition( const cv::Point& p) const
 {
-    cv::Point np( p.x, size().height() - p.y - 1);  // Reverse y
-    vtkSmartPointer<vtkWorldPointPicker> picker = vtkSmartPointer<vtkWorldPointPicker>::New();  // Hardware accelerated
-    picker->Pick( np.x, np.y, 0, _viewer->getRenderer());
-    const double* worldPos = picker->GetPickPosition();
-    return cv::Vec3f( worldPos[0], worldPos[1], worldPos[2]);
+    return _rpicker->pickWorldPosition( p);
 }   // end pickWorldPosition
 
 
 // public
 cv::Vec3f VtkActorViewer::pickWorldPosition( const cv::Point2f& p) const
 {
-    cv::Point p1( (int)cvRound(p.x * (size().width()-1)), (int)cvRound(p.y * (size().height()-1)));
-    return pickWorldPosition( p1);
+    const cv::Point np( (int)cvRound(p.x * (getWidth()-1)), (int)cvRound(p.y * (getHeight()-1)));
+    return pickWorldPosition( np);
 }   // end pickWorldPosition
-
-
-// public
-cv::Vec3f VtkActorViewer::pickWorldMeanPosition( const cv::Point& p) const
-{
-    cv::Point np( p.x, size().height() - p.y - 1);  // Reverse y
-    vtkSmartPointer<vtkWorldPointPicker> picker = vtkSmartPointer<vtkWorldPointPicker>::New();  // Hardware accelerated
-
-    // Cross of points to get 3D locations for
-    const int NPT = 5;
-    std::vector<cv::Point> pts(NPT);
-    pts[0] = np;
-    pts[1] = np;
-    pts[2] = np;
-    pts[3] = np;
-    pts[4] = np;
-    pts[1].x--;
-    pts[2].x++;
-    pts[3].y--;
-    pts[4].y++;
-
-    cv::Vec3f mv(0,0,0);   // Will be mean vector position
-    std::vector<cv::Vec3f> vs(NPT);
-    const vtkSmartPointer<vtkRenderer> ren = _viewer->getRenderer();
-    for ( int i = 0; i < NPT; ++i)
-    {
-        picker->Pick( pts[i].x, pts[i].y, 0, ren);
-        const double* worldPos = picker->GetPickPosition();
-        vs[i] = cv::Vec3f( worldPos[0], worldPos[1], worldPos[2]);
-        mv += vs[i];
-    }   // end for
-    mv /= NPT;
-
-    std::vector<cv::Vec3f> vd(NPT);   // Vector position absolute differences
-    cv::Vec3f stddev(0,0,0);   // Std-dev in three dimensions
-    for ( int i = 0; i < NPT; ++i)
-    {
-        vd[i] = cv::Vec3f( fabsf( vs[i][0] - mv[0]), fabsf( vs[i][1] - mv[1]), fabsf( vs[i][2] - mv[2]));
-        stddev += cv::Vec3f( powf( vd[i][0], 2), powf( vd[i][1], 2), powf( vd[i][2], 2));
-    }   // end for
-
-    // Only use values < 2 std-dev away in any axis
-    stddev = 2*cv::Vec3f( sqrtf(stddev[0]/NPT), sqrtf(stddev[1]/NPT), sqrtf(stddev[2]/NPT));
-    int usedCount = 0;
-    cv::Vec3f fpos(0,0,0);
-    for ( int i = 0; i < NPT; ++i)
-    {
-        const cv::Vec3f& v = vd[i];
-        if ( v[0] < stddev[0] && v[1] < stddev[1] && v[2] < stddev[2])
-        {
-            fpos += vs[i];
-            usedCount++;
-        }   // end if
-    }   // end for
-
-    if ( !usedCount)
-        fpos = vs[0];
-    else
-        fpos /= usedCount;
-
-    return fpos;
-}   // end pickWorldMeanPosition
 
 
 // public
 cv::Vec3f VtkActorViewer::pickNormal( const cv::Point& p) const
 {
-    cv::Point np( p.x, size().height() - p.y - 1);  // Reverse y
-    vtkSmartPointer<vtkCellPicker> picker = vtkSmartPointer<vtkCellPicker>::New();
-    if ( !picker->Pick( np.x, np.y, 0, _viewer->getRenderer()))
-        return cv::Vec3f(0,0,0);
-    const double* normal = picker->GetPickNormal();
-    return cv::Vec3f( normal[0], normal[1], normal[2]);
+    return _rpicker->pickNormal( p);
 }   // end pickNormal
 
 
 // public
 cv::Point VtkActorViewer::projectToDisplay( const cv::Vec3f& v) const
 {
-    vtkSmartPointer<vtkCoordinate> coordConverter = vtkSmartPointer<vtkCoordinate>::New();
-    coordConverter->SetCoordinateSystemToWorld();
-    coordConverter->SetValue( v[0], v[1], v[2]);
-    const int* dpos = coordConverter->GetComputedDisplayValue( _viewer->getRenderer());
-    return cv::Point( dpos[0], this->size().height() - dpos[1] - 1);
+    return _rpicker->projectToImagePlane( v);
 }   // end projectToDisplay
 
 
@@ -389,5 +349,5 @@ cv::Point VtkActorViewer::projectToDisplay( const cv::Vec3f& v) const
 cv::Point2f VtkActorViewer::projectToDisplayProportion( const cv::Vec3f& v) const
 {
     const cv::Point p = projectToDisplay(v);
-    return cv::Point2f( float(p.x) / (size().width()-1), float(p.y) / (size().height()-1));
+    return cv::Point2f( float(p.x) / (getWidth()-1), float(p.y) / (getHeight()-1));
 }   // end projectToDisplayProportion

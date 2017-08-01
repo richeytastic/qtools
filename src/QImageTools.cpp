@@ -4,7 +4,6 @@ using QTools::QImageTools;
 #include <cassert>
 typedef unsigned char byte;
 
-
 // Returns the image in RGB888 format
 QImage QImageTools::copyOpenCV2QImage( const cv::Mat &img)
 {
@@ -36,7 +35,6 @@ QImage QImageTools::copyOpenCV2QImage( const cv::Mat &img)
 
     return qimg;
 }   // end copyOpenCV2QImage
-
 
 
 cv::Mat QImageTools::copyQImage2OpenCV( const QImage &qimg)
@@ -75,11 +73,9 @@ cv::Mat QImageTools::copyQImage2OpenCV( const QImage &qimg)
 }   // end copyQImage2OpenCV
 
 
-
-
 QString getSaveImageFilename( const QString savefname)
 {
-    QString fname = QFileDialog::getSaveFileName( NULL, "Save Image", savefname, "Image Files (*.jpg *.jpeg *.png *.gif *.bmp)");
+    QString fname = QFileDialog::getSaveFileName( NULL, "Save Image", savefname, "Image Files (*.jpg *.jpeg *.png *.gif *.bmp)", NULL, QFileDialog::DontUseNativeDialog);
     if ( !fname.isEmpty())
     {
         // Ensure fname has a valid image extension, otherwise set
@@ -95,7 +91,6 @@ QString getSaveImageFilename( const QString savefname)
 }   // end getSaveImageFilename
 
 
-
 // static
 bool QImageTools::saveImage( const cv::Mat &img, const QString savefname)
 {
@@ -105,7 +100,6 @@ bool QImageTools::saveImage( const cv::Mat &img, const QString savefname)
         saved = cv::imwrite( fname.toStdString(), img);
     return saved;
 }   // end saveImage
-
 
 
 // static
