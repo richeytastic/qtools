@@ -29,7 +29,6 @@ using std::vector;
 
 #include "QTools_Export.h"
 #include "QImageTools.h"
-using QTools::QImageTools;
 
 #include <RectangleManager.h>
 using RFeatures::RectangleManager;

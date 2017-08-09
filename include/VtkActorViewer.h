@@ -23,6 +23,7 @@
 #include "QImageTools.h"
 #include "QTools_Export.h"
 #include <CameraParams.h>   // RFeatures
+#include <QApplication>     // All callers will have this anyway
 #include <QVTKWidget.h>
 #include <vtkSmartPointer.h>
 #include <vtkInteractorStyle.h>

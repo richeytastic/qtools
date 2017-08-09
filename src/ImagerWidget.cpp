@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "ImagerWidget.h"
+#include <ImagerWidget.h>
 using QTools::ImagerWidget;
 #include "ui_ImagerWidget.h"
 #include <QFileDialog>
@@ -67,7 +67,7 @@ ImagerWidget::~ImagerWidget()
 cv::Mat ImagerWidget::getDisplayedImage() const
 {
     const QPixmap *pixmap = ui->imageLabel->pixmap();
-    return QImageTools::copyQImage2OpenCV( pixmap->toImage());
+    return QTools::copyQImage2OpenCV( pixmap->toImage());
 }   // end getDisplayedImage
 
 
@@ -221,7 +221,7 @@ bool ImagerWidget::eventFilter( QObject *obj, QEvent *evt)
 void ImagerWidget::saveImage()
 {
     const cv::Mat im = getDisplayedImage();
-    QImageTools::saveImage( im);
+    QTools::saveImage( im);
 }   // end saveImage
 
 
@@ -376,7 +376,7 @@ void ImagerWidget::drawRectangles()
 void ImagerWidget::updateImage( const cv::Mat &dimg)
 {
     // Set the new image into the image label
-    QImage qimg = QImageTools::copyOpenCV2QImage( dimg);
+    QImage qimg = QTools::copyOpenCV2QImage( dimg);
     QPixmap pixmap = QPixmap::fromImage( qimg);
     ui->imageLabel->setPixmap( pixmap);
 }   // end updateImage

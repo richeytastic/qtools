@@ -15,14 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "QImageTools.h"
-using QTools::QImageTools;
+#include <QImageTools.h>
 #include <QFileDialog>
 #include <cassert>
 typedef unsigned char byte;
 
 // Returns the image in RGB888 format
-QImage QImageTools::copyOpenCV2QImage( const cv::Mat &img)
+QImage QTools::copyOpenCV2QImage( const cv::Mat &img)
 {
     assert( img.depth() == CV_8U);
     const int numChannels = img.channels();
@@ -54,7 +53,7 @@ QImage QImageTools::copyOpenCV2QImage( const cv::Mat &img)
 }   // end copyOpenCV2QImage
 
 
-cv::Mat QImageTools::copyQImage2OpenCV( const QImage &qimg)
+cv::Mat QTools::copyQImage2OpenCV( const QImage &qimg)
 {
     const int qDepth = qimg.depth()/8; // Step size in bytes
     int boffset = 0;
@@ -108,8 +107,7 @@ QString getSaveImageFilename( const QString savefname)
 }   // end getSaveImageFilename
 
 
-// static
-bool QImageTools::saveImage( const cv::Mat &img, const QString savefname)
+bool QTools::saveImage( const cv::Mat &img, const QString savefname)
 {
     bool saved = false;
     const QString fname = getSaveImageFilename( savefname);
@@ -119,8 +117,7 @@ bool QImageTools::saveImage( const cv::Mat &img, const QString savefname)
 }   // end saveImage
 
 
-// static
-bool QImageTools::saveImage( const QImage& img, const QString savefname)
+bool QTools::saveImage( const QImage& img, const QString savefname)
 {
     bool saved = false;
     const QString fname = getSaveImageFilename( savefname);
