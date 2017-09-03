@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#ifndef QTOOLS_IMAGER_WIDGET_H__
-#define QTOOLS_IMAGER_WIDGET_H__
+#ifndef QTOOLS_IMAGER_WIDGET_H
+#define QTOOLS_IMAGER_WIDGET_H
 
 #include <vector>
 using std::vector;

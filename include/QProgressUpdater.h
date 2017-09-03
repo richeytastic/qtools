@@ -17,32 +17,30 @@
 
 /**
  * Allow calls to update a progress bar from outside of the GUI thread.
+ * Progress bar not required, can be used simply as an emitter of progress updates.
  */
 
-#pragma once
-#ifndef QPROGRESS_BAR_UPDATER_H
-#define QPROGRESS_BAR_UPDATER_H
+#ifndef QPROGRESS_UPDATER_H
+#define QPROGRESS_UPDATER_H
 
 #include "QTools_Export.h"
 #include <QProgressBar>
-#include <ProgressDelegate.h>
-using rlib::ProgressDelegate;
+#include <ProgressDelegate.h>   // rlib
 
 namespace QTools
 {
 
-class QTools_EXPORT QProgressBarUpdater : public QObject, public ProgressDelegate
+class QTools_EXPORT QProgressUpdater : public QObject, public rlib::ProgressDelegate
 { Q_OBJECT
 public:
-    QProgressBarUpdater( QProgressBar* bar, int numThreads);
-    void reset();
+    QProgressUpdater( QProgressBar* bar=NULL, int numThreads=1);
+    void reset();   // Reset complete flag (and the progress bar if set)
 
-protected:
     virtual void processUpdate( float propComplete);    // Called inside critical section
 
 signals:
-    void updated( int percentComplete);
-    void progressComplete();    // Emitted at >= 100%
+    void progressUpdated( float propComplete);  // propComplete in [0,1]
+    void progressComplete();    // Emitted at >= 100% (emitted at least once!)
 
 private:
     QProgressBar* _pbar;

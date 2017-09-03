@@ -43,7 +43,8 @@ public:
     VtkActorViewer( QWidget *parent = NULL, bool offscreenRendering=false);
     virtual ~VtkActorViewer();
 
-    vtkRenderer* getRenderer() { return _ren;}
+    const vtkSmartPointer<vtkRenderWindow> getRenderWindow() const;
+    const vtkSmartPointer<vtkRenderer> getRenderer() const;
     virtual void setInteractor( vtkSmartPointer<vtkInteractorStyle>);
 
     // Auto rendering of updates to the viewer is off by default.
@@ -55,18 +56,18 @@ public:
     virtual void updateRender();   // Render - CALL AFTER ALL CHANGES TO SEE UPDATES!
 
     // Reset the view window size.
-    void setSize( int width, int height);
-    int getWidth() const;
-    int getHeight() const;
+    void setSize( size_t width, size_t height);
+    size_t getWidth() const;
+    size_t getHeight() const;
     cv::Size getSize() const;
 
     cv::Mat_<float> getRawZBuffer() const; // Grab snapshot of the raw Z buffer from the viewer.
     cv::Mat_<cv::Vec3b> getColourImg() const; // Grab snapshot of whatever's currently displayed (3 byte BGR order)
 
-    // Adding and removing actors will cause a re-rendering of the scene if auto-rendering is on.
-    void addActor( vtkActor*);
-    void removeActor( vtkActor*);
-    void clear();   // Remove all object actors
+    // Adding and removing props will cause a re-rendering of the scene if auto-rendering is on.
+    void add( const vtkProp*);
+    void remove( const vtkProp*);
+    void clear();   // Remove all props
 
     // Will cause a re-rendering if auto rendering is on.
     void setBackgroundWhite( bool v);	// Background white if true, else black (automatic rendering update)
@@ -125,10 +126,10 @@ public:
 
 private:
     bool _autoUpdateRender;
-    mutable vtkRenderer* _ren;
-    mutable vtkRenderWindow* _rwindow;
     RVTK::RendererPicker *_rpicker;
     RFeatures::CameraParams _resetCamera;
+    mutable vtkSmartPointer<vtkRenderer> _ren;
+    mutable vtkSmartPointer<vtkRenderWindow> _rwin;
 };	// end class
 
 }	// end namespace

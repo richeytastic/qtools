@@ -15,10 +15,41 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "PluginInterface.h"
-using QTools::PluginInterface;
+#ifndef QTOOLS_PLUGINS_DIALOG_H
+#define QTOOLS_PLUGINS_DIALOG_H
 
-QStringList PluginInterface::getInterfaceIds() const
+#include <QDialog>
+#include "PluginInterface.h"
+#include "PluginsLoader.h"
+#include <boost/shared_ptr.hpp>
+
+namespace Ui { class PluginsDialog; }
+
+namespace QTools
 {
-    return QStringList() << this->getDisplayName();
-}   // end getInterfaceIds
+
+class QTools_EXPORT PluginsDialog : public QDialog
+{ Q_OBJECT
+public:
+    typedef boost::shared_ptr<PluginsDialog> Ptr;
+    static PluginsDialog::Ptr get();    // Singleton
+
+    void setPluginsLoader( QTools::PluginsLoader*);
+
+private slots:
+    void doOnLoadedPlugin( QTools::PluginInterface*, QString);
+
+private:
+    Ui::PluginsDialog *ui;
+    static PluginsDialog::Ptr s_singleton;
+    explicit PluginsDialog(QWidget *parent = 0);
+    virtual ~PluginsDialog();
+    PluginsDialog( const PluginsDialog&);   // NO COPY
+    void operator=( const PluginsDialog&);  // NO COPY
+    class Deleter;
+};  // end class
+
+}   // end namespace
+
+#endif
+

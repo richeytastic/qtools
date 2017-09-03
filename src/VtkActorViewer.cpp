@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "VtkActorViewer.h"
+#include <VtkActorViewer.h>
 #include <VtkTools.h>       // RVTK
 #include <RendererPicker.h> // RVTK
 #include <FeatureUtils.h>   // RFeatures
@@ -31,8 +31,9 @@ using RFeatures::CameraParams;
 
 VtkActorViewer::VtkActorViewer( QWidget *parent, bool offscreen)
     : QVTKWidget( parent), _autoUpdateRender(false),
-     _ren( vtkOpenGLRenderer::New()), _rwindow( NULL), _rpicker(NULL), _resetCamera()
+      _rpicker(NULL), _resetCamera()
 {
+    //QWidget::setWindowFlags(Qt::Window);
     /*
     // Check if vtkGraphicsFactory is really needed...
     vtkSmartPointer<vtkGraphicsFactory> gf;
@@ -43,16 +44,16 @@ VtkActorViewer::VtkActorViewer( QWidget *parent, bool offscreen)
         //gf->SetUseMesaClasses(true);
     }   // end if
     */
-        
-    //QWidget::setWindowFlags(Qt::Window);
+
+    _ren = vtkOpenGLRenderer::New();
     _ren->SetBackground( 0., 0., 0.);
     _ren->SetTwoSidedLighting( true);   // Don't light occluded sides
     _ren->SetAutomaticLightCreation( false);
 
-    _rwindow = this->GetRenderWindow();
-    _rwindow->SetPointSmoothing( false);
-    _rwindow->SetOffScreenRendering( offscreen);
-    _rwindow->AddRenderer( _ren);
+    _rwin = this->GetRenderWindow();
+    _rwin->SetPointSmoothing( false);
+    _rwin->SetOffScreenRendering( offscreen);
+    _rwin->AddRenderer( _ren);
 
     _rpicker = new RVTK::RendererPicker( _ren, RVTK::RendererPicker::TOP_LEFT);
 }	// end ctor
@@ -60,16 +61,27 @@ VtkActorViewer::VtkActorViewer( QWidget *parent, bool offscreen)
 
 VtkActorViewer::~VtkActorViewer()
 {
-    _ren->Delete();
     delete _rpicker;
 }   // end dtor
+
+
+const vtkSmartPointer<vtkRenderWindow> VtkActorViewer::getRenderWindow() const
+{
+    return _rwin;
+}   // end getRenderWindow
+
+
+const vtkSmartPointer<vtkRenderer> VtkActorViewer::getRenderer() const
+{
+    return _ren;
+}   // end getRenderer
 
 
 // public
 void VtkActorViewer::setInteractor( vtkSmartPointer<vtkInteractorStyle> intStyle)
 {
-    _rwindow->GetInteractor()->SetInteractorStyle( intStyle);
-    intStyle->GetInteractor()->SetRenderWindow( _rwindow);
+    _rwin->GetInteractor()->SetInteractorStyle( intStyle);
+    intStyle->GetInteractor()->SetRenderWindow( _rwin);
 }   // end setInteractor
 
 
@@ -77,12 +89,12 @@ void VtkActorViewer::setInteractor( vtkSmartPointer<vtkInteractorStyle> intStyle
 void VtkActorViewer::updateRender()
 {
     _ren->ResetCameraClippingRange();
-    _rwindow->Render();
+    this->GetRenderWindow()->Render();
 }   // end updateRender
 
 
 // public
-void VtkActorViewer::setSize( int w, int h)
+void VtkActorViewer::setSize( size_t w, size_t h)
 {
     this->resize(w,h);
     this->setMinimumSize(w,h);
@@ -91,14 +103,14 @@ void VtkActorViewer::setSize( int w, int h)
 
 
 // public
-int VtkActorViewer::getWidth() const
+size_t VtkActorViewer::getWidth() const
 {
     return _ren->GetSize()[0];
 }   // end getWidth
 
 
 // public
-int VtkActorViewer::getHeight() const
+size_t VtkActorViewer::getHeight() const
 {
     return _ren->GetSize()[1];
 }   // end getHeight
@@ -115,33 +127,33 @@ cv::Size VtkActorViewer::getSize() const
 // public
 cv::Mat_<float> VtkActorViewer::getRawZBuffer() const
 {
-    return RVTK::extractZBuffer( _rwindow);
+    return RVTK::extractZBuffer( _rwin);
 }   // end getRawZBuffer
 
 
 // public
 cv::Mat_<cv::Vec3b> VtkActorViewer::getColourImg() const
 {
-    return RVTK::extractImage( _rwindow);
+    return RVTK::extractImage( _rwin);
 }   // end getColourImg
 
 
 // public
-void VtkActorViewer::addActor( vtkActor* actor)
+void VtkActorViewer::add( const vtkProp* prop)
 {
-    _ren->AddActor( actor);
+    _ren->AddViewProp( const_cast<vtkProp*>(prop));
     if ( _autoUpdateRender)
         updateRender();
-}   // end addActor
+}   // end add
 
 
 // public
-void VtkActorViewer::removeActor( vtkActor* obj)
+void VtkActorViewer::remove( const vtkProp* prop)
 {
-    _ren->RemoveActor( obj);
+    _ren->RemoveViewProp( const_cast<vtkProp*>(prop));
     if ( _autoUpdateRender)
         updateRender();
-}   // end removeActor
+}   // end remove
 
 
 // public
@@ -172,7 +184,6 @@ void VtkActorViewer::resetCamera()
 void VtkActorViewer::getCamera( CameraParams& cp) const
 {
     vtkCamera* cam = _ren->GetActiveCamera();
-
     const double *arr = cam->GetPosition();
     cp.pos = cv::Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
 
@@ -214,7 +225,7 @@ void VtkActorViewer::setBackgroundWhite( bool on)
 // public
 void VtkActorViewer::setStereoRendering( bool on)
 {
-    _rwindow->SetStereoRender( on);
+    _rwin->SetStereoRender( on);
     if ( _autoUpdateRender)
         updateRender();
 }	// end setStereoRendering
@@ -368,3 +379,4 @@ cv::Point2f VtkActorViewer::projectToDisplayProportion( const cv::Vec3f& v) cons
     const cv::Point p = projectToDisplay(v);
     return cv::Point2f( float(p.x) / (getWidth()-1), float(p.y) / (getHeight()-1));
 }   // end projectToDisplayProportion
+

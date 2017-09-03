@@ -33,6 +33,7 @@
  */
 
 #include <QStringList>
+#include <QKeySequence>
 #include <QIcon>
 #include <QtPlugin>
 #include "QTools_Export.h"
@@ -43,27 +44,35 @@ namespace QTools
 
 // The interface to interact with loaded plugins.
 class QTools_EXPORT PluginInterface : public QObject
-{
-Q_OBJECT
+{ Q_OBJECT
 public:
     virtual ~PluginInterface(){}
 
     // If this PluginInterface object is a collection of different interfaces,
-    // get the list of interface display names that are accessible through this collection.
+    // get the list of unique interface ids that are accessible through this collection.
     // If class derived from this interface definition only defines and implements a single
-    // object, the returned list will have only a single member: what's returned from getDisplayName().
-    virtual QStringList getDisplayNames() const;
+    // object, the returned list will have only a single member: what's returned from this
+    // instance's implementation of getDisplayName().
+    virtual QStringList getInterfaceIds() const;
 
     // Gets the interface accessible through this interface. Allows collection classes.
     // Returns this object if it expresses the correct interface, or the interface for
     // the specified class. The return type should be changed to the derived class.
-    virtual PluginInterface* getInterface( const QString&) = 0;
+    // Plugin types are not required to implement this function.
+    virtual PluginInterface* getInterface( const QString& id) const { return NULL;}
 
     // Returns the icon for this plugin.
-    virtual const QIcon* getIcon() const = 0;
+    // Plugin types are not required to implement this function.
+    virtual const QIcon* getIcon() const { return NULL;}
+
+    // Returns the key shortcut for this plugin.
+    // Plugin types are not required to implement this function.
+    virtual const QKeySequence* getShortcut() const { return NULL;}
 
     // The name used to display this plugin interface for menus, legend, etc.
-    virtual QString getDisplayName() const = 0;
+    // Plugin types are not required to implement this function but the
+    // default is the name of the class.
+    virtual QString getDisplayName() const { return metaObject()->className();}
 };  // end class
 
 }   // end namespace

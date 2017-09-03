@@ -15,39 +15,43 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "QProgressBarUpdater.h"
-using QTools::QProgressBarUpdater;
+#include <QProgressUpdater.h>
+using QTools::QProgressUpdater;
 #include <algorithm>
 
 
-QProgressBarUpdater::QProgressBarUpdater( QProgressBar* bar, int numThreads)
+QProgressUpdater::QProgressUpdater( QProgressBar* bar, int numThreads)
     : QObject(), ProgressDelegate(numThreads), _pbar(bar), _complete(false)
 {
-    connect( this, SIGNAL( updated(int)), _pbar, SLOT( setValue(int)));
 }   // end ctor
 
 
-void QProgressBarUpdater::reset()
+void QProgressUpdater::reset()
 {
-    _pbar->reset();
-    _pbar->setValue(0);
+    if ( _pbar)
+    {
+        _pbar->reset();
+        _pbar->setValue(0);
+    }   // end if
     _complete = false;
 }   // end reset
 
 
 // protected virtual (called from inside critical section)
-void QProgressBarUpdater::processUpdate( float propComplete)
+void QProgressUpdater::processUpdate( float propComplete)
 {
     if ( _complete)
         return;
 
-    const int pcnt = 100*propComplete;
-    emit updated(pcnt); // Cause update on the GUI thread
-    if ( pcnt >= 100)
+    if ( _pbar)
+        _pbar->setValue( 100*propComplete);
+
+    emit progressUpdated( propComplete); // Cause update on the GUI thread
+
+    if ( propComplete >= 1.0f)
     {
         emit progressComplete();
         _complete = true;
     }   // end if
 }   // end processUpdate
-
 
