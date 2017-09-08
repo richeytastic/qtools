@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "PluginsLoader.h"
-#include "PluginInterface.h"
+#include <PluginsLoader.h>
+#include <PluginInterface.h>
 using QTools::PluginsLoader;
 using QTools::PluginInterface;
 #include <QPluginLoader>
@@ -24,33 +24,27 @@ using QTools::PluginInterface;
 #include <iostream>
 
 
-QDir findPluginsDir()
+PluginsLoader::PluginsLoader( const std::string& pluginsDir)
+    : _pluginsDir(pluginsDir.c_str())
 {
-    // Set the plugins directory for the non-static plugins
-    QDir pluginsDir = QDir(qApp->applicationDirPath());
-    /*
-#if defined(Q_OS_WIN)
-    if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
-        pluginsDir.cdUp();
-#elif defined(Q_OS_MAC)
-    if (pluginsDir.dirName() == "MacOS")
+    if ( !_pluginsDir.exists() || !_pluginsDir.isReadable())
     {
-        pluginsDir.cdUp();
-        pluginsDir.cdUp();
-        pluginsDir.cdUp();
+        std::cerr << "[WARNING] QTools::PluginsLoader: " << pluginsDir << " either doesn't exist, or isn't readable!" << std::endl;
+        std::cerr << "                                 Trying for 'plugins' directory in application root directory..." << std::endl;
+        _pluginsDir = QDir(qApp->applicationDirPath());
+        _pluginsDir.cd("plugins");
     }   // end if
-#endif
-    */
-    pluginsDir.cd("plugins");
-    //const QString pluginsPath = pluginsDir.absolutePath();
-    return pluginsDir;
-}   // end findPluginsDir
+
+    if ( !_pluginsDir.exists())
+        std::cerr << "[WARNING] QTools::PluginsLoader: " << _pluginsDir.absolutePath().toStdString() << " doesn't exist!" << std::endl;
+    else if ( !_pluginsDir.isReadable())
+        std::cerr << "[WARNING] QTools::PluginsLoader: " << _pluginsDir.absolutePath().toStdString() << " can't be read from!" << std::endl;
+}   // end ctor
 
 
-PluginsLoader::PluginsLoader()
+PluginsLoader::PluginMeta::PluginMeta( const QString& fp, const PluginInterface* pi, bool ok)
+    : filepath(fp), plugin(pi), loaded(ok)
 {
-    _pluginsDir = findPluginsDir();
-    _pluginFileNames = _pluginsDir.entryList(QDir::Files);
 }   // end ctor
 
 
@@ -68,41 +62,45 @@ size_t PluginsLoader::loadPlugins()
             std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins(): "
                 << "Qt statically loaded plugin does not implement QTools::PluginInterface so skipping it!" << std::endl;
             std::cerr << "Tried to load plugin: " + cname.toStdString() << std::endl;
-            emit onLoadedPlugin( NULL, cname);
+            emit loadedPlugin( NULL, cname);
             continue;
         }   // end if
         numLoaded++;
-        emit onLoadedPlugin( pluginInterface);
-        emit onLoadedPlugin( pluginInterface, cname);
+        emit loadedPlugin( pluginInterface, cname);
     }   // end foreach
 
-    // Load the dynamic plugins and store their file names
-    foreach ( QString fileName, _pluginFileNames)
+    // Load the dynamic plugins and store them
+    const QStringList fnames = _pluginsDir.entryList( QDir::Files | QDir::Readable, QDir::Type | QDir::Name);
+    foreach ( const QString& fname, fnames)
     {
-        const QString filePath = _pluginsDir.absoluteFilePath(fileName);
-        QPluginLoader loader( filePath);
+        const QString fpath = _pluginsDir.absoluteFilePath(fname);
+        QPluginLoader loader( fpath);
+
         QObject *plugin = loader.instance();
+        QTools::PluginInterface* pluginInterface = NULL;
         if ( !plugin)
-        {
             std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins: Qt dynamically loaded plugin is not a QObject (Qt issue?)!" << std::endl;
-            std::cerr << "Tried to load plugin: " << filePath.toStdString();
-            emit onLoadedPlugin( NULL, fileName);
-            continue;
-        }   // end if
-
-        QTools::PluginInterface* pluginInterface = qobject_cast<QTools::PluginInterface*>( plugin);
-        if ( !pluginInterface)
+        else
         {
-            std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins: "
-                << "Qt dynamically loaded plugin does not implement QTools::PluginInterface so skipping it!" << std::endl;
-            std::cerr << "Tried to load plugin: " << fileName.toStdString();
-            emit onLoadedPlugin( NULL, fileName);
+            pluginInterface = qobject_cast<QTools::PluginInterface*>( plugin);
+            if ( !pluginInterface)
+                std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins: "
+                    << "Qt dynamically loaded plugin does not implement QTools::PluginInterface so skipping it!" << std::endl;
+        }   // end else
+
+        if ( !plugin || !pluginInterface)
+        {
+            std::cerr << "Tried to load plugin: " << fpath.toStdString();
+            emit loadedPlugin( NULL, fpath);
+            PluginMeta pmeta( fpath, NULL, false);
+            _plugins << pmeta;
             continue;
         }   // end if
 
+        PluginMeta pmeta( fpath, pluginInterface, true);
+        _plugins << pmeta;
         numLoaded++;
-        emit onLoadedPlugin( pluginInterface);
-        emit onLoadedPlugin( pluginInterface, fileName);
+        emit loadedPlugin( pluginInterface, fpath);
     }   // end foreach
 
     return numLoaded;

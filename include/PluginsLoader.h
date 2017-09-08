@@ -18,8 +18,9 @@
 #ifndef QTOOLS_PLUGINS_LOADER_H
 #define QTOOLS_PLUGINS_LOADER_H
 
-#include <QDir>
 #include "QTools_Export.h"
+#include <QList>
+#include <QDir>
 
 namespace QTools
 {
@@ -29,23 +30,41 @@ class PluginInterface;
 class QTools_EXPORT PluginsLoader : public QObject
 { Q_OBJECT
 public:
-    PluginsLoader();  // Finds all plugins in plugins directory - does not load them!
+    // Searches for shared plugins in the given absolute directory path.
+    // If not given, or path doesn't resolve to a readable directory, searches
+    // for the 'plugins' directory in the application root directory.
+    PluginsLoader( const std::string& sharedPluginsDir="");
     virtual ~PluginsLoader(){}
 
-    // Loads all plugins (static + dynamic) returns number loaded.
-    // Fires onLoadedPlugin for each new plugin loaded.
+    // Loads all plugins returning the number of static libraries found plus the number
+    // of dynamic plugins loaded. Fires onLoadedPlugin for each new plugin loaded,
+    // and foundStaticLibrary for each compile time linked library.
     size_t loadPlugins();
 
+    // Get dynamically loaded library data.
     const QDir& getPluginsDir() const { return _pluginsDir;}    // The dynamic library location
-    const QStringList& getDynamicPluginFileNames() const { return _pluginFileNames;}    // Dynamic libraries
+
+    struct PluginMeta
+    {
+        PluginMeta( const QString&, const PluginInterface*, bool);
+        QString filepath;               // Absolute path to the plugin discovered
+        const PluginInterface* plugin;  // The plugin itself (NULL if !loaded)
+        bool loaded;                    // True iff loaded okay
+    };  // end struct
+
+    const QList<PluginMeta>& getPlugins() const { return _plugins;}
 
 signals:
-    void onLoadedPlugin( QTools::PluginInterface*);
-    void onLoadedPlugin( QTools::PluginInterface*, QString);
+    // Signal discovery of statically linked libraries emitting the class name,
+    // or signal loading of dynamically linked libraries with absolute filepath.
+    void loadedPlugin( PluginInterface*, QString);
 
 private:
     QDir _pluginsDir;
-    QStringList _pluginFileNames;
+    QList<PluginMeta> _plugins;
+
+    PluginsLoader( const PluginsLoader&);   // No copy
+    void operator=( const PluginsLoader&);  // No copy
 };  // end class
 
 }   // end namespace

@@ -21,7 +21,6 @@
 #include <QDialog>
 #include "PluginInterface.h"
 #include "PluginsLoader.h"
-#include <boost/shared_ptr.hpp>
 
 namespace Ui { class PluginsDialog; }
 
@@ -31,22 +30,16 @@ namespace QTools
 class QTools_EXPORT PluginsDialog : public QDialog
 { Q_OBJECT
 public:
-    typedef boost::shared_ptr<PluginsDialog> Ptr;
-    static PluginsDialog::Ptr get();    // Singleton
+    explicit PluginsDialog(QWidget *parent = 0);
+    virtual ~PluginsDialog();
 
-    void setPluginsLoader( QTools::PluginsLoader*);
-
-private slots:
-    void doOnLoadedPlugin( QTools::PluginInterface*, QString);
+    // Add plugins to the tree
+    void addPlugins( const PluginsLoader&);
 
 private:
     Ui::PluginsDialog *ui;
-    static PluginsDialog::Ptr s_singleton;
-    explicit PluginsDialog(QWidget *parent = 0);
-    virtual ~PluginsDialog();
     PluginsDialog( const PluginsDialog&);   // NO COPY
     void operator=( const PluginsDialog&);  // NO COPY
-    class Deleter;
 };  // end class
 
 }   // end namespace

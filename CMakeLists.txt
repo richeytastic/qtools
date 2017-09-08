@@ -69,7 +69,6 @@ set( RESOURCE_FILE "res.qrc")  # Qt resource file
 
 qt5_wrap_ui( FORM_HEADERS ${FORMS})
 qt5_wrap_cpp( QOBJECT_MOCS ${QOBJECTS})
-#qt5_add_resources( RESOURCE_FILE "${RESOURCE_FILE}" OPTIONS "-no-compress")
 qt5_add_resources( RESOURCE_FILE "${RESOURCE_FILE}")
 
 add_library( ${PROJECT_NAME} ${SRC_FILES} ${QOBJECT_MOCS} ${INCLUDE_FILES} ${FORMS} ${RESOURCE_FILE})

@@ -18,24 +18,8 @@
 #include <PluginsDialog.h>
 #include <ui_PluginsDialog.h>
 using QTools::PluginsDialog;
+using QTools::PluginsLoader;
 
-
-class PluginsDialog::Deleter
-{ public:
-    void operator()( PluginsDialog* d) { delete d;}
-};  // end class
-
-PluginsDialog::Ptr PluginsDialog::s_singleton;
-
-// public static
-PluginsDialog::Ptr PluginsDialog::get()
-{
-    if ( !s_singleton)
-        s_singleton = Ptr( new PluginsDialog(), Deleter());
-    return s_singleton;
-}   // end get
-
-// private
 PluginsDialog::PluginsDialog(QWidget *parent) : QDialog(parent), ui(new Ui::PluginsDialog)
 {
     ui->setupUi(this);
@@ -43,54 +27,51 @@ PluginsDialog::PluginsDialog(QWidget *parent) : QDialog(parent), ui(new Ui::Plug
     connect( ui->buttonBox, SIGNAL(clicked(QAbstractButton*)), this, SLOT(close()));
 }   // end ctor
 
-// private
+
 PluginsDialog::~PluginsDialog() { delete ui;}   // end dtor
 
 
 // public
-void PluginsDialog::setPluginsLoader( QTools::PluginsLoader *ploader)
+void PluginsDialog::addPlugins( const PluginsLoader& ploader)
 {
-    connect( ploader, SIGNAL( onLoadedPlugin( QTools::PluginInterface*, QString)),
-                this, SLOT( doOnLoadedPlugin( QTools::PluginInterface*, QString)));
-}   // end setPluginsLoader
+    const QList<PluginsLoader::PluginMeta>& plugins = ploader.getPlugins();
 
-
-// private slot
-void PluginsDialog::doOnLoadedPlugin( QTools::PluginInterface* plugin, QString text)
-{
-    QTreeWidgetItem *pluginItem = new QTreeWidgetItem(ui->treeWidget);
-    pluginItem->setText(0, text);
-    QFont font = pluginItem->font(0);
-    font.setBold(true);
-    pluginItem->setFont(0, font);
-
-    if ( !plugin)   // Show plugin in red italics if it couldn't be loaded
+    foreach ( const PluginsLoader::PluginMeta& pmeta, plugins)
     {
-        pluginItem->setTextColor(0, QColor::fromRgbF(1,0,0));
+        QTreeWidgetItem *pluginItem = new QTreeWidgetItem(ui->treeWidget);
+        pluginItem->setText(0, pmeta.filepath);
         QFont font = pluginItem->font(0);
-        font.setItalic(true);
+        font.setBold(true);
         pluginItem->setFont(0, font);
-    }   // end if
-    else
-    {
-        ui->treeWidget->setItemExpanded(pluginItem, true);
-        // TODO Add in user selected enabling/disabling of dynamic plugins (requires restart).
-        //pluginItem->setCheckState(0, Qt::CheckState::Checked);
-        // Get the names of the available interfaces in this plugin
-        const QStringList pnames = plugin->getInterfaceIds();
-        foreach ( const QString& pname, pnames)
+
+        if ( !pmeta.loaded)   // Show plugin in red italics if it couldn't be loaded
         {
-            const QTools::PluginInterface* iface = plugin->getInterface(pname);
-            if (iface)
+            pluginItem->setTextColor(0, QColor::fromRgbF(1,0,0));
+            QFont font = pluginItem->font(0);
+            font.setItalic(true);
+            pluginItem->setFont(0, font);
+        }   // end if
+        else
+        {
+            ui->treeWidget->setItemExpanded(pluginItem, true);
+            // TODO Add in user selected enabling/disabling of dynamic plugins (requires restart).
+            //pluginItem->setCheckState(0, Qt::CheckState::Checked);
+            // Get the names of the available interfaces in this plugin
+            const QStringList pnames = pmeta.plugin->getInterfaceIds();
+            foreach ( const QString& pname, pnames)
             {
-                QTreeWidgetItem *iitem = new QTreeWidgetItem(pluginItem);
-                const QString cname = iface->metaObject()->className();
-                iitem->setText(0, iface->getDisplayName() + " (" + cname + ")");
-                iitem->setIcon(0, *iface->getIcon());
-                QFont font = iitem->font(0);
-                font.setItalic(true);
-                iitem->setFont(0, font);
-            }   // end if
-        }   // end foreach
-    }   // end if
-}   // end doOnLoadedPlugin
+                const QTools::PluginInterface* iface = pmeta.plugin->getInterface(pname);
+                if (iface)
+                {
+                    QTreeWidgetItem *iitem = new QTreeWidgetItem(pluginItem);
+                    const QString cname = iface->metaObject()->className();
+                    iitem->setText(0, iface->getDisplayName() + " (" + cname + ")");
+                    iitem->setIcon(0, *iface->getIcon());
+                    QFont font = iitem->font(0);
+                    font.setItalic(true);
+                    iitem->setFont(0, font);
+                }   // end if
+            }   // end foreach
+        }   // end if
+    }   // end foreach
+}   // end addPlugins
