@@ -23,6 +23,7 @@
 #include "QImageTools.h"
 #include "QTools_Export.h"
 #include <CameraParams.h>   // RFeatures
+#include <VtkTools.h>       // RVTK
 #include <QApplication>     // All callers will have this anyway
 #include <QVTKWidget.h>
 #include <vtkSmartPointer.h>
@@ -40,7 +41,7 @@ namespace QTools
 class QTools_EXPORT VtkActorViewer : public QVTKWidget
 { Q_OBJECT
 public:
-    VtkActorViewer( QWidget *parent = NULL, bool offscreenRendering=false);
+    explicit VtkActorViewer( QWidget *parent = NULL);
     virtual ~VtkActorViewer();
 
     const vtkSmartPointer<vtkRenderWindow> getRenderWindow() const;
@@ -83,14 +84,11 @@ public:
     void getCamera( RFeatures::CameraParams&) const;
     void setCamera( const RFeatures::CameraParams&);   // Move camera to given position
 
-    // Set the lighting array for the scene - each light must have a corresponding focal point.
-    void setSceneLights( const std::vector<cv::Vec3f>& lightPositions, const std::vector<cv::Vec3f>& lightFocalPoints);
-    void setHeadlight();    // Replace scene lights (if present) with a camera headlight
+    void setLights( const std::vector<RVTK::Light>&);
 
     // Given a 2D render window (with TOP LEFT origin), find the actor from the given list being pointed to.
     // If no actors from the list are being pointed to, returns NULL.
     vtkActor* pickActor( const cv::Point& point, const std::vector<vtkActor*>& pactors) const;
-    vtkSmartPointer<vtkActor> pickActor( const cv::Point& point, const std::vector<vtkSmartPointer<vtkActor> >& pactors) const;
 
     // Given a 2D render window (with TOP LEFT origin), find the actor being pointed to
     // If no actor is found, return NULL.

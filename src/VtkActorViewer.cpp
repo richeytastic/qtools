@@ -16,7 +16,6 @@
  ************************************************************************/
 
 #include <VtkActorViewer.h>
-#include <VtkTools.h>       // RVTK
 #include <RendererPicker.h> // RVTK
 #include <FeatureUtils.h>   // RFeatures
 #include <cassert>
@@ -24,27 +23,14 @@
 #include <vtkLight.h>
 #include <vtkRendererCollection.h>
 #include <vtkOpenGLRenderer.h>
-//#include <vtkGraphicsFactory.h>
 using QTools::VtkActorViewer;
 using RFeatures::CameraParams;
 
 
-VtkActorViewer::VtkActorViewer( QWidget *parent, bool offscreen)
-    : QVTKWidget( parent), _autoUpdateRender(false),
-      _rpicker(NULL), _resetCamera()
+VtkActorViewer::VtkActorViewer( QWidget *parent)
+    : QVTKWidget( parent), _autoUpdateRender(false), _rpicker(NULL), _resetCamera()
 {
     //QWidget::setWindowFlags(Qt::Window);
-    /*
-    // Check if vtkGraphicsFactory is really needed...
-    vtkSmartPointer<vtkGraphicsFactory> gf;
-    if ( offscreen)
-    {
-        //gf = vtkSmartPointer<vtkGraphicsFactory>::New();
-        //gf->SetOffScreenOnlyMode(true);
-        //gf->SetUseMesaClasses(true);
-    }   // end if
-    */
-
     _ren = vtkOpenGLRenderer::New();
     _ren->SetBackground( 0., 0., 0.);
     _ren->SetTwoSidedLighting( true);   // Don't light occluded sides
@@ -52,7 +38,6 @@ VtkActorViewer::VtkActorViewer( QWidget *parent, bool offscreen)
 
     _rwin = this->GetRenderWindow();
     _rwin->SetPointSmoothing( false);
-    _rwin->SetOffScreenRendering( offscreen);
     _rwin->AddRenderer( _ren);
 
     _rpicker = new RVTK::RendererPicker( _ren, RVTK::RendererPicker::TOP_LEFT);
@@ -253,29 +238,14 @@ void VtkActorViewer::setOrthogonal( bool on)
 
 
 // public
-void VtkActorViewer::setSceneLights( const std::vector<cv::Vec3f>& lpos, const std::vector<cv::Vec3f>& lfoc)
+void VtkActorViewer::setLights( const std::vector<RVTK::Light>& lights)
 {
-    const int numLights = (int)lpos.size();
-    assert( numLights == lfoc.size());
-
-    _ren->RemoveAllLights();
-    for ( int i = 0; i < numLights; ++i)
-    {
-        vtkSmartPointer<vtkLight> light = vtkSmartPointer<vtkLight>::New();
-        light->SetLightTypeToSceneLight();
-        light->SetColor(1,1,1);
-        light->SetAmbientColor(1,1,1);
-        light->SetIntensity( 1);
-        light->SetPosition( lpos[i][0], lpos[i][1], lpos[i][2]);
-        light->SetFocalPoint( lfoc[i][0], lfoc[i][1], lfoc[i][2]);
-        _ren->AddLight( light);
-    }   // end for
-
+    RVTK::resetLights( _ren, lights);
     if ( _autoUpdateRender)
         updateRender();
-}   // end setSceneLights
+}   // end setLights
 
-
+/*
 // public
 void VtkActorViewer::setHeadlight()
 {
@@ -289,18 +259,11 @@ void VtkActorViewer::setHeadlight()
     if ( _autoUpdateRender)
         updateRender();
 }   // end setHeadlight
+*/
 
 
 // public
 vtkActor* VtkActorViewer::pickActor( const cv::Point& p, const std::vector<vtkActor*>& pactors) const
-{
-    return _rpicker->pickActor( p, pactors);
-}   // end pickActor
-
-
-// public
-vtkSmartPointer<vtkActor> VtkActorViewer::pickActor( const cv::Point& p,
-                                                     const std::vector<vtkSmartPointer<vtkActor> >& pactors) const
 {
     return _rpicker->pickActor( p, pactors);
 }   // end pickActor
