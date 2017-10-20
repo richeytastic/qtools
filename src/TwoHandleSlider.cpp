@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "TwoHandleSlider.h"
+#include <TwoHandleSlider.h>
 using QTools::TwoHandleSlider;
 #include <QSlider>
 #include <QHBoxLayout>
@@ -107,8 +107,8 @@ TwoHandleSlider::TwoHandleSlider( QWidget* parent, bool orientVertically)
             }"
             );
 
-    connect( _s0->qslider, SIGNAL( valueChanged(int)), this, SLOT( doOnValue0Changed()));
-    connect( _s1->qslider, SIGNAL( valueChanged(int)), this, SLOT( doOnValue1Changed()));
+    connect( _s0->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue0Changed);
+    connect( _s1->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue1Changed);
     setPageStep( 0.1f);
     setSingleStep( 0.01f);
     resetRange( 0, 1);
@@ -126,15 +126,15 @@ TwoHandleSlider::~TwoHandleSlider()
 // Keep the centrepoint between the slider handles given new desired values for the handles.
 void TwoHandleSlider::updateSlidersMidpoint( float v0, float v1)
 {
-    disconnect( _s0->qslider, SIGNAL( valueChanged(int)), this, SLOT( doOnValue0Changed()));
-    disconnect( _s1->qslider, SIGNAL( valueChanged(int)), this, SLOT( doOnValue1Changed()));
+    _s0->qslider->disconnect(this);
+    _s1->qslider->disconnect(this);
 
     const float mid = (v0 + v1)/2;
     _s0->max = _s1->min = mid;
 
     const float rng = _s1->max - _s0->min;
     const float lprop = (mid - _s0->min) / rng;
-    const float rprop = 1.0 - lprop;
+    //const float rprop = 1.0 - lprop;
 
     const int totPxlWidth = width();
     const int lActWidth = roundf(lprop * totPxlWidth);
@@ -151,8 +151,8 @@ void TwoHandleSlider::updateSlidersMidpoint( float v0, float v1)
     _s0->qslider->setValue( int( lIntValProp * Slider::INT_RNG));
     _s1->qslider->setValue( int( rIntValProp * Slider::INT_RNG));
 
-    connect( _s0->qslider, SIGNAL( valueChanged(int)), this, SLOT( doOnValue0Changed()));
-    connect( _s1->qslider, SIGNAL( valueChanged(int)), this, SLOT( doOnValue1Changed()));
+    connect( _s0->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue0Changed);
+    connect( _s1->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue1Changed);
 }   // end updateSlidersMidpoint
 
 

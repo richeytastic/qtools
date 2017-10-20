@@ -21,7 +21,7 @@
 #include <iostream>
 #include <vector>
 #include "QImageTools.h"
-#include "QTools_Export.h"
+#include "KeyPressHandler.h"
 #include <CameraParams.h>   // RFeatures
 #include <VtkTools.h>       // RVTK
 #include <QApplication>     // All callers will have this anyway
@@ -71,9 +71,9 @@ public:
     void clear();   // Remove all props
 
     // Will cause a re-rendering if auto rendering is on.
-    void setBackgroundWhite( bool v);	// Background white if true, else black (automatic rendering update)
-    void setStereoRendering( bool v);	// Points are stereo if true else normal (automatic rendering update)
-    void setOrthogonal( bool v);        // Projection orthogonal if true else perspective (automatic rendering update)
+    void setBackgroundWhite( bool);	// Background white if true, else black (automatic rendering update)
+    void setStereoRendering( bool);	// Points are stereo if true else normal (automatic rendering update)
+    void setOrthogonal( bool);        // Projection orthogonal if true else perspective (automatic rendering update)
 
     // All camera adjustments will cause a re-rendering if auto-rendering is on.
     // Sets the parameters to reset the camera to when calling reset camera.
@@ -88,15 +88,15 @@ public:
 
     // Given a 2D render window (with TOP LEFT origin), find the actor from the given list being pointed to.
     // If no actors from the list are being pointed to, returns NULL.
-    vtkActor* pickActor( const cv::Point& point, const std::vector<vtkActor*>& pactors) const;
+    vtkActor* pickActor( const cv::Point&, const std::vector<vtkActor*>& pactors) const;
 
     // Given a 2D render window (with TOP LEFT origin), find the actor being pointed to
     // If no actor is found, return NULL.
-    vtkActor* pickActor( const cv::Point& point) const;
+    vtkActor* pickActor( const cv::Point&) const;
 
     // Find an actor's cell addressed by a 2D point (using TOP LEFT origin).
     // If no actor cell is found (no actor is pointed to), -1 is returned.
-    int pickCell( const cv::Point& point) const;
+    int pickCell( const cv::Point&) const;
 
     // Given a vector of 2D points (using TOP LEFT origin) and an actor (cannot be NULL), set cellIds with
     // the indices of the cells intercepted by the points. Duplicate cellIds are ignored. Returns the number
@@ -107,24 +107,30 @@ public:
     int pickActorCells( const cv::Mat& mask, vtkActor* actor, std::vector<int>& cellIds) const;
 
     // Find the position in 3D world space from a 2D point using TOP LEFT origin.
-    cv::Vec3f pickWorldPosition( const cv::Point& p) const;
+    cv::Vec3f pickWorldPosition( const cv::Point&) const;
 
     // As above, but specify view coordinates from top left as a proportion of the window dimensions.
-    cv::Vec3f pickWorldPosition( const cv::Point2f& p) const;
+    cv::Vec3f pickWorldPosition( const cv::Point2f&) const;
 
     // Pick the surface normal at the given 2D point having TOP LEFT origin.
     // If no surface is picked at p, (0,0,0) is returned.
-    cv::Vec3f pickNormal( const cv::Point& p) const;
+    cv::Vec3f pickNormal( const cv::Point&) const;
 
     // Find the display position in 2D (using TOP LEFT origin) of a 3D world coordinate point.
-    cv::Point projectToDisplay( const cv::Vec3f& v) const;
+    cv::Point projectToDisplay( const cv::Vec3f&) const;
 
     // As above, but return the coordinates from the top left of the display as a proportion of the display pane.
-    cv::Point2f projectToDisplayProportion( const cv::Vec3f& v) const;
+    cv::Point2f projectToDisplayProportion( const cv::Vec3f&) const;
+
+    void setKeyPressHandler( KeyPressHandler*);
+
+protected:
+    virtual void keyPressEvent( QKeyEvent*);
 
 private:
     bool _autoUpdateRender;
     RVTK::RendererPicker *_rpicker;
+    KeyPressHandler *_keyPressHandler;
     RFeatures::CameraParams _resetCamera;
     mutable vtkSmartPointer<vtkRenderer> _ren;
     mutable vtkSmartPointer<vtkRenderWindow> _rwin;

@@ -51,6 +51,7 @@ set( QOBJECTS
 set( INCLUDE_FILES
     "${QOBJECTS}"
     "${INCLUDE_DIR}/DatabaseClient.h"
+    "${INCLUDE_DIR}/KeyPressHandler.h"
     "${INCLUDE_DIR}/QImageTools.h"
     "${INCLUDE_DIR}/QUtils.h"
     )

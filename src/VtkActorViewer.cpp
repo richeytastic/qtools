@@ -28,10 +28,11 @@ using RFeatures::CameraParams;
 
 
 VtkActorViewer::VtkActorViewer( QWidget *parent)
-    : QVTKWidget( parent), _autoUpdateRender(false), _rpicker(NULL), _resetCamera()
+    : QVTKWidget( parent), _autoUpdateRender(false), _rpicker(NULL), _keyPressHandler(NULL), _resetCamera()
 {
     //QWidget::setWindowFlags(Qt::Window);
-    _ren = vtkOpenGLRenderer::New();
+    //_ren = vtkOpenGLRenderer::New();
+    _ren = vtkRenderer::New();
     _ren->SetBackground( 0., 0., 0.);
     _ren->SetTwoSidedLighting( true);   // Don't light occluded sides
     _ren->SetAutomaticLightCreation( false);
@@ -188,7 +189,6 @@ void VtkActorViewer::setCamera( const CameraParams& cp)
     vtkCamera* cam = _ren->GetActiveCamera();
     cam->SetFocalPoint( cp.focus[0], cp.focus[1], cp.focus[2]);
     cam->SetPosition( cp.pos[0], cp.pos[1], cp.pos[2]);
-    cam->ComputeViewPlaneNormal();
     cam->SetViewUp( cp.up[0], cp.up[1], cp.up[2]);
     cam->SetViewAngle( cp.fov);
     _ren->ResetCameraClippingRange();
@@ -343,3 +343,20 @@ cv::Point2f VtkActorViewer::projectToDisplayProportion( const cv::Vec3f& v) cons
     return cv::Point2f( float(p.x) / (getWidth()-1), float(p.y) / (getHeight()-1));
 }   // end projectToDisplayProportion
 
+
+// public
+void VtkActorViewer::setKeyPressHandler( QTools::KeyPressHandler* kph)
+{
+    _keyPressHandler = kph;
+}   // end setKeyPressHandler
+
+
+// protected
+void VtkActorViewer::keyPressEvent( QKeyEvent* event)
+{
+    bool accepted = false;
+    if ( _keyPressHandler)
+        accepted = _keyPressHandler->handleKeyPress(event);
+    if ( !accepted)
+        QVTKWidget::keyPressEvent( event);
+}   // end keyPressEvent
