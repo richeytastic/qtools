@@ -82,9 +82,9 @@ void VtkActorViewer::updateRender()
 // public
 void VtkActorViewer::setSize( size_t w, size_t h)
 {
-    this->resize(w,h);
-    this->setMinimumSize(w,h);
-    this->setMaximumSize(w,h);
+    this->resize( (int)w, (int)h);
+    this->setMinimumSize( (int)w, (int)h);
+    this->setMaximumSize( (int)w, (int)h);
 }   // end setSize
 
 
