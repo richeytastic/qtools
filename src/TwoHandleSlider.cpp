@@ -64,7 +64,7 @@ struct TwoHandleSlider::Slider
 
 
 TwoHandleSlider::TwoHandleSlider( QWidget* parent, bool orientVertically)
-    : QWidget(parent), _s0( new Slider), _s1( new Slider)
+    : QWidget(parent), _s0( new Slider), _s1( new Slider), _isVertical(orientVertically)
 {
     QBoxLayout* layout = NULL;
     if ( orientVertically)
@@ -73,6 +73,8 @@ TwoHandleSlider::TwoHandleSlider( QWidget* parent, bool orientVertically)
         _s0->qslider->setOrientation( Qt::Vertical);
         _s1->qslider->setOrientation( Qt::Vertical);
         //setSizePolicy( QSizePolicy::Fixed, QSizePolicy::Preferred);
+        layout->addWidget( _s0->qslider);   // Top - min is middle
+        layout->addWidget( _s1->qslider);   // Bottom - max is middle
     }   // end if
     else
     {
@@ -80,17 +82,36 @@ TwoHandleSlider::TwoHandleSlider( QWidget* parent, bool orientVertically)
         _s0->qslider->setOrientation( Qt::Horizontal);
         _s1->qslider->setOrientation( Qt::Horizontal);
         //setSizePolicy( QSizePolicy::Preferred, QSizePolicy::Fixed);
+        layout->addWidget( _s0->qslider);   // Left - max is middle
+        layout->addWidget( _s1->qslider);   // Right - min is middle
     }   // end else
 
     layout->setContentsMargins(0,0,0,0);
     layout->setSpacing(0);
+    setLayout(layout);
 
-    layout->addWidget( _s0->qslider);
-    layout->addWidget( _s1->qslider);
-
-    this->setLayout(layout);
-
-    this->setStyleSheet( " \
+    if ( orientVertically)
+    {
+        setStyleSheet( " \
+            QSlider::groove:vertical { \
+            border: 1px solid #999999; \
+            width: 8px; /* groove expands to size of slider by def. giving it width, it has fixed size */ \
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, stop:1 #c4c4c4); \
+            margin: 2px 0; \
+            } \
+            \
+            QSlider::handle:vertical { \
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f); \
+            border: 1px solid #5c5c5c; \
+            height: 18px; \
+            margin: 0 -2px; /* handle placed by def on contents rect of groove. Expand outside the groove */ \
+            border-radius: 3px; \
+            }"
+            );
+    }   // end if
+    else
+    {
+        setStyleSheet( " \
             QSlider::groove:horizontal { \
             border: 1px solid #999999; \
             height: 8px; /* groove expands to size of slider by def. giving it height, it has fixed size */ \
@@ -106,11 +127,12 @@ TwoHandleSlider::TwoHandleSlider( QWidget* parent, bool orientVertically)
             border-radius: 3px; \
             }"
             );
+    }   // end else
 
-    connect( _s0->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue0Changed);
-    connect( _s1->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue1Changed);
+    connectSliders();
     setPageStep( 0.1f);
     setSingleStep( 0.01f);
+
     resetRange( 0, 1);
 }   // end ctor
 
@@ -123,6 +145,25 @@ TwoHandleSlider::~TwoHandleSlider()
 
 
 // private
+void TwoHandleSlider::connectSliders()
+{
+    if ( _isVertical)
+    {
+        connect( _s1->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue0Changed);
+        connect( _s0->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue1Changed);
+    }   // end if
+    else
+    {
+        connect( _s0->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue0Changed);
+        connect( _s1->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue1Changed);
+    }   // end else
+}   // end connectSliders
+
+// For vertical:
+// _s0->qslider   // Top - min is middle
+// _s1->qslider   // Bottom - max is middle
+
+// private
 // Keep the centrepoint between the slider handles given new desired values for the handles.
 void TwoHandleSlider::updateSlidersMidpoint( float v0, float v1)
 {
@@ -131,117 +172,109 @@ void TwoHandleSlider::updateSlidersMidpoint( float v0, float v1)
 
     const float mid = (v0 + v1)/2;
     _s0->max = _s1->min = mid;
+    if ( _isVertical)
+        _s0->min = _s1->max = mid;
 
-    const float rng = _s1->max - _s0->min;
-    const float lprop = (mid - _s0->min) / rng;
+    const float rng = maximum() - minimum();
+    const float lprop = (mid - minimum()) / rng;
     //const float rprop = 1.0 - lprop;
 
-    const int totPxlWidth = width();
-    const int lActWidth = roundf(lprop * totPxlWidth);
-    const int rActWidth = totPxlWidth - lActWidth;
-    const int h = this->height();
-    _s0->qslider->resize( lActWidth, h);
-    _s1->qslider->resize( rActWidth, h);
-    _s1->qslider->move( lActWidth, 0);
-    _s0->qslider->move( 0, 0);
+    const int totPxl = _isVertical ? height() : width();
+    const int lPxl = roundf(lprop * totPxl);    // Left / bottom (low section)
+    const int hPxl = totPxl - lPxl;             // Right / top (high section)
+    const int dPxl = _isVertical ? this->width() : this->height(); // Fixed dimension not moving
+
+    if ( _isVertical)
+    {
+        _s0->qslider->resize( dPxl, hPxl);
+        _s1->qslider->resize( dPxl, lPxl);
+        _s0->qslider->move( 0, 0);
+        _s1->qslider->move( 0, hPxl);
+    }   // end if
+    else
+    {
+        _s0->qslider->resize( lPxl, dPxl);
+        _s1->qslider->resize( hPxl, dPxl);
+        _s0->qslider->move( 0, 0);
+        _s1->qslider->move( lPxl, 0);
+    }   // end else
 
     // Finally, set the actual positions of the sliders in accordance
-    const double lIntValProp = double(v0 - _s0->min)/(mid - _s0->min);
-    const double rIntValProp = double(v1 - mid)/(_s1->max - mid);
-    _s0->qslider->setValue( int( lIntValProp * Slider::INT_RNG));
-    _s1->qslider->setValue( int( rIntValProp * Slider::INT_RNG));
+    const double lIntValProp = double(v0 - minimum())/(mid - minimum());
+    const double rIntValProp = double(v1 - mid)/(maximum() - mid);
 
-    connect( _s0->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue0Changed);
-    connect( _s1->qslider, &QSlider::valueChanged, this, &TwoHandleSlider::doOnValue1Changed);
+    if ( _isVertical)
+    {
+        _s1->qslider->setValue( int( lIntValProp * Slider::INT_RNG));
+        _s0->qslider->setValue( int( rIntValProp * Slider::INT_RNG));
+    }   // end if
+    else
+    {
+        _s0->qslider->setValue( int( lIntValProp * Slider::INT_RNG));
+        _s1->qslider->setValue( int( rIntValProp * Slider::INT_RNG));
+    }   // end else
+
+    connectSliders();
 }   // end updateSlidersMidpoint
 
 
 // public
 void TwoHandleSlider::resetRange( float min, float max)
 {
-    _s0->min = min;
-    _s1->max = max;
+    if ( _isVertical)
+    {
+        _s0->max = max;
+        _s1->min = min;
+    }   // end if
+    else
+    {
+        _s0->min = min;
+        _s1->max = max;
+    }   // end else
     reset();
 }   // end resetRange
 
 
 // public
-void TwoHandleSlider::resetMinimum()
-{
-    updateSlidersMidpoint( _s0->min, value1());
-}   // end resetMinimum
-
-
-// public
-void TwoHandleSlider::resetMaximum()
-{
-    updateSlidersMidpoint( value0(), _s1->max);
-}   // end resetMaximum
-
-
-// public
-void TwoHandleSlider::reset()
-{
-    updateSlidersMidpoint( _s0->min, _s1->max);
-}   // end reset
+void TwoHandleSlider::reset() { updateSlidersMidpoint( minimum(), maximum());}
+float TwoHandleSlider::minimum() const { return _isVertical ? _s1->min : _s0->min;}
+float TwoHandleSlider::maximum() const { return _isVertical ? _s0->max : _s1->max;}
+float TwoHandleSlider::value0() const { return _isVertical ? _s1->value() : _s0->value();}  // Lower value
+float TwoHandleSlider::value1() const { return _isVertical ? _s0->value() : _s1->value();}  // Higher value
+void TwoHandleSlider::setValue0( float v) { updateSlidersMidpoint( v, value1());}
+void TwoHandleSlider::setValue1( float v) { updateSlidersMidpoint( value0(), v);}
 
 
 // public
 void TwoHandleSlider::setPageStep( float pstep)
 {
-    _s0->qslider->setPageStep( _s0->toInt( pstep));
-    _s1->qslider->setPageStep( _s1->toInt( -pstep));
+    if ( _isVertical)
+    {   // Handles coming together on vertical
+        _s0->qslider->setPageStep( _s0->toInt( -pstep));
+        _s1->qslider->setPageStep( _s1->toInt( pstep));
+    }   // end if
+    else
+    {   // Handles coming together on horizontal
+        _s0->qslider->setPageStep( _s0->toInt( pstep));
+        _s1->qslider->setPageStep( _s1->toInt( -pstep));
+    }   // end else
 }   // end setPageStep
 
 
 // public
 void TwoHandleSlider::setSingleStep( float sstep)
 {
-    _s0->qslider->setSingleStep( _s0->toInt( sstep));
-    _s1->qslider->setSingleStep( _s1->toInt( -sstep));
+    if ( _isVertical)
+    {
+        _s0->qslider->setSingleStep( _s0->toInt( -sstep));
+        _s1->qslider->setSingleStep( _s1->toInt( sstep));
+    }   // end if
+    else
+    {
+        _s0->qslider->setSingleStep( _s0->toInt( sstep));
+        _s1->qslider->setSingleStep( _s1->toInt( -sstep));
+    }   // end else
 }   // end setSingleStep
-
-
-// public
-float TwoHandleSlider::value0() const
-{
-    return _s0->value();
-}   // end value0
-
-
-// public
-float TwoHandleSlider::value1() const
-{
-    return _s1->value();
-}   // end value1
-
-
-// public
-void TwoHandleSlider::setValue0( float v)
-{
-    updateSlidersMidpoint( v, value1());
-}   // end setValue0
-
-
-// public
-void TwoHandleSlider::setValue1( float v)
-{
-    updateSlidersMidpoint( value0(), v);
-}   // end setValue1
-
-
-// public
-float TwoHandleSlider::minimum() const
-{
-    return _s0->min;
-}   // end minimum
-
-
-// public
-float TwoHandleSlider::maximum() const
-{
-    return _s1->max;
-}   // end maximum
 
 
 // private slot

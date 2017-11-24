@@ -20,8 +20,8 @@ using QTools::QProgressUpdater;
 #include <algorithm>
 
 
-QProgressUpdater::QProgressUpdater( QProgressBar* bar, int numThreads)
-    : QObject(), ProgressDelegate(numThreads), _pbar(bar), _complete(false)
+QProgressUpdater::QProgressUpdater( QProgressBar* pbar, int numThreads)
+    : ProgressDelegate(numThreads), _pbar(pbar), _complete(false)
 {
 }   // end ctor
 
@@ -29,10 +29,7 @@ QProgressUpdater::QProgressUpdater( QProgressBar* bar, int numThreads)
 void QProgressUpdater::reset()
 {
     if ( _pbar)
-    {
         _pbar->reset();
-        _pbar->setValue(0);
-    }   // end if
     _complete = false;
 }   // end reset
 
@@ -43,9 +40,9 @@ void QProgressUpdater::processUpdate( float propComplete)
     if ( _complete)
         return;
 
+    propComplete = std::max( 0.0f, std::min( 1.0f, propComplete));
     if ( _pbar)
-        _pbar->setValue( 100*propComplete);
-
+        _pbar->setValue( _pbar->maximum()*propComplete);
     emit progressUpdated( propComplete); // Cause update on the GUI thread
 
     if ( propComplete >= 1.0f)

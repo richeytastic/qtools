@@ -20,8 +20,8 @@
  * Progress bar not required, can be used simply as an emitter of progress updates.
  */
 
-#ifndef QPROGRESS_UPDATER_H
-#define QPROGRESS_UPDATER_H
+#ifndef QTOOLS_QPROGRESS_UPDATER_H
+#define QTOOLS_QPROGRESS_UPDATER_H
 
 #include "QTools_Export.h"
 #include <QProgressBar>
@@ -34,9 +34,10 @@ class QTools_EXPORT QProgressUpdater : public QObject, public rlib::ProgressDele
 { Q_OBJECT
 public:
     QProgressUpdater( QProgressBar* bar=NULL, int numThreads=1);
+
     void reset();   // Reset complete flag (and the progress bar if set)
 
-    virtual void processUpdate( float propComplete);    // Called inside critical section
+    void processUpdate( float propComplete) override;    // Called inside critical section
 
 signals:
     void progressUpdated( float propComplete);  // propComplete in [0,1]
@@ -49,7 +50,4 @@ private:
 
 }   // end namespace
 
-
 #endif
-
-

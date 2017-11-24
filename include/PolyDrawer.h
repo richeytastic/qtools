@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#pragma once
 #ifndef QTOOLS_POLY_DRAWER_H
 #define QTOOLS_POLY_DRAWER_H
 

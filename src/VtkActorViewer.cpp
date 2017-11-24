@@ -22,16 +22,15 @@
 #include <iostream>
 #include <vtkLight.h>
 #include <vtkRendererCollection.h>
-#include <vtkOpenGLRenderer.h>
+#include <vtkRenderer.h>
 using QTools::VtkActorViewer;
 using RFeatures::CameraParams;
 
 
 VtkActorViewer::VtkActorViewer( QWidget *parent)
-    : QVTKWidget( parent), _autoUpdateRender(false), _rpicker(NULL), _keyPressHandler(NULL), _resetCamera()
+    : QVTKWidget( parent), _autoUpdateRender(false), _rpicker(NULL), _resetCamera()
 {
     //QWidget::setWindowFlags(Qt::Window);
-    //_ren = vtkOpenGLRenderer::New();
     _ren = vtkRenderer::New();
     _ren->SetBackground( 0., 0., 0.);
     _ren->SetTwoSidedLighting( true);   // Don't light occluded sides
@@ -345,18 +344,36 @@ cv::Point2f VtkActorViewer::projectToDisplayProportion( const cv::Vec3f& v) cons
 
 
 // public
-void VtkActorViewer::setKeyPressHandler( QTools::KeyPressHandler* kph)
+void VtkActorViewer::addKeyPressHandler( QTools::KeyPressHandler* kph)
 {
-    _keyPressHandler = kph;
-}   // end setKeyPressHandler
+    _keyPressHandlers.insert( kph);
+}   // end addKeyPressHandler
+
+
+// public
+void VtkActorViewer::removeKeyPressHandler( QTools::KeyPressHandler* kph)
+{
+    _keyPressHandlers.erase( kph);
+}   // end removeKeyPressHandler
 
 
 // protected
 void VtkActorViewer::keyPressEvent( QKeyEvent* event)
 {
     bool accepted = false;
-    if ( _keyPressHandler)
-        accepted = _keyPressHandler->handleKeyPress(event);
+    foreach ( QTools::KeyPressHandler* kph, _keyPressHandlers)
+        accepted |= kph->handleKeyPress(event);
     if ( !accepted)
         QVTKWidget::keyPressEvent( event);
 }   // end keyPressEvent
+
+
+// protected
+void VtkActorViewer::keyReleaseEvent( QKeyEvent* event)
+{
+    bool accepted = false;
+    foreach ( QTools::KeyPressHandler* kph, _keyPressHandlers)
+        accepted |= kph->handleKeyPress(event);
+    if ( !accepted)
+        QVTKWidget::keyReleaseEvent( event);
+}   // end keyReleaseEvent

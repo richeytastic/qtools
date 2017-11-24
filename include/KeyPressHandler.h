@@ -33,7 +33,8 @@ class VtkActorViewer;
 class QTools_EXPORT KeyPressHandler
 {
 protected:
-    // Return true if descendent handles the event.
+    // Return true if key event is handled. Note that this function
+    // allows for QKeyEvents having type of both KeyPress and KeyRelease.
     virtual bool handleKeyPress( QKeyEvent*) = 0;
     friend class VtkActorViewer;
 };	// end class

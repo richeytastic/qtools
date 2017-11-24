@@ -31,6 +31,7 @@
 #include <vtkActor.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
+#include <boost/unordered_set.hpp>
 
 namespace RVTK { class RendererPicker;}
 
@@ -122,16 +123,19 @@ public:
     // As above, but return the coordinates from the top left of the display as a proportion of the display pane.
     cv::Point2f projectToDisplayProportion( const cv::Vec3f&) const;
 
-    void setKeyPressHandler( KeyPressHandler*);
+    // Add/remove a key press handler
+    void addKeyPressHandler( KeyPressHandler*);
+    void removeKeyPressHandler( KeyPressHandler*);
 
 protected:
     virtual void keyPressEvent( QKeyEvent*);
+    virtual void keyReleaseEvent( QKeyEvent*);
 
 private:
     bool _autoUpdateRender;
     RVTK::RendererPicker *_rpicker;
-    KeyPressHandler *_keyPressHandler;
     RFeatures::CameraParams _resetCamera;
+    boost::unordered_set<KeyPressHandler*> _keyPressHandlers;
     mutable vtkSmartPointer<vtkRenderer> _ren;
     mutable vtkSmartPointer<vtkRenderWindow> _rwin;
 };	// end class
