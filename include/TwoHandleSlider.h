@@ -21,8 +21,7 @@
 #include <QWidget>
 #include "QTools_Export.h"
 
-namespace QTools
-{
+namespace QTools {
 
 class QTools_EXPORT TwoHandleSlider : public QWidget
 { Q_OBJECT
@@ -31,8 +30,10 @@ public:
     TwoHandleSlider( QWidget *parent=NULL, bool orientVertically=false);
     virtual ~TwoHandleSlider();
 
-    void resetRange( float min, float max);
+    void resetRange( float min, float max); // Also calls reset
     void reset();   // Reset handles to existing min and max
+    float minimum() const;
+    float maximum() const;
 
     void setPageStep( float pstep);
     void setSingleStep( float sstep);
@@ -41,9 +42,6 @@ public:
     float value1() const;
     void setValue0( float);
     void setValue1( float);
-
-    float minimum() const;
-    float maximum() const;
 
 signals:
     void value0Changed( float);
@@ -60,7 +58,6 @@ private:
     void updateSlidersMidpoint( float, float);
     void connectSliders();
 };  // end class
-
 
 }   // end namespace
 

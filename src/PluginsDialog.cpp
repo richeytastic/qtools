@@ -23,7 +23,6 @@ using QTools::PluginsLoader;
 PluginsDialog::PluginsDialog(QWidget *parent) : QDialog(parent), ui(new Ui::PluginsDialog)
 {
     ui->setupUi(this);
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
     connect( ui->buttonBox, SIGNAL(clicked(QAbstractButton*)), this, SLOT(close()));
 }   // end ctor
 
@@ -36,7 +35,7 @@ void PluginsDialog::addPlugins( const PluginsLoader& ploader)
 {
     const QList<PluginsLoader::PluginMeta>& plugins = ploader.getPlugins();
 
-    foreach ( const PluginsLoader::PluginMeta& pmeta, plugins)
+    for ( const PluginsLoader::PluginMeta& pmeta : plugins)
     {
         QTreeWidgetItem *pluginItem = new QTreeWidgetItem(ui->treeWidget);
         pluginItem->setText(0, pmeta.filepath);
@@ -58,7 +57,7 @@ void PluginsDialog::addPlugins( const PluginsLoader& ploader)
             //pluginItem->setCheckState(0, Qt::CheckState::Checked);
             // Get the names of the available interfaces in this plugin
             const QStringList pnames = pmeta.plugin->getInterfaceIds();
-            foreach ( const QString& pname, pnames)
+            for ( const QString& pname : pnames)
             {
                 const QTools::PluginInterface* iface = pmeta.plugin->getInterface(pname);
                 if (iface)

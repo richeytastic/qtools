@@ -43,8 +43,7 @@ namespace Ui {
     class ImagerWidget;
 }
 
-namespace QTools
-{
+namespace QTools {
 
 class QTools_EXPORT ImagerWidget : public QWidget
 { Q_OBJECT

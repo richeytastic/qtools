@@ -38,9 +38,7 @@
 #include <QtPlugin>
 #include "QTools_Export.h"
 
-
-namespace QTools
-{
+namespace QTools {
 
 // The interface to interact with loaded plugins.
 class QTools_EXPORT PluginInterface : public QObject
@@ -73,6 +71,12 @@ public:
     // Plugin types are not required to implement this function but the
     // default is the name of the class.
     virtual QString getDisplayName() const { return metaObject()->className();}
+
+    // Define a tool tip to be displayed for this action (none by default).
+    virtual QString getToolTip() const { return "";}
+
+    // Complex plugins may want to define a widget to handle configuration.
+    virtual QWidget* getWidget() const { return NULL;}
 };  // end class
 
 }   // end namespace

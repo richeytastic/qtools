@@ -13,37 +13,36 @@ include_directories( ${INCLUDE_DIR})
 include_directories( ${PROJECT_BINARY_DIR}) # Req. for generated Qt form headers
 
 set( SRC_FILES
+    "${SRC_DIR}/ColourMappingWidget.cpp"
     "${SRC_DIR}/DatabaseClient.cpp"
     "${SRC_DIR}/DatabaseOptionsDialog.cpp"
     "${SRC_DIR}/ImagerWidget.cpp"
-    "${SRC_DIR}/VtkActorViewer.cpp"
-    #"${SRC_DIR}/PanoramaViewer.cpp"
     "${SRC_DIR}/PluginInterface.cpp"
     "${SRC_DIR}/PluginsDialog.cpp"
     "${SRC_DIR}/PluginsLoader.cpp"
-    #"${SRC_DIR}/PointCloudViewer.cpp"
     "${SRC_DIR}/PolyDrawer.cpp"
     "${SRC_DIR}/QImageTools.cpp"
     "${SRC_DIR}/QProgressUpdater.cpp"
     "${SRC_DIR}/QUtils.cpp"
     "${SRC_DIR}/TwoHandleSlider.cpp"
-    #"${SRC_DIR}/ViewFrame.cpp"
     "${SRC_DIR}/ViewNavigator.cpp"
+    "${SRC_DIR}/VtkActorViewer.cpp"
+    "${SRC_DIR}/VtkViewerInteractorManager.cpp"
+    "${SRC_DIR}/VtkViewerActorInteractor.cpp"
+    "${SRC_DIR}/VtkViewerCameraInteractor.cpp"
     )
 
 set( QOBJECTS
+    "${INCLUDE_DIR}/ColourMappingWidget.h"
     "${INCLUDE_DIR}/DatabaseOptionsDialog.h"
     "${INCLUDE_DIR}/ImagerWidget.h"
     "${INCLUDE_DIR}/VtkActorViewer.h"
-    #"${INCLUDE_DIR}/PanoramaViewer.h"
     "${INCLUDE_DIR}/PluginInterface.h"
     "${INCLUDE_DIR}/PluginsDialog.h"
     "${INCLUDE_DIR}/PluginsLoader.h"
-    #"${INCLUDE_DIR}/PointCloudViewer.h"
     "${INCLUDE_DIR}/PolyDrawer.h"
     "${INCLUDE_DIR}/QProgressUpdater.h"
     "${INCLUDE_DIR}/TwoHandleSlider.h"
-    #"${INCLUDE_DIR}/ViewFrame.h"
     "${INCLUDE_DIR}/ViewNavigator.h"
     )
 
@@ -54,15 +53,17 @@ set( INCLUDE_FILES
     "${INCLUDE_DIR}/KeyPressHandler.h"
     "${INCLUDE_DIR}/QImageTools.h"
     "${INCLUDE_DIR}/QUtils.h"
+    "${INCLUDE_DIR}/VtkViewerInteractor.h"
+    "${INCLUDE_DIR}/VtkViewerInteractorManager.h"
+    "${INCLUDE_DIR}/VtkViewerActorInteractor.h"
+    "${INCLUDE_DIR}/VtkViewerCameraInteractor.h"
     )
 
 set( FORMS
+    "${FORMS_DIR}/ColourMappingWidget.ui"
     "${FORMS_DIR}/DatabaseOptionsDialog.ui"
     "${FORMS_DIR}/ImagerWidget.ui"
     "${FORMS_DIR}/PluginsDialog.ui"
-    #"${FORMS_DIR}/PanoramaViewer.ui"
-    #"${FORMS_DIR}/PointCloudViewer.ui"
-    #"${FORMS_DIR}/ViewFrame.ui"
     "${FORMS_DIR}/ViewNavigator.ui"
     )
 

@@ -22,11 +22,10 @@
 #ifndef QTOOLS_KEY_PRESS_HANDLER_H
 #define QTOOLS_KEY_PRESS_HANDLER_H
 
-#include <QKeyEvent>
 #include "QTools_Export.h"
+#include <QKeyEvent>
 
-namespace QTools
-{
+namespace QTools {
 
 class VtkActorViewer;
 

@@ -31,13 +31,11 @@
 #include <vtkActor.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
-#include <boost/unordered_set.hpp>
+#include <unordered_set>
 
 namespace RVTK { class RendererPicker;}
 
-
-namespace QTools
-{
+namespace QTools {
 
 class QTools_EXPORT VtkActorViewer : public QVTKWidget
 { Q_OBJECT
@@ -124,8 +122,8 @@ public:
     cv::Point2f projectToDisplayProportion( const cv::Vec3f&) const;
 
     // Add/remove a key press handler
-    void addKeyPressHandler( KeyPressHandler*);
-    void removeKeyPressHandler( KeyPressHandler*);
+    void attachKeyPressHandler( KeyPressHandler*);
+    void detachKeyPressHandler( KeyPressHandler*);
 
 protected:
     virtual void keyPressEvent( QKeyEvent*);
@@ -135,7 +133,7 @@ private:
     bool _autoUpdateRender;
     RVTK::RendererPicker *_rpicker;
     RFeatures::CameraParams _resetCamera;
-    boost::unordered_set<KeyPressHandler*> _keyPressHandlers;
+    std::unordered_set<KeyPressHandler*> _keyPressHandlers;
     mutable vtkSmartPointer<vtkRenderer> _ren;
     mutable vtkSmartPointer<vtkRenderWindow> _rwin;
 };	// end class

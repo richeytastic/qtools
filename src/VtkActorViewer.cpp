@@ -25,7 +25,7 @@
 #include <vtkRenderer.h>
 using QTools::VtkActorViewer;
 using RFeatures::CameraParams;
-
+#include <vtkInteractorStyleJoystickCamera.h>
 
 VtkActorViewer::VtkActorViewer( QWidget *parent)
     : QVTKWidget( parent), _autoUpdateRender(false), _rpicker(NULL), _resetCamera()
@@ -44,29 +44,15 @@ VtkActorViewer::VtkActorViewer( QWidget *parent)
 }	// end ctor
 
 
-VtkActorViewer::~VtkActorViewer()
-{
-    delete _rpicker;
-}   // end dtor
-
-
-const vtkSmartPointer<vtkRenderWindow> VtkActorViewer::getRenderWindow() const
-{
-    return _rwin;
-}   // end getRenderWindow
-
-
-const vtkSmartPointer<vtkRenderer> VtkActorViewer::getRenderer() const
-{
-    return _ren;
-}   // end getRenderer
-
-
 // public
-void VtkActorViewer::setInteractor( vtkSmartPointer<vtkInteractorStyle> intStyle)
+VtkActorViewer::~VtkActorViewer() { delete _rpicker;}
+const vtkSmartPointer<vtkRenderWindow> VtkActorViewer::getRenderWindow() const { return _rwin;}
+const vtkSmartPointer<vtkRenderer> VtkActorViewer::getRenderer() const { return _ren;}
+
+
+void VtkActorViewer::setInteractor( vtkSmartPointer<vtkInteractorStyle> iStyle)
 {
-    _rwin->GetInteractor()->SetInteractorStyle( intStyle);
-    intStyle->GetInteractor()->SetRenderWindow( _rwin);
+    _rwin->GetInteractor()->SetInteractorStyle( iStyle);
 }   // end setInteractor
 
 
@@ -344,24 +330,15 @@ cv::Point2f VtkActorViewer::projectToDisplayProportion( const cv::Vec3f& v) cons
 
 
 // public
-void VtkActorViewer::addKeyPressHandler( QTools::KeyPressHandler* kph)
-{
-    _keyPressHandlers.insert( kph);
-}   // end addKeyPressHandler
-
-
-// public
-void VtkActorViewer::removeKeyPressHandler( QTools::KeyPressHandler* kph)
-{
-    _keyPressHandlers.erase( kph);
-}   // end removeKeyPressHandler
+void VtkActorViewer::attachKeyPressHandler( QTools::KeyPressHandler* kph) { _keyPressHandlers.insert( kph);}
+void VtkActorViewer::detachKeyPressHandler( QTools::KeyPressHandler* kph) { _keyPressHandlers.erase( kph);}
 
 
 // protected
 void VtkActorViewer::keyPressEvent( QKeyEvent* event)
 {
     bool accepted = false;
-    foreach ( QTools::KeyPressHandler* kph, _keyPressHandlers)
+    for ( QTools::KeyPressHandler* kph : _keyPressHandlers)
         accepted |= kph->handleKeyPress(event);
     if ( !accepted)
         QVTKWidget::keyPressEvent( event);
@@ -372,7 +349,7 @@ void VtkActorViewer::keyPressEvent( QKeyEvent* event)
 void VtkActorViewer::keyReleaseEvent( QKeyEvent* event)
 {
     bool accepted = false;
-    foreach ( QTools::KeyPressHandler* kph, _keyPressHandlers)
+    for ( QTools::KeyPressHandler* kph : _keyPressHandlers)
         accepted |= kph->handleKeyPress(event);
     if ( !accepted)
         QVTKWidget::keyReleaseEvent( event);
