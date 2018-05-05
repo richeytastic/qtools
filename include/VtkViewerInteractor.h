@@ -19,20 +19,21 @@
 #define QTOOLS_VTK_VIEWER_INTERACTOR_H
 
 /**
- * Provides an interface to a model viewer via VTK events on the underlying viewer.
- * Multiple ModelViewerInteractor instances can be active on a single viewer at once,
- * but a single ModelViewerInteractor can only be attached to one viewer.
- * Within its constructor, this interface attaches itself to a viewer using
- * ModelViewer::attachInterface( &MVI) and detaches itself on destruction with
- * ModelViewer::detachInterface( &MVI).
+ * Provides an interface to a VtkActorViewer via VTK events on the underlying viewer.
+ * Multiple VtkViewerInteractor instances can be active on a single viewer at once,
+ * but a VtkViewerInteractor can only be attached to a single VtkActorViewer.
+ * VtkViewerInteractorManager is used to coordinate attaching/detaching.
+ * Although not requiring to be a QObject type itself, VtkViewerInteractor
+ * derives from QObject since most derived types of VtkViewerInteractor will
+ * want to define signals to communicate user interactions to other code.
  */
 
 #include "KeyPressHandler.h"
 
 namespace QTools {
 
-class QTools_EXPORT VtkViewerInteractor
-{
+class QTools_EXPORT VtkViewerInteractor : public QObject
+{ Q_OBJECT
 public:
     VtkViewerInteractor(){}
     virtual ~VtkViewerInteractor(){}
@@ -55,11 +56,11 @@ public:
     virtual void rightButtonDown( const QPoint&){}
     virtual void rightButtonUp( const QPoint&){}
 
-    virtual void leftButtonDown( const QPoint&){}  // Not emitted if leftDoubleClick
-    virtual void leftButtonUp( const QPoint&){}    // Not emitted if leftDoubleClick
+    virtual void leftButtonDown( const QPoint&){}  // Not called if leftDoubleClick
+    virtual void leftButtonUp( const QPoint&){}    // Not called if leftDoubleClick
     virtual void leftDoubleClick( const QPoint&){}
 
-    virtual QTools::KeyPressHandler* keyPressHandler() { return NULL;}
+    virtual QTools::KeyPressHandler* keyPressHandler() { return NULL;}  // Not required.
 
 private:
     VtkViewerInteractor( const VtkViewerInteractor&);   // No copy

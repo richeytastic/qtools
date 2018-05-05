@@ -44,6 +44,7 @@ set( QOBJECTS
     "${INCLUDE_DIR}/QProgressUpdater.h"
     "${INCLUDE_DIR}/TwoHandleSlider.h"
     "${INCLUDE_DIR}/ViewNavigator.h"
+    "${INCLUDE_DIR}/VtkViewerInteractor.h"
     )
 
 # Super set of header files
@@ -53,7 +54,6 @@ set( INCLUDE_FILES
     "${INCLUDE_DIR}/KeyPressHandler.h"
     "${INCLUDE_DIR}/QImageTools.h"
     "${INCLUDE_DIR}/QUtils.h"
-    "${INCLUDE_DIR}/VtkViewerInteractor.h"
     "${INCLUDE_DIR}/VtkViewerInteractorManager.h"
     "${INCLUDE_DIR}/VtkViewerActorInteractor.h"
     "${INCLUDE_DIR}/VtkViewerCameraInteractor.h"
