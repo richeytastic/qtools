@@ -18,8 +18,7 @@
 #ifndef QTOOLS_VTK_ACTOR_VIEWER_H
 #define QTOOLS_VTK_ACTOR_VIEWER_H
 
-#include <iostream>
-#include <vector>
+#include "VtkViewerInteractorManager.h"
 #include "QImageTools.h"
 #include "KeyPressHandler.h"
 #include <CameraParams.h>   // RFeatures
@@ -31,7 +30,8 @@
 #include <vtkActor.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
-#include <unordered_set>
+#include <iostream>
+#include <vector>
 
 namespace RVTK { class RendererPicker;}
 
@@ -121,7 +121,29 @@ public:
     // As above, but return the coordinates from the top left of the display as a proportion of the display pane.
     cv::Point2f projectToDisplayProportion( const cv::Vec3f&) const;
 
-    // Add/remove a key press handler
+
+    /******************************************************************/
+    /****************** MOUSE / KEYBOARD INTERACTION ******************/
+    /******************************************************************/
+
+    bool attach( VVI*); // Attach given interactor returning false iff already attached.
+    bool detach( VVI*); // Detach given interactor returning false iff already detached.
+    bool isAttached( VVI*) const;   // Returns whether the given interactor is attached.
+    size_t transferInteractors( VtkActorViewer*);   // Transfer to parameter viewer all VVIs attached to this one (returns # moved).
+
+    // Set/get the interaction mode (Camera or Actor)
+    void setInteractionMode( InteractionMode m) { _iman->setInteractionMode(m);}
+    InteractionMode interactionMode() const { return _iman->interactionMode();}
+
+    // Set/get locking of call pass-through for mouse events bound to camera/actor movement.
+    void setInteractionLocked( bool v) { _iman->setInteractionLocked(v);}
+    bool isInteractionLocked() const { return _iman->isInteractionLocked();}
+
+    // Return the current mouse coordinates.
+    QPoint getMouseCoords() const { return _iman->getMouseCoords();}
+
+    // Add/remove a key press handlers. Note that these functions are called as part of the
+    // attach/detach process for VtkViewerInteractor instances if they define KeyPressHandlers.
     void attachKeyPressHandler( KeyPressHandler*);
     void detachKeyPressHandler( KeyPressHandler*);
 
@@ -132,6 +154,7 @@ protected:
 private:
     bool _autoUpdateRender;
     RVTK::RendererPicker *_rpicker;
+    VtkViewerInteractorManager *_iman;
     RFeatures::CameraParams _resetCamera;
     std::unordered_set<KeyPressHandler*> _keyPressHandlers;
     mutable vtkSmartPointer<vtkRenderer> _ren;

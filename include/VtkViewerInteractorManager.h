@@ -32,10 +32,15 @@
  */
 
 #include "VtkViewerInteractor.h"
-#include "VtkActorViewer.h"
 #include <QPoint>
+#include <vtkSmartPointer.h>
+#include <vtkInteractorStyle.h>
+#include <unordered_set>
+#include <unordered_map>
 
 namespace QTools {
+
+class VtkActorViewer;
 
 enum InteractionMode
 {

@@ -18,6 +18,7 @@
 #include <VtkViewerInteractorManager.h>
 #include <VtkViewerActorInteractor.h>
 #include <VtkViewerCameraInteractor.h>
+#include <VtkActorViewer.h>
 
 // For getMouseCoords
 #include <vtkRenderer.h>
@@ -30,12 +31,13 @@
 #include <algorithm>
 #include <cassert>
 using QTools::VtkViewerInteractorManager;
+using QTools::VtkActorViewer;
 using QTools::InteractionMode;
 using QTools::VVI;
 
 
 // public
-VtkViewerInteractorManager::VtkViewerInteractorManager( QTools::VtkActorViewer *qv)
+VtkViewerInteractorManager::VtkViewerInteractorManager( VtkActorViewer *qv)
     : _qviewer(qv), _locked(false), _lbdown(false), _rbdown(false), _mbdown(false), _lbDownTime(0)
 {
     assert(qv);

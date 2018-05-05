@@ -24,13 +24,12 @@
 #include <vtkRendererCollection.h>
 #include <vtkRenderer.h>
 using QTools::VtkActorViewer;
+using QTools::VVI;
 using RFeatures::CameraParams;
-#include <vtkInteractorStyleJoystickCamera.h>
 
 VtkActorViewer::VtkActorViewer( QWidget *parent)
     : QVTKWidget( parent), _autoUpdateRender(false), _rpicker(NULL), _resetCamera()
 {
-    //QWidget::setWindowFlags(Qt::Window);
     _ren = vtkRenderer::New();
     _ren->SetBackground( 0., 0., 0.);
     _ren->SetTwoSidedLighting( true);   // Don't light occluded sides
@@ -41,11 +40,19 @@ VtkActorViewer::VtkActorViewer( QWidget *parent)
     _rwin->AddRenderer( _ren);
 
     _rpicker = new RVTK::RendererPicker( _ren, RVTK::RendererPicker::TOP_LEFT);
+
+    _iman = new VtkViewerInteractorManager(this);
 }	// end ctor
 
 
 // public
-VtkActorViewer::~VtkActorViewer() { delete _rpicker;}
+VtkActorViewer::~VtkActorViewer()
+{
+    delete _iman;
+    delete _rpicker;
+}   // end dtor
+
+
 const vtkSmartPointer<vtkRenderWindow> VtkActorViewer::getRenderWindow() const { return _rwin;}
 const vtkSmartPointer<vtkRenderer> VtkActorViewer::getRenderer() const { return _ren;}
 
@@ -230,22 +237,6 @@ void VtkActorViewer::setLights( const std::vector<RVTK::Light>& lights)
         updateRender();
 }   // end setLights
 
-/*
-// public
-void VtkActorViewer::setHeadlight()
-{
-    _ren->RemoveAllLights();
-    vtkSmartPointer<vtkLight> hlight = vtkSmartPointer<vtkLight>::New();
-    hlight->SetLightTypeToHeadlight();
-    _ren->AddLight( hlight);
-    _ren->SetLightFollowCamera(true);
-    hlight->SetSwitch( true);
-
-    if ( _autoUpdateRender)
-        updateRender();
-}   // end setHeadlight
-*/
-
 
 // public
 vtkActor* VtkActorViewer::pickActor( const cv::Point& p, const std::vector<vtkActor*>& pactors) const
@@ -330,15 +321,48 @@ cv::Point2f VtkActorViewer::projectToDisplayProportion( const cv::Vec3f& v) cons
 
 
 // public
-void VtkActorViewer::attachKeyPressHandler( QTools::KeyPressHandler* kph) { _keyPressHandlers.insert( kph);}
-void VtkActorViewer::detachKeyPressHandler( QTools::KeyPressHandler* kph) { _keyPressHandlers.erase( kph);}
+void VtkActorViewer::attachKeyPressHandler( KeyPressHandler* kph) { _keyPressHandlers.insert( kph);}
+void VtkActorViewer::detachKeyPressHandler( KeyPressHandler* kph) { _keyPressHandlers.erase( kph);}
+
+
+// public
+bool VtkActorViewer::isAttached( VVI* vvi) const { return _iman->interactors().count(vvi) > 0;}
+
+// public
+bool VtkActorViewer::attach( VVI* vvi)
+{
+    if (isAttached(vvi))
+        return false;
+    _iman->addInteractor(vvi);
+    return true;
+}   // end attach
+
+// public
+bool VtkActorViewer::detach( VVI* vvi)
+{
+    if (!isAttached(vvi))
+        return false;
+    _iman->removeInteractor(vvi);
+    return true;
+}   // end detach
+
+// public
+size_t VtkActorViewer::transferInteractors( VtkActorViewer* tv)
+{
+    std::unordered_set<VVI*> interactors = _iman->interactors();    // Copy out since moving
+    for ( VVI* vvi : interactors)
+    {
+        detach(vvi);
+        tv->attach(vvi);
+    }   // end for
+}   // end transferInteractors
 
 
 // protected
 void VtkActorViewer::keyPressEvent( QKeyEvent* event)
 {
     bool accepted = false;
-    for ( QTools::KeyPressHandler* kph : _keyPressHandlers)
+    for ( KeyPressHandler* kph : _keyPressHandlers)
         accepted |= kph->handleKeyPress(event);
     if ( !accepted)
         QVTKWidget::keyPressEvent( event);
@@ -349,7 +373,7 @@ void VtkActorViewer::keyPressEvent( QKeyEvent* event)
 void VtkActorViewer::keyReleaseEvent( QKeyEvent* event)
 {
     bool accepted = false;
-    for ( QTools::KeyPressHandler* kph : _keyPressHandlers)
+    for ( KeyPressHandler* kph : _keyPressHandlers)
         accepted |= kph->handleKeyPress(event);
     if ( !accepted)
         QVTKWidget::keyReleaseEvent( event);
