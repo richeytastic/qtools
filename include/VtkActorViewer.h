@@ -129,7 +129,10 @@ public:
     bool attach( VVI*); // Attach given interactor returning false iff already attached.
     bool detach( VVI*); // Detach given interactor returning false iff already detached.
     bool isAttached( VVI*) const;   // Returns whether the given interactor is attached.
-    size_t transferInteractors( VtkActorViewer*);   // Transfer to parameter viewer all VVIs attached to this one (returns # moved).
+
+    // Transfer to parameter viewer all VVIs attached to this one (returns # moved).
+    // If the parameter viewer is this viewer, nothing happens and zero is returnd.
+    size_t transferInteractors( VtkActorViewer*);
 
     // Set/get the interaction mode (Camera or Actor)
     void setInteractionMode( InteractionMode m) { _iman->setInteractionMode(m);}

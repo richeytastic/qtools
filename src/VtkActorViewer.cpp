@@ -349,6 +349,8 @@ bool VtkActorViewer::detach( VVI* vvi)
 // public
 size_t VtkActorViewer::transferInteractors( VtkActorViewer* tv)
 {
+    if ( tv == this)
+        return 0;
     std::unordered_set<VVI*> interactors = _iman->interactors();    // Copy out since moving
     for ( VVI* vvi : interactors)
     {
