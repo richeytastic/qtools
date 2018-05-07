@@ -16,7 +16,7 @@
  ************************************************************************/
 
 #include <VtkViewerCameraInteractor.h>
-#include <VtkViewerInteractorManager.h>   // For _delegate calls
+#include <VtkViewerInteractorManager.h>   // For _iman calls
 #include <vtkObjectFactory.h>   // vtkStandardNewMacro
 using QTools::VtkViewerCameraInteractor;
 
@@ -26,64 +26,71 @@ VtkViewerCameraInteractor::VtkViewerCameraInteractor() {}
 
 void VtkViewerCameraInteractor::OnLeftButtonDown()
 {
-    _delegate->doOnLeftButtonDown();
-    if ( !_delegate->isInteractionLocked())
+    if ( _iman->doOnLeftButtonDown())
+        return;
+    if ( !_iman->isInteractionLocked())
         vtkInteractorStyleTrackballCamera::OnLeftButtonDown();
 }   // end OnLeftButtonDown
 
 
 void VtkViewerCameraInteractor::OnLeftButtonUp()
 {
-    _delegate->doOnLeftButtonUp();
-    if ( !_delegate->isInteractionLocked())
+    if ( _iman->doOnLeftButtonUp())
+        return;
+    if ( !_iman->isInteractionLocked())
         vtkInteractorStyleTrackballCamera::OnLeftButtonUp();
 }   // end OnLeftButtonUp
 
 
 void VtkViewerCameraInteractor::OnRightButtonDown()
 {
-    _delegate->doOnRightButtonDown();
-    if ( !_delegate->isInteractionLocked())
+    if ( _iman->doOnRightButtonDown())
+        return;
+    if ( !_iman->isInteractionLocked())
         vtkInteractorStyleTrackballCamera::OnMiddleButtonDown();    // Want the right mouse button to pan
 }   // end OnRightButtonDown
 
 
 void VtkViewerCameraInteractor::OnRightButtonUp()
 {
-    _delegate->doOnRightButtonUp();
-    if ( !_delegate->isInteractionLocked())
+    if ( _iman->doOnRightButtonUp())
+        return;
+    if ( !_iman->isInteractionLocked())
         vtkInteractorStyleTrackballCamera::OnMiddleButtonUp();  // Right mouse pans
 }   // end OnRightButtonUp
 
 
 // Don't pass middle mouse button events up to TrackballCamera since we want right mouse button to pan
-void VtkViewerCameraInteractor::OnMiddleButtonDown() { _delegate->doOnMiddleButtonDown();}
-void VtkViewerCameraInteractor::OnMiddleButtonUp() { _delegate->doOnMiddleButtonUp();}
+void VtkViewerCameraInteractor::OnMiddleButtonDown() { _iman->doOnMiddleButtonDown();}
+void VtkViewerCameraInteractor::OnMiddleButtonUp() { _iman->doOnMiddleButtonUp();}
 
 
 void VtkViewerCameraInteractor::OnMouseWheelForward()
 {
-    _delegate->doOnMouseWheelForward();
-    if ( !_delegate->isInteractionLocked())
+    if ( _iman->doOnMouseWheelForward())
+        return;
+    if ( !_iman->isInteractionLocked())
         vtkInteractorStyleTrackballCamera::OnMouseWheelForward();   // FoV Zoom
 }   // end OnMouseWheelForward
 
 void VtkViewerCameraInteractor::OnMouseWheelBackward()
 {
-    _delegate->doOnMouseWheelBackward();
-    if ( !_delegate->isInteractionLocked())
+    if ( _iman->doOnMouseWheelBackward())
+        return;
+    if ( !_iman->isInteractionLocked())
         vtkInteractorStyleTrackballCamera::OnMouseWheelBackward();  // FoV Zoom
 }   // end OnMouseWheelBackward
 
 
 void VtkViewerCameraInteractor::OnMouseMove()
 {
-    _delegate->doOnMouseMove();
-    if ( !_delegate->isInteractionLocked())
+    if ( _iman->doOnMouseMove())
+        return;
+    if ( !_iman->isInteractionLocked())
         vtkInteractorStyleTrackballCamera::OnMouseMove();
 }   // end OnMouseMove
 
 
 // vtkInteractorStyleTrackballCamera does not implement OnEnter/Leave
-void VtkViewerCameraInteractor::OnEnter() { _delegate->doOnEnter();}
-void VtkViewerCameraInteractor::OnLeave() { _delegate->doOnLeave();}
+void VtkViewerCameraInteractor::OnEnter() { _iman->doOnEnter();}
+void VtkViewerCameraInteractor::OnLeave() { _iman->doOnLeave();}

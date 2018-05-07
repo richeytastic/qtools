@@ -23,6 +23,8 @@
  * Multiple VtkViewerInteractor instances can be active on a single viewer at once,
  * but a VtkViewerInteractor can only be attached to a single VtkActorViewer.
  * VtkViewerInteractorManager is used to coordinate attaching/detaching.
+ * Overridden functions should return true if they do not want the underlying VTK
+ * camera or actor interactor to process the mouse control.
  * Although not requiring to be a QObject type itself, VtkViewerInteractor
  * derives from QObject since most derived types of VtkViewerInteractor will
  * want to define signals to communicate user interactions to other code.
@@ -38,27 +40,27 @@ public:
     VtkViewerInteractor(){}
     virtual ~VtkViewerInteractor(){}
 
-    virtual void mouseMove( const QPoint&){}  // Move mouse with no buttons depressed.
-    virtual void leftDrag( const QPoint&){}   // Move mouse with left button depressed.
-    virtual void rightDrag( const QPoint&){}  // Move mouse with right button depressed.
-    virtual void middleDrag( const QPoint&){} // Move mouse with middle button depressed.
+    virtual bool mouseMove( const QPoint&){ return false;}  // Move mouse with no buttons depressed.
+    virtual bool leftDrag( const QPoint&){ return false;}   // Move mouse with left button depressed.
+    virtual bool rightDrag( const QPoint&){ return false;}  // Move mouse with right button depressed.
+    virtual bool middleDrag( const QPoint&){ return false;} // Move mouse with middle button depressed.
 
     // Mouse enter/leave the viewer bounds.
-    virtual void mouseLeave( const QPoint&){}
-    virtual void mouseEnter( const QPoint&){}
+    virtual bool mouseLeave( const QPoint&){ return false;}
+    virtual bool mouseEnter( const QPoint&){ return false;}
 
-    virtual void mouseWheelForward( const QPoint&){}
-    virtual void mouseWheelBackward( const QPoint&){}
+    virtual bool mouseWheelForward( const QPoint&){ return false;}
+    virtual bool mouseWheelBackward( const QPoint&){ return false;}
 
-    virtual void middleButtonDown( const QPoint&){}
-    virtual void middleButtonUp( const QPoint&){}
+    virtual bool middleButtonDown( const QPoint&){ return false;}
+    virtual bool middleButtonUp( const QPoint&){ return false;}
 
-    virtual void rightButtonDown( const QPoint&){}
-    virtual void rightButtonUp( const QPoint&){}
+    virtual bool rightButtonDown( const QPoint&){ return false;}
+    virtual bool rightButtonUp( const QPoint&){ return false;}
 
-    virtual void leftButtonDown( const QPoint&){}  // Not called if leftDoubleClick
-    virtual void leftButtonUp( const QPoint&){}    // Not called if leftDoubleClick
-    virtual void leftDoubleClick( const QPoint&){}
+    virtual bool leftButtonDown( const QPoint&){ return false;}  // Not called if leftDoubleClick
+    virtual bool leftButtonUp( const QPoint&){ return false;}    // Not called if leftDoubleClick
+    virtual bool leftDoubleClick( const QPoint&){ return false;}
 
     virtual QTools::KeyPressHandler* keyPressHandler() { return NULL;}  // Not required.
 

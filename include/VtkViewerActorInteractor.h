@@ -46,14 +46,14 @@ public:
     void OnEnter() override;
     void OnLeave() override;
 
-    void setDelegate( VtkViewerInteractorManager* d) { _delegate = d;}
+    void setDelegate( VtkViewerInteractorManager* d) { _iman = d;}
 
 protected:
     VtkViewerActorInteractor();
     virtual ~VtkViewerActorInteractor(){}
 
 private:
-    VtkViewerInteractorManager *_delegate;
+    VtkViewerInteractorManager *_iman;
 };  // end class
 
 }   // end namespace

@@ -71,18 +71,18 @@ public:
     void setInteractionMode( InteractionMode);
     InteractionMode interactionMode() const { return _imode;}
 
-    void doOnLeftButtonDown();
-    void doOnLeftButtonUp();
-    void doOnMiddleButtonDown();
-    void doOnMiddleButtonUp();
-    void doOnRightButtonDown();
-    void doOnRightButtonUp();
-    void doOnMouseWheelForward();
-    void doOnMouseWheelBackward();
+    bool doOnLeftButtonDown();
+    bool doOnLeftButtonUp();
+    bool doOnMiddleButtonDown();
+    bool doOnMiddleButtonUp();
+    bool doOnRightButtonDown();
+    bool doOnRightButtonUp();
+    bool doOnMouseWheelForward();
+    bool doOnMouseWheelBackward();
     
-    void doOnMouseMove();
-    void doOnEnter();
-    void doOnLeave();
+    bool doOnMouseMove();
+    bool doOnEnter();
+    bool doOnLeave();
 
 private:
     VtkActorViewer *_qviewer;

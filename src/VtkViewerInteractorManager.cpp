@@ -91,105 +91,121 @@ QPoint VtkViewerInteractorManager::getMouseCoords()
 }   // end getMouseCoords
 
 
-void VtkViewerInteractorManager::doOnLeftButtonDown()
+namespace {
+bool dofunction( const std::unordered_set<VVI*>& ifaces, auto func)
+{
+    bool swallowed = false;
+    for ( VVI* vvi : ifaces)
+    {
+        if ( func(vvi))
+            swallowed = true;
+    }   // end for
+    return swallowed;
+}   // end dofunction
+}   // end namespace
+
+
+bool VtkViewerInteractorManager::doOnLeftButtonDown()
 {
     const QPoint p = getMouseCoords();
     _lbdown = true;
+    bool swallowed = false;
     const qint64 tnow = QDateTime::currentDateTime().currentMSecsSinceEpoch();
-    if ( (tnow - _lbDownTime) < QApplication::doubleClickInterval())    // A second left down received inside double click interval
+    if ( (tnow - _lbDownTime) < QApplication::doubleClickInterval())    // Check for double click
     {
         _lbDownTime = 0;
-        std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->leftDoubleClick(p);});
+        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->leftDoubleClick(p);});
     }   // end if
     else
     {
         _lbDownTime = tnow;
-        std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->leftButtonDown(p);});
+        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->leftButtonDown(p);});
     }   // end else
+    return swallowed;
 }   // end doOnLeftButtonDown
 
 
-void VtkViewerInteractorManager::doOnLeftButtonUp()
+bool VtkViewerInteractorManager::doOnLeftButtonUp()
 {
     const QPoint p = getMouseCoords();
     _lbdown = false;
+    bool swallowed = false;
     if ( _lbDownTime > 0)   // Ensure left button up only after single click down (not after double click)
-        std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->leftButtonUp(p);});
+        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->leftButtonUp(p);});
+    return swallowed;
 }   // end doOnLeftButtonUp
 
 
-void VtkViewerInteractorManager::doOnRightButtonDown()
+bool VtkViewerInteractorManager::doOnRightButtonDown()
 {
     const QPoint p = getMouseCoords();
     _rbdown = true;
-    std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->rightButtonDown(p);});
+    return dofunction( _ifaces, [&p](auto vvi){ return vvi->rightButtonDown(p);});
 }   // end doOnRightButtonDown
 
 
-void VtkViewerInteractorManager::doOnRightButtonUp()
+bool VtkViewerInteractorManager::doOnRightButtonUp()
 {
     const QPoint p = getMouseCoords();
     _rbdown = false;
-    std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->rightButtonUp(p);});
+    return dofunction( _ifaces, [&p](auto vvi){ return vvi->rightButtonUp(p);});
 }   // end doOnRightButtonUp
 
 
-void VtkViewerInteractorManager::doOnMiddleButtonDown()
+bool VtkViewerInteractorManager::doOnMiddleButtonDown()
 {
     const QPoint p = getMouseCoords();
     _mbdown = true;
-    std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->middleButtonDown(p);});
+    return dofunction( _ifaces, [&p](auto vvi){ return vvi->middleButtonDown(p);});
 }   // end doOnMiddleButtonDown
 
 
-void VtkViewerInteractorManager::doOnMiddleButtonUp()
+bool VtkViewerInteractorManager::doOnMiddleButtonUp()
 {
     const QPoint p = getMouseCoords();
     _mbdown = false;
-    std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->middleButtonUp(p);});
+    return dofunction( _ifaces, [&p](auto vvi){ return vvi->middleButtonUp(p);});
 }   // end doOnMiddleButtonUp
 
 
-void VtkViewerInteractorManager::doOnMouseWheelForward()
+bool VtkViewerInteractorManager::doOnMouseWheelForward()
 {
     const QPoint p = getMouseCoords();
-    std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->mouseWheelForward(p);});
+    return dofunction( _ifaces, [&p](auto vvi){ return vvi->mouseWheelForward(p);});
 }   // end doOnMouseWheelForward
 
 
-void VtkViewerInteractorManager::doOnMouseWheelBackward()
+bool VtkViewerInteractorManager::doOnMouseWheelBackward()
 {
     const QPoint p = getMouseCoords();
-    std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->mouseWheelBackward(p);});
+    return dofunction( _ifaces, [&p](auto vvi){ return vvi->mouseWheelBackward(p);});
 }   // end doOnMouseWheelBackward
 
 
-void VtkViewerInteractorManager::doOnMouseMove()
+bool VtkViewerInteractorManager::doOnMouseMove()
 {
     const QPoint p = getMouseCoords();
-    for ( VVI* vvi : _ifaces)
-    {
-        if ( _lbdown)
-            vvi->leftDrag(p);
-        else if ( _rbdown)
-            vvi->rightDrag(p);
-        else if ( _mbdown)
-            vvi->middleDrag(p);
-        else
-            vvi->mouseMove(p);
-    }   // end for
+    bool swallowed = false;
+    if ( _lbdown)
+        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->leftDrag(p);});
+    else if ( _rbdown)
+        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->rightDrag(p);});
+    else if ( _mbdown)
+        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->middleDrag(p);});
+    else
+        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->mouseMove(p);});
+    return swallowed;
 }   // end doOnMouseMove
 
 
-void VtkViewerInteractorManager::doOnEnter()
+bool VtkViewerInteractorManager::doOnEnter()
 {
     const QPoint p = getMouseCoords();
-    std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->mouseEnter(p);});
+    return dofunction( _ifaces, [&p](auto vvi){ return vvi->mouseEnter(p);});
 }   // end doOnEnter
 
-void VtkViewerInteractorManager::doOnLeave()
+bool VtkViewerInteractorManager::doOnLeave()
 {
     const QPoint p = getMouseCoords();
-    std::for_each( std::begin(_ifaces), std::end(_ifaces), [&](VVI* vvi){vvi->mouseLeave(p);});
+    return dofunction( _ifaces, [&p](auto vvi){ return vvi->mouseLeave(p);});
 }   // end doOnLeave
-
