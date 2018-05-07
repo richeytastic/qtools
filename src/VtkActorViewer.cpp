@@ -357,6 +357,7 @@ size_t VtkActorViewer::transferInteractors( VtkActorViewer* tv)
         detach(vvi);
         tv->attach(vvi);
     }   // end for
+    return interactors.size();
 }   // end transferInteractors
 
 
