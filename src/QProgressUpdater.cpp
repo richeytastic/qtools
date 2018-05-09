@@ -19,7 +19,13 @@
 using QTools::QProgressUpdater;
 #include <algorithm>
 
+QProgressUpdater::Ptr QProgressUpdater::create( QProgressBar* pb, int nt)
+{
+    return Ptr( new QProgressUpdater( pb, nt));
+}   // end create
 
+
+// private
 QProgressUpdater::QProgressUpdater( QProgressBar* pbar, int numThreads)
     : ProgressDelegate(numThreads), _pbar(pbar), _complete(false)
 {

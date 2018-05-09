@@ -26,17 +26,17 @@
 #include "QTools_Export.h"
 #include <QProgressBar>
 #include <ProgressDelegate.h>   // rlib
+#include <boost/shared_ptr.hpp>
 
-namespace QTools
-{
+namespace QTools {
 
 class QTools_EXPORT QProgressUpdater : public QObject, public rlib::ProgressDelegate
 { Q_OBJECT
 public:
-    QProgressUpdater( QProgressBar* bar=NULL, int numThreads=1);
+    typedef boost::shared_ptr<QProgressUpdater> Ptr;
+    static Ptr create( QProgressBar* bar=NULL, int numThreads=1);
 
     void reset();   // Reset complete flag (and the progress bar if set)
-
     void processUpdate( float propComplete) override;    // Called inside critical section
 
 signals:
@@ -46,6 +46,10 @@ signals:
 private:
     QProgressBar* _pbar;
     bool _complete;
+
+    QProgressUpdater( QProgressBar* bar=NULL, int numThreads=1);
+    QProgressUpdater( const QProgressUpdater&); // No copy
+    void operator=(const QProgressUpdater&);    // No copy
 };  // end class
 
 }   // end namespace
