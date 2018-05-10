@@ -28,7 +28,7 @@ class ColourMappingWidget;
 namespace QTools {
 class TwoHandleSlider;
 
-class ColourMappingWidget : public QWidget
+class QTools_EXPORT ColourMappingWidget : public QWidget
 { Q_OBJECT
 public:
     explicit ColourMappingWidget( QWidget *parent = 0);

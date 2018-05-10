@@ -73,7 +73,7 @@ float ColourMappingWidget::maxScalar() const { return _slider->value1();}
 
 void ColourMappingWidget::setNumColours( size_t nc)
 {
-    ui->numColoursSpinBox->setValue( std::max<size_t>(2, std::min<size_t>( 256, nc)));
+    ui->numColoursSpinBox->setValue( (int)(std::max<size_t>(2, std::min<size_t>( 256, nc))));
 }   // end setNumColours
 
 

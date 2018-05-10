@@ -30,6 +30,7 @@
 #include <QDateTime>
 #include <algorithm>
 #include <cassert>
+#include <functional>
 using QTools::VtkViewerInteractorManager;
 using QTools::VtkActorViewer;
 using QTools::InteractionMode;
@@ -92,7 +93,7 @@ QPoint VtkViewerInteractorManager::getMouseCoords()
 
 
 namespace {
-bool dofunction( const std::unordered_set<VVI*>& ifaces, auto func)
+bool dofunction( const std::unordered_set<VVI*>& ifaces, std::function<bool (VVI*)> func)
 {
     bool swallowed = false;
     for ( VVI* vvi : ifaces)
@@ -114,12 +115,12 @@ bool VtkViewerInteractorManager::doOnLeftButtonDown()
     if ( (tnow - _lbDownTime) < QApplication::doubleClickInterval())    // Check for double click
     {
         _lbDownTime = 0;
-        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->leftDoubleClick(p);});
+        swallowed = dofunction( _ifaces, [&p](VVI* vvi){ return vvi->leftDoubleClick(p);});
     }   // end if
     else
     {
         _lbDownTime = tnow;
-        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->leftButtonDown(p);});
+        swallowed = dofunction( _ifaces, [&p](VVI* vvi){ return vvi->leftButtonDown(p);});
     }   // end else
     return swallowed;
 }   // end doOnLeftButtonDown
@@ -131,7 +132,7 @@ bool VtkViewerInteractorManager::doOnLeftButtonUp()
     _lbdown = false;
     bool swallowed = false;
     if ( _lbDownTime > 0)   // Ensure left button up only after single click down (not after double click)
-        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->leftButtonUp(p);});
+        swallowed = dofunction( _ifaces, [&p](VVI* vvi){ return vvi->leftButtonUp(p);});
     return swallowed;
 }   // end doOnLeftButtonUp
 
@@ -140,7 +141,7 @@ bool VtkViewerInteractorManager::doOnRightButtonDown()
 {
     const QPoint p = getMouseCoords();
     _rbdown = true;
-    return dofunction( _ifaces, [&p](auto vvi){ return vvi->rightButtonDown(p);});
+    return dofunction( _ifaces, [&p](VVI* vvi){ return vvi->rightButtonDown(p);});
 }   // end doOnRightButtonDown
 
 
@@ -148,7 +149,7 @@ bool VtkViewerInteractorManager::doOnRightButtonUp()
 {
     const QPoint p = getMouseCoords();
     _rbdown = false;
-    return dofunction( _ifaces, [&p](auto vvi){ return vvi->rightButtonUp(p);});
+    return dofunction( _ifaces, [&p](VVI* vvi){ return vvi->rightButtonUp(p);});
 }   // end doOnRightButtonUp
 
 
@@ -156,7 +157,7 @@ bool VtkViewerInteractorManager::doOnMiddleButtonDown()
 {
     const QPoint p = getMouseCoords();
     _mbdown = true;
-    return dofunction( _ifaces, [&p](auto vvi){ return vvi->middleButtonDown(p);});
+    return dofunction( _ifaces, [&p](VVI* vvi){ return vvi->middleButtonDown(p);});
 }   // end doOnMiddleButtonDown
 
 
@@ -164,21 +165,21 @@ bool VtkViewerInteractorManager::doOnMiddleButtonUp()
 {
     const QPoint p = getMouseCoords();
     _mbdown = false;
-    return dofunction( _ifaces, [&p](auto vvi){ return vvi->middleButtonUp(p);});
+    return dofunction( _ifaces, [&p](VVI* vvi){ return vvi->middleButtonUp(p);});
 }   // end doOnMiddleButtonUp
 
 
 bool VtkViewerInteractorManager::doOnMouseWheelForward()
 {
     const QPoint p = getMouseCoords();
-    return dofunction( _ifaces, [&p](auto vvi){ return vvi->mouseWheelForward(p);});
+    return dofunction( _ifaces, [&p](VVI* vvi){ return vvi->mouseWheelForward(p);});
 }   // end doOnMouseWheelForward
 
 
 bool VtkViewerInteractorManager::doOnMouseWheelBackward()
 {
     const QPoint p = getMouseCoords();
-    return dofunction( _ifaces, [&p](auto vvi){ return vvi->mouseWheelBackward(p);});
+    return dofunction( _ifaces, [&p](VVI* vvi){ return vvi->mouseWheelBackward(p);});
 }   // end doOnMouseWheelBackward
 
 
@@ -187,13 +188,13 @@ bool VtkViewerInteractorManager::doOnMouseMove()
     const QPoint p = getMouseCoords();
     bool swallowed = false;
     if ( _lbdown)
-        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->leftDrag(p);});
+        swallowed = dofunction( _ifaces, [&p](VVI* vvi){ return vvi->leftDrag(p);});
     else if ( _rbdown)
-        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->rightDrag(p);});
+        swallowed = dofunction( _ifaces, [&p](VVI* vvi){ return vvi->rightDrag(p);});
     else if ( _mbdown)
-        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->middleDrag(p);});
+        swallowed = dofunction( _ifaces, [&p](VVI* vvi){ return vvi->middleDrag(p);});
     else
-        swallowed = dofunction( _ifaces, [&p](auto vvi){ return vvi->mouseMove(p);});
+        swallowed = dofunction( _ifaces, [&p](VVI* vvi){ return vvi->mouseMove(p);});
     return swallowed;
 }   // end doOnMouseMove
 
@@ -201,11 +202,11 @@ bool VtkViewerInteractorManager::doOnMouseMove()
 bool VtkViewerInteractorManager::doOnEnter()
 {
     const QPoint p = getMouseCoords();
-    return dofunction( _ifaces, [&p](auto vvi){ return vvi->mouseEnter(p);});
+    return dofunction( _ifaces, [&p](VVI* vvi){ return vvi->mouseEnter(p);});
 }   // end doOnEnter
 
 bool VtkViewerInteractorManager::doOnLeave()
 {
     const QPoint p = getMouseCoords();
-    return dofunction( _ifaces, [&p](auto vvi){ return vvi->mouseLeave(p);});
+    return dofunction( _ifaces, [&p](VVI* vvi){ return vvi->mouseLeave(p);});
 }   // end doOnLeave

@@ -25,6 +25,7 @@
 #include <vtkRenderer.h>
 using QTools::VtkActorViewer;
 using QTools::VVI;
+using QTools::KeyPressHandler;
 using RFeatures::CameraParams;
 
 VtkActorViewer::VtkActorViewer( QWidget *parent)
