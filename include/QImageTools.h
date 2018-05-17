@@ -23,8 +23,7 @@
 #include <QString>
 #include "QTools_Export.h"
 
-namespace QTools
-{
+namespace QTools {
 
 // Copy a CV_8UC1 or CV_8UC3 cv::Mat to a RGB888 QImage
 QTools_EXPORT QImage copyOpenCV2QImage( const cv::Mat &img);

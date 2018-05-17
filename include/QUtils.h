@@ -21,8 +21,7 @@
 #include "QTools_Export.h"
 #include <QString>
 
-namespace QTools
-{
+namespace QTools {
 
 // Get the directory part of fname and place the remainder without file
 // extension (if any) in rem (if not NULL).

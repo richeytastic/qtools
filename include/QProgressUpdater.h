@@ -26,14 +26,14 @@
 #include "QTools_Export.h"
 #include <QProgressBar>
 #include <ProgressDelegate.h>   // rlib
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace QTools {
 
 class QTools_EXPORT QProgressUpdater : public QObject, public rlib::ProgressDelegate
 { Q_OBJECT
 public:
-    typedef boost::shared_ptr<QProgressUpdater> Ptr;
+    typedef std::shared_ptr<QProgressUpdater> Ptr;
     static Ptr create( QProgressBar* bar=NULL, int numThreads=1);
 
     void reset();   // Reset complete flag (and the progress bar if set)

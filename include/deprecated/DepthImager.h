@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#pragma once
 #ifndef QTOOLS_DEPTH_IMAGER_H
 #define QTOOLS_DEPTH_IMAGER_H
 
@@ -35,8 +34,7 @@ namespace Ui {
 }   // end namespace
 
 
-namespace QTools
-{
+namespace QTools {
 
 class DepthImager : public QGroupBox
 { Q_OBJECT

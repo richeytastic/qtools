@@ -24,8 +24,7 @@
 
 namespace Ui { class PluginsDialog; }
 
-namespace QTools
-{
+namespace QTools {
 
 class QTools_EXPORT PluginsDialog : public QDialog
 { Q_OBJECT

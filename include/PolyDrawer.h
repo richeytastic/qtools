@@ -25,9 +25,7 @@
 #include <QMouseEvent>
 #include "QTools_Export.h"
 
-
-namespace QTools
-{
+namespace QTools {
 
 class QTools_EXPORT PolyDrawer : public QObject
 { Q_OBJECT

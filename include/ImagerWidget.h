@@ -31,12 +31,11 @@ using std::vector;
 #include "QImageTools.h"
 
 #include <RectangleManager.h>
-using RFeatures::RectangleManager;
 #include <DepthFinder.h>
+using RFeatures::RectangleManager;
 using RFeatures::DepthFinder;
 
 #include <opencv2/opencv.hpp>
-#include <boost/shared_ptr.hpp>
 
 
 namespace Ui {

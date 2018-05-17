@@ -67,7 +67,7 @@ set( FORMS
     "${FORMS_DIR}/ViewNavigator.ui"
     )
 
-set( RESOURCE_FILE "res.qrc")  # Qt resource file
+set( RESOURCE_FILE "QTools_res.qrc")  # Qt resource file
 
 qt5_wrap_ui( FORM_HEADERS ${FORMS})
 qt5_wrap_cpp( QOBJECT_MOCS ${QOBJECTS})

@@ -21,7 +21,6 @@
   November 2014
   */
 
-#pragma once
 #ifndef QTOOLS_DATABASE_CLIENT_H
 #define QTOOLS_DATABASE_CLIENT_H
 
@@ -31,8 +30,7 @@
 #include "DatabaseOptionsDialog.h"
 #include "QTools_Export.h"
 
-namespace QTools
-{
+namespace QTools {
 
 class QTools_EXPORT DatabaseClient
 {

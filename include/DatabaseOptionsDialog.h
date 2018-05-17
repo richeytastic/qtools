@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#pragma once
 #ifndef QTOOLS_DATABASEOPTIONSDIALOG_H
 #define QTOOLS_DATABASEOPTIONSDIALOG_H
 
@@ -29,8 +28,7 @@ namespace Ui {
 class DatabaseOptionsDialog;
 }
 
-namespace QTools
-{
+namespace QTools {
 
 class QTools_EXPORT DatabaseOptionsDialog : public QDialog
 { Q_OBJECT
