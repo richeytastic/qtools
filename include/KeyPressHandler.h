@@ -15,10 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-/**
- * Handle key press events on QVTKWidget descendent VtkActorViewer.
- */
-
 #ifndef QTOOLS_KEY_PRESS_HANDLER_H
 #define QTOOLS_KEY_PRESS_HANDLER_H
 
@@ -26,16 +22,29 @@
 #include <QKeyEvent>
 
 namespace QTools {
-
-class VtkActorViewer;
+class VtkViewerInteractor;
 
 class QTools_EXPORT KeyPressHandler
 {
+public:
+    // If instantiated by a VtkViewerInteractor, it should pass itself in to the
+    // constructor so this KeyPressHandler can query VtkViewerInteractor::isEnabled
+    // when deciding whether to process key press events.
+    explicit KeyPressHandler( const VtkViewerInteractor* vvi=nullptr);
+
+    // These functions called by VtkActorViewer.
+    bool handleKeyPress( QKeyEvent*);
+    bool handleKeyRelease( QKeyEvent*);
+
 protected:
-    // Return true if key event is handled. Note that this function
-    // allows for QKeyEvents having type of both KeyPress and KeyRelease.
-    virtual bool handleKeyPress( QKeyEvent*) = 0;
-    friend class VtkActorViewer;
+    // Deriving classes should override one or both of these functions which are
+    // only ever called if the instantiating VtkViewerInteractor (if it exists) is
+    // enabled. Return true if key event is handled.
+    virtual bool doHandleKeyPress( QKeyEvent*) { return false;}
+    virtual bool doHandleKeyRelease( QKeyEvent*) { return false;}
+
+private:
+    const VtkViewerInteractor *_vvi;
 };	// end class
 
 }	// end namespace

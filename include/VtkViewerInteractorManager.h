@@ -21,22 +21,23 @@
 /**
  * Not actually a vtkInteractor, but manages the application of different vtkInteractorStyles to a
  * vtkRenderWindow (via its implementation as VtkActorViewer). This class communicates VTK mouse
- * events to non VTK based delegate objects derived from ModelViewerInteractor for implementing
+ * events to non VTK based delegate objects derived from VtkViewerInteractor for implementing
  * different interactions. VTK interaction modes can be switched between trackball camera (the default)
- * and trackball actor. NB Unlike VTK interaction, the right mouse button instead of the middle mouse
+ * and trackball actor. Unlike VTK interaction, the right mouse button instead of the middle mouse
  * button is used for panning.
  *
- * Descendents of ModelViewerInteractor can enable/disable interactions by overriding the requisite
- * function stubs in ModelViewerInteractor. More than one ModelViewerInteractor can be attached and
- * the attaching client must manage the priority of the attached ModelViewerInteractor objects.
+ * Descendents of VtkViewerInteractor can enable/disable interactions by overriding the requisite
+ * function stubs in that class. More than one VtkViewerInteractor can be attached and the attaching
+ * client must manage the priority of the attached VtkViewerInteractor objects.
  */
 
 #include "VtkViewerInteractor.h"
+#include "VtkViewerSwitchInteractor.h"
 #include <QPoint>
 #include <vtkSmartPointer.h>
-#include <vtkInteractorStyle.h>
 #include <unordered_set>
 #include <unordered_map>
+#include <random>
 
 namespace QTools {
 
@@ -52,7 +53,7 @@ class QTools_EXPORT VtkViewerInteractorManager
 {
 public:
     explicit VtkViewerInteractorManager( VtkActorViewer*);
-    virtual ~VtkViewerInteractorManager(){}
+    virtual ~VtkViewerInteractorManager();
 
     const std::unordered_set<VVI*>& interactors() const;
     void addInteractor( VVI*);
@@ -60,8 +61,13 @@ public:
 
     QPoint getMouseCoords();    // With top left origin
 
-    // Lock/unlock camera/actor interaction.
-    void setInteractionLocked( bool);
+    // Lock/unlock camera/actor interaction. Locking key matched since many interactors
+    // may be active; one interactor should not be able to unlock interaction when another
+    // interactor requires interaction to still be locked.
+    int lockInteraction();  // Returns the key to unlock
+    // Pass in key returned from lockInteraction. Returns true if unlocking worked (or not yet locked).
+    bool unlockInteraction( int key);
+    // Returns true iff interaction currently locked.
     bool isInteractionLocked() const;
 
     // Camera mode can be camera transform (default), or actor tansform.
@@ -71,6 +77,7 @@ public:
     void setInteractionMode( InteractionMode);
     InteractionMode interactionMode() const { return _imode;}
 
+private:
     bool doOnLeftButtonDown();
     bool doOnLeftButtonUp();
     bool doOnMiddleButtonDown();
@@ -84,13 +91,29 @@ public:
     bool doOnEnter();
     bool doOnLeave();
 
-private:
+    void doAfterCameraRotate();
+    void doAfterCameraPan();
+    void doAfterCameraDolly();
+    void doAfterCameraSpin();
+    void doAfterCameraStop();
+
+    void doAfterActorRotate();
+    void doAfterActorDolly();
+    void doAfterActorSpin();
+    void doAfterActorPan();
+    void doAfterActorStop();
+
+    friend class VtkViewerSwitchInteractor;
+
     VtkActorViewer *_qviewer;
-    bool _locked, _lbdown, _rbdown, _mbdown;
+    bool _lbdown, _rbdown, _mbdown;
     InteractionMode _imode;
     qint64 _lbDownTime;
-    std::unordered_set<VVI*> _ifaces;   // The interfaces
-    std::unordered_map<int, vtkSmartPointer<vtkInteractorStyle> > _interactors;
+    std::minstd_rand0 _rng; // Random number generator for _lockKeys
+
+    VtkViewerSwitchInteractor* _istyle;
+    std::unordered_set<VVI*> _vvis;   // The interactors
+    std::unordered_set<int> _lockKeys;
 
     VtkViewerInteractorManager( const VtkViewerInteractorManager&); // No copy
     void operator=( const VtkViewerInteractorManager&);             // No copy

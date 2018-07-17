@@ -15,30 +15,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#ifndef QTOOLS_VTK_VIEWER_CAMERA_INTERACTOR_H
-#define QTOOLS_VTK_VIEWER_CAMERA_INTERACTOR_H
+#include <KeyPressHandler.h>
+#include <VtkViewerInteractor.h>
+using QTools::KeyPressHandler;
+using QTools::VtkViewerInteractor;
 
-#include "QTools_Export.h"
-#include <vtkInteractorStyleTrackballCamera.h>
 
-namespace QTools {
+KeyPressHandler::KeyPressHandler( const VtkViewerInteractor* vvi) : _vvi(vvi) {}
 
-class QTools_EXPORT VtkViewerCameraInteractor : public vtkInteractorStyleTrackballCamera
+
+bool KeyPressHandler::handleKeyPress( QKeyEvent *e)
 {
-public:
-    static VtkViewerCameraInteractor* New();
-    vtkTypeMacro( VtkViewerCameraInteractor, vtkInteractorStyleTrackballCamera)
+    bool rv = false;
+    if ( _vvi && _vvi->isEnabled())
+        rv = doHandleKeyPress(e);
+    return rv;
+}   // end handleKeyPress
 
-    void OnChar() override {}   // Override VTK key press handling
 
-    void findPickedActor( int, int) {}
-    void dolly( double f) { Dolly(f);}  // Needed to call protected function from outside.
-
-protected:
-    VtkViewerCameraInteractor();
-    ~VtkViewerCameraInteractor() override;
-};  // end class
-
-}   // end namespace
-
-#endif
+bool KeyPressHandler::handleKeyRelease( QKeyEvent *e)
+{
+    bool rv = false;
+    if ( _vvi && _vvi->isEnabled())
+        rv = doHandleKeyRelease(e);
+    return rv;
+}   // end handleKeyRelease

@@ -16,69 +16,61 @@
  ************************************************************************/
 
 #include <VtkViewerActorInteractor.h>
-#include <VtkViewerInteractorManager.h>   // For _iman calls
 #include <vtkObjectFactory.h>   // vtkStandardNewMacro
+#include <vtkRenderer.h>
+#include <vtkRenderWindowInteractor.h>
+#include <vtkCamera.h>
+#include <vtkProp3D.h>
+#include <vtkTransform.h>
+#include <vtkMatrix4x4.h>
 using QTools::VtkViewerActorInteractor;
 
 vtkStandardNewMacro( VtkViewerActorInteractor)
 
 VtkViewerActorInteractor::VtkViewerActorInteractor() {}
+VtkViewerActorInteractor::~VtkViewerActorInteractor() {}
 
-void VtkViewerActorInteractor::OnLeftButtonDown()
+void VtkViewerActorInteractor::findPickedActor( int x, int y)
 {
-    if ( _iman->doOnLeftButtonDown())
-        return;
-    if ( !_iman->isInteractionLocked())
-        vtkInteractorStyleTrackballActor::OnLeftButtonDown();
-}   // end OnLeftButtonDown
+    FindPickedActor(x,y);   // Protected
+}   // findPickedActor
 
 
-void VtkViewerActorInteractor::OnLeftButtonUp()
+// Source code copied and edited from vtkInteractorStyleTrackballActor.cxx
+void VtkViewerActorInteractor::dolly( double dollyFactor)
 {
-    if ( _iman->doOnLeftButtonUp())
+    if (!this->CurrentRenderer || !this->InteractionProp)
         return;
-    if ( !_iman->isInteractionLocked())
-        vtkInteractorStyleTrackballActor::OnLeftButtonUp();
-}   // end OnLeftButtonUp
 
+    vtkRenderWindowInteractor *rwi = this->Interactor;
+    vtkCamera *cam = this->CurrentRenderer->GetActiveCamera();
 
-void VtkViewerActorInteractor::OnRightButtonDown()
-{
-    if ( _iman->doOnRightButtonDown())
-        return;
-    if ( !_iman->isInteractionLocked())
-        vtkInteractorStyleTrackballActor::OnMiddleButtonDown();    // Want the right mouse button to pan
-}   // end OnRightButtonDown
+    double view_point[3], view_focus[3];
+    cam->GetPosition(view_point);
+    cam->GetFocalPoint(view_focus);
 
+    dollyFactor -= 1.0;
 
-void VtkViewerActorInteractor::OnRightButtonUp()
-{
-    if ( _iman->doOnRightButtonUp())
-        return;
-    if ( !_iman->isInteractionLocked())
-        vtkInteractorStyleTrackballActor::OnMiddleButtonUp();  // Right mouse pans
-}   // end OnRightButtonUp
+    double motion_vector[3];
+    motion_vector[0] = (view_point[0] - view_focus[0]) * dollyFactor;
+    motion_vector[1] = (view_point[1] - view_focus[1]) * dollyFactor;
+    motion_vector[2] = (view_point[2] - view_focus[2]) * dollyFactor;
 
+    if ( this->InteractionProp->GetUserMatrix())
+    {
+        vtkTransform *t = vtkTransform::New();
+        t->PostMultiply();
+        t->SetMatrix( this->InteractionProp->GetUserMatrix());
+        t->Translate( motion_vector[0], motion_vector[1], motion_vector[2]);
+        this->InteractionProp->GetUserMatrix()->DeepCopy( t->GetMatrix());
+        t->Delete();
+    } // end if
+    else
+        this->InteractionProp->AddPosition(motion_vector);
 
-// Don't pass middle mouse button events up to TrackballActor since we want right mouse button to pan
-void VtkViewerActorInteractor::OnMiddleButtonDown() { _iman->doOnMiddleButtonDown();}
-void VtkViewerActorInteractor::OnMiddleButtonUp() { _iman->doOnMiddleButtonUp();}
+    if (this->AutoAdjustCameraClippingRange)
+        this->CurrentRenderer->ResetCameraClippingRange();
 
+    rwi->Render();
+}   // end dolly
 
-// vtkInteractorStyleTrackballActor does not implement OnMouseWheelForward/Backward
-void VtkViewerActorInteractor::OnMouseWheelForward() { _iman->doOnMouseWheelForward();}
-void VtkViewerActorInteractor::OnMouseWheelBackward() { _iman->doOnMouseWheelBackward();}
-
-
-void VtkViewerActorInteractor::OnMouseMove()
-{
-    if ( _iman->doOnMouseMove())
-        return;
-    if ( !_iman->isInteractionLocked())
-        vtkInteractorStyleTrackballActor::OnMouseMove();
-}   // end OnMouseMove
-
-
-// vtkInteractorStyleTrackballActor does not implement OnEnter/Leave
-void VtkViewerActorInteractor::OnEnter() { _iman->doOnEnter();}
-void VtkViewerActorInteractor::OnLeave() { _iman->doOnLeave();}

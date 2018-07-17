@@ -25,7 +25,6 @@
 #include <VtkTools.h>       // RVTK
 #include <QApplication>     // All callers will have this anyway
 #include <QVTKWidget.h>
-#include <vtkSmartPointer.h>
 #include <vtkInteractorStyle.h>
 #include <vtkActor.h>
 #include <vtkRenderer.h>
@@ -43,9 +42,9 @@ public:
     explicit VtkActorViewer( QWidget *parent = NULL);
     virtual ~VtkActorViewer();
 
-    const vtkSmartPointer<vtkRenderWindow> getRenderWindow() const;
-    const vtkSmartPointer<vtkRenderer> getRenderer() const;
-    virtual void setInteractor( vtkSmartPointer<vtkInteractorStyle>);
+    const vtkRenderWindow* getRenderWindow() const;
+    const vtkRenderer* getRenderer() const;
+    virtual void setInteractor( vtkInteractorStyle*);
 
     // Auto rendering of updates to the viewer is off by default.
     // It can be useful to set this on for simple view use cases (adding and removing single objects).
@@ -139,7 +138,13 @@ public:
     InteractionMode interactionMode() const { return _iman->interactionMode();}
 
     // Set/get locking of call pass-through for mouse events bound to camera/actor movement.
-    void setInteractionLocked( bool v) { _iman->setInteractionLocked(v);}
+    // Interaction locking is key matched; interaction will not necessarily be unlocked if
+    // more than one call has been made to lockInteraction(). All previous callers must call
+    // unlockInteraction() with their held keys to unlock interaction. Function lockInteraction()
+    // returns the key that should be passed to unlockInteraction() when that caller wishes
+    // interaction to be unlocked. Function unlockInteraction() returns true iff unlocking worked.
+    int lockInteraction() { return _iman->lockInteraction();}
+    bool unlockInteraction( int key) { return _iman->unlockInteraction(key);}
     bool isInteractionLocked() const { return _iman->isInteractionLocked();}
 
     // Return the current mouse coordinates.
@@ -160,8 +165,8 @@ private:
     VtkViewerInteractorManager *_iman;
     RFeatures::CameraParams _resetCamera;
     std::unordered_set<KeyPressHandler*> _keyPressHandlers;
-    mutable vtkSmartPointer<vtkRenderer> _ren;
-    mutable vtkSmartPointer<vtkRenderWindow> _rwin;
+    mutable vtkRenderer* _ren;
+    mutable vtkRenderWindow* _rwin;
 };	// end class
 
 }	// end namespace

@@ -17,6 +17,7 @@ set( SRC_FILES
     "${SRC_DIR}/DatabaseClient.cpp"
     "${SRC_DIR}/DatabaseOptionsDialog.cpp"
     "${SRC_DIR}/ImagerWidget.cpp"
+    "${SRC_DIR}/KeyPressHandler.cpp"
     "${SRC_DIR}/PluginInterface.cpp"
     "${SRC_DIR}/PluginsDialog.cpp"
     "${SRC_DIR}/PluginsLoader.cpp"
@@ -30,6 +31,7 @@ set( SRC_FILES
     "${SRC_DIR}/VtkViewerInteractorManager.cpp"
     "${SRC_DIR}/VtkViewerActorInteractor.cpp"
     "${SRC_DIR}/VtkViewerCameraInteractor.cpp"
+    "${SRC_DIR}/VtkViewerSwitchInteractor.cpp"
     )
 
 set( QOBJECTS
@@ -57,6 +59,7 @@ set( INCLUDE_FILES
     "${INCLUDE_DIR}/VtkViewerInteractorManager.h"
     "${INCLUDE_DIR}/VtkViewerActorInteractor.h"
     "${INCLUDE_DIR}/VtkViewerCameraInteractor.h"
+    "${INCLUDE_DIR}/VtkViewerSwitchInteractor.h"
     )
 
 set( FORMS

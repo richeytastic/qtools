@@ -51,14 +51,15 @@ VtkActorViewer::~VtkActorViewer()
 {
     delete _iman;
     delete _rpicker;
+    _ren->Delete();
 }   // end dtor
 
 
-const vtkSmartPointer<vtkRenderWindow> VtkActorViewer::getRenderWindow() const { return _rwin;}
-const vtkSmartPointer<vtkRenderer> VtkActorViewer::getRenderer() const { return _ren;}
+const vtkRenderWindow* VtkActorViewer::getRenderWindow() const { return _rwin;}
+const vtkRenderer* VtkActorViewer::getRenderer() const { return _ren;}
 
 
-void VtkActorViewer::setInteractor( vtkSmartPointer<vtkInteractorStyle> iStyle)
+void VtkActorViewer::setInteractor( vtkInteractorStyle* iStyle)
 {
     _rwin->GetInteractor()->SetInteractorStyle( iStyle);
 }   // end setInteractor
@@ -378,7 +379,7 @@ void VtkActorViewer::keyReleaseEvent( QKeyEvent* event)
 {
     bool accepted = false;
     for ( KeyPressHandler* kph : _keyPressHandlers)
-        accepted |= kph->handleKeyPress(event);
+        accepted |= kph->handleKeyRelease(event);
     if ( !accepted)
         QVTKWidget::keyReleaseEvent( event);
 }   // end keyReleaseEvent

@@ -18,12 +18,17 @@
 #ifndef QTOOLS_VTK_VIEWER_ACTOR_INTERACTOR_H
 #define QTOOLS_VTK_VIEWER_ACTOR_INTERACTOR_H
 
+/**
+ * Used by VtkViewerSwitchInteractor simply to allow actor picking to
+ * be carried out so that actor movements won't return on null actor
+ * from inside the vtkInteractorStyleTrackballActor's movement functions
+ * (Rotate, Pan, Dolly etc).
+ */
+
 #include "QTools_Export.h"
 #include <vtkInteractorStyleTrackballActor.h>
 
 namespace QTools {
-
-class VtkViewerInteractorManager;
 
 class QTools_EXPORT VtkViewerActorInteractor : public vtkInteractorStyleTrackballActor
 {
@@ -33,27 +38,12 @@ public:
 
     void OnChar() override {}   // Override VTK key press handling
 
-    void OnLeftButtonDown() override;
-    void OnLeftButtonUp() override;
-    void OnMiddleButtonDown() override;
-    void OnMiddleButtonUp() override;
-    void OnRightButtonDown() override;
-    void OnRightButtonUp() override;
-    void OnMouseWheelForward() override;
-    void OnMouseWheelBackward() override;
-    
-    void OnMouseMove() override;
-    void OnEnter() override;
-    void OnLeave() override;
-
-    void setDelegate( VtkViewerInteractorManager* d) { _iman = d;}
+    void findPickedActor( int x, int y);    // Encapsulates protected vtkInteractorStyleTrackballActor::FindPickedActor
+    void dolly( double);
 
 protected:
     VtkViewerActorInteractor();
-    virtual ~VtkViewerActorInteractor(){}
-
-private:
-    VtkViewerInteractorManager *_iman;
+    ~VtkViewerActorInteractor() override;
 };  // end class
 
 }   // end namespace

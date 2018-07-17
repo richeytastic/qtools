@@ -91,7 +91,8 @@ cv::Mat QTools::copyQImage2OpenCV( const QImage &qimg)
 
 QString getSaveImageFilename( const QString savefname)
 {
-    QString fname = QFileDialog::getSaveFileName( NULL, "Save Image", savefname, "Image Files (*.jpg *.jpeg *.png *.gif *.bmp)", NULL, QFileDialog::DontUseNativeDialog);
+    //QString fname = QFileDialog::getSaveFileName( NULL, "Save Image", savefname, "Image Files (*.jpg *.jpeg *.png *.gif *.bmp)", NULL, QFileDialog::DontUseNativeDialog);
+    QString fname = QFileDialog::getSaveFileName( NULL, "Save Image", savefname, "Image Files (*.jpg *.jpeg *.png *.gif *.bmp)", NULL);
     if ( !fname.isEmpty())
     {
         // Ensure fname has a valid image extension, otherwise set
