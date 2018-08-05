@@ -42,8 +42,10 @@ public:
     explicit VtkActorViewer( QWidget *parent = NULL);
     virtual ~VtkActorViewer();
 
-    const vtkRenderWindow* getRenderWindow() const;
-    const vtkRenderer* getRenderer() const;
+    inline const vtkRenderWindow* getRenderWindow() const { return _rwin;}
+    inline const vtkRenderer* getRenderer() const { return _ren;}
+    inline vtkRenderer* getRenderer() { return _ren;}
+
     virtual void setInteractor( vtkInteractorStyle*);
 
     // Auto rendering of updates to the viewer is off by default.
@@ -56,9 +58,9 @@ public:
 
     // Reset the view window size.
     void setSize( size_t width, size_t height);
-    size_t getWidth() const;
-    size_t getHeight() const;
-    cv::Size getSize() const;
+    inline size_t getWidth() const { return _ren->GetSize()[0];}
+    inline size_t getHeight() const { return _ren->GetSize()[1];}
+    inline cv::Size getSize() const { return cv::Size( getWidth(), getHeight());}
 
     cv::Mat_<float> getRawZBuffer() const; // Grab snapshot of the raw Z buffer from the viewer.
     cv::Mat_<cv::Vec3b> getColourImg() const; // Grab snapshot of whatever's currently displayed (3 byte BGR order)

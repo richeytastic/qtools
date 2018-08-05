@@ -55,14 +55,7 @@ VtkActorViewer::~VtkActorViewer()
 }   // end dtor
 
 
-const vtkRenderWindow* VtkActorViewer::getRenderWindow() const { return _rwin;}
-const vtkRenderer* VtkActorViewer::getRenderer() const { return _ren;}
-
-
-void VtkActorViewer::setInteractor( vtkInteractorStyle* iStyle)
-{
-    _rwin->GetInteractor()->SetInteractorStyle( iStyle);
-}   // end setInteractor
+void VtkActorViewer::setInteractor( vtkInteractorStyle* iStyle) { _rwin->GetInteractor()->SetInteractorStyle( iStyle);}
 
 
 // public
@@ -80,28 +73,6 @@ void VtkActorViewer::setSize( size_t w, size_t h)
     this->setMinimumSize( (int)w, (int)h);
     this->setMaximumSize( (int)w, (int)h);
 }   // end setSize
-
-
-// public
-size_t VtkActorViewer::getWidth() const
-{
-    return _ren->GetSize()[0];
-}   // end getWidth
-
-
-// public
-size_t VtkActorViewer::getHeight() const
-{
-    return _ren->GetSize()[1];
-}   // end getHeight
-
-
-// public
-cv::Size VtkActorViewer::getSize() const
-{
-    const int* wsz = _ren->GetSize();
-    return cv::Size( wsz[0], wsz[1]);
-}   // end getSize
 
 
 // public
