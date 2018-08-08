@@ -29,14 +29,18 @@ using QTools::KeyPressHandler;
 using RFeatures::CameraParams;
 
 VtkActorViewer::VtkActorViewer( QWidget *parent)
-    : QVTKWidget( parent), _autoUpdateRender(false), _rpicker(NULL), _resetCamera()
+    : QVTKOpenGLWidget( parent), _autoUpdateRender(false), _rpicker(nullptr), _resetCamera()
+    //: QVTKWidget( parent), _autoUpdateRender(false), _rpicker(nullptr), _resetCamera()
 {
     _ren = vtkRenderer::New();
     _ren->SetBackground( 0., 0., 0.);
     _ren->SetTwoSidedLighting( true);   // Don't light occluded sides
     _ren->SetAutomaticLightCreation( false);
 
-    _rwin = this->GetRenderWindow();
+    _rwin = vtkGenericOpenGLRenderWindow::New();
+    SetRenderWindow( _rwin);
+
+    //_rwin = this->GetRenderWindow();
     _rwin->SetPointSmoothing( false);
     _rwin->AddRenderer( _ren);
 
@@ -52,6 +56,7 @@ VtkActorViewer::~VtkActorViewer()
     delete _iman;
     delete _rpicker;
     _ren->Delete();
+    _rwin->Delete();
 }   // end dtor
 
 
@@ -62,7 +67,8 @@ void VtkActorViewer::setInteractor( vtkInteractorStyle* iStyle) { _rwin->GetInte
 void VtkActorViewer::updateRender()
 {
     _ren->ResetCameraClippingRange();
-    this->GetRenderWindow()->Render();
+    //this->GetRenderWindow()->Render();
+    update();   // Called on the widget
 }   // end updateRender
 
 
@@ -212,37 +218,43 @@ void VtkActorViewer::setLights( const std::vector<RVTK::Light>& lights)
 
 
 // public
+bool VtkActorViewer::pointedAt( const cv::Point& p, const vtkProp* prop) const { return prop && prop == _rpicker->pickActor( p);}
+bool VtkActorViewer::pointedAt( const QPoint& p, const vtkProp* prop) const { return pointedAt( cv::Point(p.x(), p.y()), prop);}
+
+
+// public
 vtkActor* VtkActorViewer::pickActor( const cv::Point& p, const std::vector<vtkActor*>& pactors) const
-{
-    return _rpicker->pickActor( p, pactors);
-}   // end pickActor
+{ return _rpicker->pickActor( p, pactors);}
+vtkActor* VtkActorViewer::pickActor( const QPoint& p, const std::vector<vtkActor*>& pactors) const
+{ return pickActor( cv::Point(p.x(), p.y()), pactors);}
 
 
 // public
-vtkActor* VtkActorViewer::pickActor( const cv::Point& p) const
-{
-    return _rpicker->pickActor( p);
-}   // end pickActor
+vtkActor* VtkActorViewer::pickActor( const cv::Point& p) const { return _rpicker->pickActor( p);}
+vtkActor* VtkActorViewer::pickActor( const QPoint& p) const { return pickActor( cv::Point(p.x(), p.y()));}
 
 
 // public
-int VtkActorViewer::pickCell(const cv::Point &p) const
-{
-    return _rpicker->pickCell( p);
-}   // end pickCell
+int VtkActorViewer::pickCell(const cv::Point &p) const { return _rpicker->pickCell( p);}
+int VtkActorViewer::pickCell(const QPoint &p) const { return pickCell( cv::Point(p.x(), p.y()));}
 
 
 // public
 int VtkActorViewer::pickActorCells( const std::vector<cv::Point>& points, vtkActor* actor, std::vector<int>& cellIds) const
+{ return _rpicker->pickActorCells( points, actor, cellIds);}
+
+int VtkActorViewer::pickActorCells( const std::vector<QPoint>& points, vtkActor* actor, std::vector<int>& cellIds) const
 {
-    return _rpicker->pickActorCells( points, actor, cellIds);
+    std::vector<cv::Point> pts;
+    std::for_each( std::begin(points), std::end(points), [&](auto p){ pts.push_back(cv::Point(p.x(), p.y()));});
+    return pickActorCells( pts, actor, cellIds);
 }   // end pickActorCells
 
 
 // public
 int VtkActorViewer::pickActorCells( const cv::Mat& inmask, vtkActor* actor, std::vector<int>& cellIds) const
 {
-    if ( actor == NULL)
+    if ( actor == nullptr)
         return 0;
 
     assert( inmask.rows == getHeight() && inmask.cols == getWidth());
@@ -257,10 +269,8 @@ int VtkActorViewer::pickActorCells( const cv::Mat& inmask, vtkActor* actor, std:
 
 
 // public
-cv::Vec3f VtkActorViewer::pickWorldPosition( const cv::Point& p) const
-{
-    return _rpicker->pickWorldPosition( p);
-}   // end pickWorldPosition
+cv::Vec3f VtkActorViewer::pickWorldPosition( const cv::Point& p) const { return _rpicker->pickWorldPosition( p);}
+cv::Vec3f VtkActorViewer::pickWorldPosition( const QPoint& p) const { return pickWorldPosition( cv::Point(p.x(), p.y()));}
 
 
 // public
@@ -272,10 +282,8 @@ cv::Vec3f VtkActorViewer::pickWorldPosition( const cv::Point2f& p) const
 
 
 // public
-cv::Vec3f VtkActorViewer::pickNormal( const cv::Point& p) const
-{
-    return _rpicker->pickNormal( p);
-}   // end pickNormal
+cv::Vec3f VtkActorViewer::pickNormal( const cv::Point& p) const { return _rpicker->pickNormal( p);}
+cv::Vec3f VtkActorViewer::pickNormal( const QPoint& p) const { return pickNormal( cv::Point(p.x(), p.y()));}
 
 
 // public
@@ -341,7 +349,7 @@ void VtkActorViewer::keyPressEvent( QKeyEvent* event)
     for ( KeyPressHandler* kph : _keyPressHandlers)
         accepted |= kph->handleKeyPress(event);
     if ( !accepted)
-        QVTKWidget::keyPressEvent( event);
+        QVTKOpenGLWidget::keyPressEvent( event);
 }   // end keyPressEvent
 
 
@@ -352,5 +360,5 @@ void VtkActorViewer::keyReleaseEvent( QKeyEvent* event)
     for ( KeyPressHandler* kph : _keyPressHandlers)
         accepted |= kph->handleKeyRelease(event);
     if ( !accepted)
-        QVTKWidget::keyReleaseEvent( event);
+        QVTKOpenGLWidget::keyReleaseEvent( event);
 }   // end keyReleaseEvent

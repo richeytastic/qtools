@@ -45,7 +45,7 @@ public:
     virtual ~VtkViewerInteractor(){}
 
     // Temporarily disable calls to the virtual mouse interaction functions and key press handler.
-    void setEnabled( bool v) { _enabled = v;}
+    void setEnabled( bool v) { _enabled = v; onEnabledStateChanged(v);}
     bool isEnabled() const { return _enabled;}
 
     virtual bool mouseMove( const QPoint&){ return false;}  // Move mouse with no buttons depressed.
@@ -84,6 +84,9 @@ public:
     virtual void actorSpin(){}
     virtual void actorPan(){}
     virtual void actorStop(){}  // Stopped interacting with the actor
+
+protected:
+    virtual void onEnabledStateChanged( bool){}
 
 private:
     bool _enabled;

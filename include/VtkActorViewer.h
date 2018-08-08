@@ -24,11 +24,13 @@
 #include <CameraParams.h>   // RFeatures
 #include <VtkTools.h>       // RVTK
 #include <QApplication>     // All callers will have this anyway
-#include <QVTKWidget.h>
+//#include <QVTKWidget.h>
+#include <QVTKOpenGLWidget.h>
 #include <vtkInteractorStyle.h>
 #include <vtkActor.h>
 #include <vtkRenderer.h>
-#include <vtkRenderWindow.h>
+#include <vtkGenericOpenGLRenderWindow.h>
+//#include <vtkRenderWindow.h>
 #include <iostream>
 #include <vector>
 
@@ -36,10 +38,10 @@ namespace RVTK { class RendererPicker;}
 
 namespace QTools {
 
-class QTools_EXPORT VtkActorViewer : public QVTKWidget
+class QTools_EXPORT VtkActorViewer : public QVTKOpenGLWidget
 { Q_OBJECT
 public:
-    explicit VtkActorViewer( QWidget *parent = NULL);
+    explicit VtkActorViewer( QWidget *parent = nullptr);
     virtual ~VtkActorViewer();
 
     inline const vtkRenderWindow* getRenderWindow() const { return _rwin;}
@@ -86,28 +88,37 @@ public:
 
     void setLights( const std::vector<RVTK::Light>&);
 
+    // Given a 2D render window (with TOP LEFT origin), returns true if the prop given is pointed at.
+    bool pointedAt( const cv::Point&, const vtkProp*) const;
+    bool pointedAt( const QPoint&, const vtkProp*) const;
+
     // Given a 2D render window (with TOP LEFT origin), find the actor from the given list being pointed to.
-    // If no actors from the list are being pointed to, returns NULL.
+    // If no actors from the list are being pointed to, returns null.
     vtkActor* pickActor( const cv::Point&, const std::vector<vtkActor*>& pactors) const;
+    vtkActor* pickActor( const QPoint&, const std::vector<vtkActor*>& pactors) const;
 
     // Given a 2D render window (with TOP LEFT origin), find the actor being pointed to
-    // If no actor is found, return NULL.
+    // If no actor is found, return null.
     vtkActor* pickActor( const cv::Point&) const;
+    vtkActor* pickActor( const QPoint&) const;
 
     // Find an actor's cell addressed by a 2D point (using TOP LEFT origin).
     // If no actor cell is found (no actor is pointed to), -1 is returned.
     int pickCell( const cv::Point&) const;
+    int pickCell( const QPoint&) const;
 
-    // Given a vector of 2D points (using TOP LEFT origin) and an actor (cannot be NULL), set cellIds with
+    // Given a vector of 2D points (using TOP LEFT origin) and an actor (cannot be null), set cellIds with
     // the indices of the cells intercepted by the points. Duplicate cellIds are ignored. Returns the number
     // of cell IDs appended to cellIds.
     int pickActorCells( const std::vector<cv::Point>& points, vtkActor* actor, std::vector<int>& cellIds) const;
+    int pickActorCells( const std::vector<QPoint>& points, vtkActor* actor, std::vector<int>& cellIds) const;
 
     // As above but selects cells where the corresponding 2D mask values > 0.
     int pickActorCells( const cv::Mat& mask, vtkActor* actor, std::vector<int>& cellIds) const;
 
     // Find the position in 3D world space from a 2D point using TOP LEFT origin.
     cv::Vec3f pickWorldPosition( const cv::Point&) const;
+    cv::Vec3f pickWorldPosition( const QPoint&) const;
 
     // As above, but specify view coordinates from top left as a proportion of the window dimensions.
     cv::Vec3f pickWorldPosition( const cv::Point2f&) const;
@@ -115,6 +126,7 @@ public:
     // Pick the surface normal at the given 2D point having TOP LEFT origin.
     // If no surface is picked at p, (0,0,0) is returned.
     cv::Vec3f pickNormal( const cv::Point&) const;
+    cv::Vec3f pickNormal( const QPoint&) const;
 
     // Find the display position in 2D (using TOP LEFT origin) of a 3D world coordinate point.
     cv::Point projectToDisplay( const cv::Vec3f&) const;
@@ -168,7 +180,8 @@ private:
     RFeatures::CameraParams _resetCamera;
     std::unordered_set<KeyPressHandler*> _keyPressHandlers;
     mutable vtkRenderer* _ren;
-    mutable vtkRenderWindow* _rwin;
+    //mutable vtkRenderWindow* _rwin;
+    vtkGenericOpenGLRenderWindow* _rwin;
 };	// end class
 
 }	// end namespace
