@@ -25,11 +25,7 @@ using QTools::VtkActorViewer;
 
 void VtkScalingActor::init( vtkPolyDataAlgorithm* src, const cv::Vec3f& pos)
 {
-    _glyph = vtkGlyph3D::New();
-    _d2cam = vtkDistanceToCamera::New();
-    _actor = vtkActor::New();
     _viewer = nullptr;
-
     _glyph->SetSourceConnection( src->GetOutputPort());
     _glyph->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "DistanceToCamera");
 
@@ -66,14 +62,6 @@ VtkScalingActor::VtkScalingActor( vtkPolyDataAlgorithm* src, const cv::Vec3f& po
 }   // end ctor
 
 
-VtkScalingActor::~VtkScalingActor()
-{
-    _actor->Delete();
-    _d2cam->Delete();
-    _glyph->Delete();
-}   // end dtor
-
-
 void VtkScalingActor::setPickable( bool v) { _actor->SetPickable(v);}
 bool VtkScalingActor::pickable() const { return _actor->GetPickable();}
 
@@ -91,7 +79,7 @@ void VtkScalingActor::setScaleFactor( double f) { _glyph->SetScaleFactor(f);}
 double VtkScalingActor::scaleFactor() const { return _glyph->GetScaleFactor();}
 
 void VtkScalingActor::setVisible( bool v) { _actor->SetVisibility(v);}
-bool VtkScalingActor::visible() const { return _actor->GetVisibility();}
+bool VtkScalingActor::visible() const { return _viewer && _actor->GetVisibility();}
 
 void VtkScalingActor::setPosition( const cv::Vec3f& v)
 {
@@ -112,32 +100,46 @@ cv::Vec3f VtkScalingActor::position() const
 
 
 void VtkScalingActor::setColour( double r, double g, double b) { _actor->GetProperty()->SetColor( r, g, b);}
+void VtkScalingActor::setColour( const double c[3]) { _actor->GetProperty()->SetColor( const_cast<double*>(c));}
 const double* VtkScalingActor::colour() const { return _actor->GetProperty()->GetColor();}
 
 void VtkScalingActor::setOpacity( double a) { _actor->GetProperty()->SetOpacity(a);}
 double VtkScalingActor::opacity() const { return _actor->GetProperty()->GetOpacity();}
 
 
+void VtkScalingActor::copyPropertiesFrom( const VtkScalingActor* sa)
+{
+    setPickable(sa->pickable());
+    setFixedScale(sa->fixedScale());
+    setScaleFactor(sa->scaleFactor());
+    setVisible(sa->visible());
+    setPosition(sa->position());
+    setColour(sa->colour());
+    setOpacity(sa->opacity());
+    pokeTransform(sa->_actor->GetMatrix());
+}   // end copyPropertiesFrom
+
+
 bool VtkScalingActor::isProp( const vtkProp* p) const { return _actor == p;}
 bool VtkScalingActor::pointedAt( const QPoint& p) const { return _viewer && _viewer->pointedAt( p, _actor);}
 
 
-void VtkScalingActor::addToViewer( VtkActorViewer* viewer)
+void VtkScalingActor::setInViewer( VtkActorViewer* viewer)
 {
-    assert(_viewer == nullptr);
-    viewer->add(_actor);
-    _d2cam->SetRenderer( viewer->getRenderer());
-    _viewer = viewer;
-}   // end addToViewer
+    if ( _viewer)   // Remove from existing viewer if set
+    {
+        _viewer->remove(_actor);
+        _d2cam->SetRenderer( nullptr);
+        _viewer = nullptr;
+    }   // end if
 
-
-void VtkScalingActor::removeFromViewer()
-{
-    assert(_viewer);
-    _viewer->remove(_actor);
-    _d2cam->SetRenderer( nullptr);
-    _viewer = nullptr;
-}   // end removeFromViewer
+    if ( viewer)
+    {
+        viewer->add(_actor);
+        _d2cam->SetRenderer( viewer->getRenderer());
+        _viewer = viewer;
+    }   // end if
+}   // end setInViewer
 
 
 void VtkScalingActor::pokeTransform( const vtkMatrix4x4* vm) { _actor->PokeMatrix( const_cast<vtkMatrix4x4*>(vm));}

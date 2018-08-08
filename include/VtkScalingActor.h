@@ -28,7 +28,6 @@
 #include <vtkPolyDataAlgorithm.h>
 #include <vtkGlyph3D.h>
 
-
 namespace QTools {
 
 class QTools_EXPORT VtkScalingActor
@@ -38,7 +37,6 @@ public:
     // Call function setFixedScale to turn fixed scaling on and off.
     VtkScalingActor( vtkPolyDataAlgorithm* src, double x=0.0, double y=0.0, double z=0.0);
     VtkScalingActor( vtkPolyDataAlgorithm* src, const cv::Vec3f& pos);
-    virtual ~VtkScalingActor();
 
     void setPickable( bool);
     bool pickable() const;
@@ -50,31 +48,42 @@ public:
     double scaleFactor() const;
 
     void setVisible( bool);
-    bool visible() const;
+    bool visible() const;   // Only visible if setVisible(true) and setInViewer.
 
     void setPosition( const cv::Vec3f&);
     cv::Vec3f position() const;
 
     void setColour( double r, double g, double b);
+    void setColour( const double[3]);
     const double* colour() const;
 
     void setOpacity( double);
     double opacity() const;
 
-    bool isProp( const vtkProp*) const;
-    bool pointedAt( const QPoint&) const;
+    // Copy the above properties in to this object from the given object.
+    // Does NOT assign this object to a viewer!
+    void copyPropertiesFrom( const VtkScalingActor*);
 
-    void addToViewer( QTools::VtkActorViewer*);
-    void removeFromViewer();
+    bool pointedAt( const QPoint&) const;
+    bool isProp( const vtkProp*) const;
+    const vtkProp* prop() const { return _actor;}
+
+    // This actor can only be set in a single viewer since its scale depends
+    // upon the position of the camera in the viewer it's been added to.
+    // Initially, the actor is not set in a viewer. Move this actor between
+    // viewers by calling setInViewer with a different viewer parameter.
+    // Call with nullptr (default) to remove from the viewer.
+    void setInViewer( VtkActorViewer* v=nullptr);
+    const VtkActorViewer* viewer() const { return _viewer;}
 
     void pokeTransform( const vtkMatrix4x4*);   // Directly adjust the actor's transform.
     void fixTransform();                        // Actor transform is Identity on return.
 
 private:
-    vtkSmartPointer<vtkGlyph3D> _glyph;
-    vtkSmartPointer<vtkDistanceToCamera> _d2cam;
-    vtkSmartPointer<vtkActor> _actor;
-    QTools::VtkActorViewer *_viewer;
+    vtkNew<vtkGlyph3D> _glyph;
+    vtkNew<vtkDistanceToCamera> _d2cam;
+    vtkNew<vtkActor> _actor;
+    VtkActorViewer *_viewer;
 
     void init( vtkPolyDataAlgorithm*, const cv::Vec3f&);
     VtkScalingActor( const VtkScalingActor&) = delete;
