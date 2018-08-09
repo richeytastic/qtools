@@ -19,36 +19,43 @@
 #define QTOOLS_VTK_SCALING_ACTOR_H
 
 /**
- * This class exists because scaling actors cannot be added to more than one renderer
- * since their size is dependent upon the camera present.
+ * This class encapsulates the functionality needed for the fixed scaling of an actor.
  */
 
-#include "VtkActorViewer.h"
+#include "QTools_Export.h"
+#include <opencv2/opencv.hpp>
+#include <vtkRenderer.h>
 #include <vtkDistanceToCamera.h>
 #include <vtkPolyDataAlgorithm.h>
 #include <vtkGlyph3D.h>
+#include <vtkActor.h>
 
 namespace QTools {
 
 class QTools_EXPORT VtkScalingActor
 {
 public:
-    // Initially, the scale of the actor is fixed with respect to the camera (viewer).
-    // Call function setFixedScale to turn fixed scaling on and off.
-    VtkScalingActor( vtkPolyDataAlgorithm* src, double x=0.0, double y=0.0, double z=0.0);
-    VtkScalingActor( vtkPolyDataAlgorithm* src, const cv::Vec3f& pos);
+    explicit VtkScalingActor( vtkPolyDataAlgorithm* src);
+
+    // It is up to the caller to ensure that the renderer that the prop is
+    // added to is provided as a parameter to setRenderer. It is possible
+    // to assign a different renderer (for distance calculations) than the
+    // one the prop is added to.
+    const vtkActor* prop() const { return _actor;}  // Get the prop to add to the renderer.
+    void setRenderer( vtkRenderer*);                // Set the associated renderer.
+    vtkRenderer* renderer() const;                  // Return the associated renderer.
+
+    void setFixedScale( bool);              // False initially.
+    bool fixedScale() const;                // Will return true if doing fixed scaling.
 
     void setPickable( bool);
     bool pickable() const;
-
-    void setFixedScale( bool);
-    bool fixedScale() const;
 
     void setScaleFactor( double);
     double scaleFactor() const;
 
     void setVisible( bool);
-    bool visible() const;   // Only visible if setVisible(true) and setInViewer.
+    bool visible() const;
 
     void setPosition( const cv::Vec3f&);
     cv::Vec3f position() const;
@@ -60,32 +67,17 @@ public:
     void setOpacity( double);
     double opacity() const;
 
-    // Copy the above properties in to this object from the given object.
-    // Does NOT assign this object to a viewer!
-    void copyPropertiesFrom( const VtkScalingActor*);
-
-    bool pointedAt( const QPoint&) const;
-    bool isProp( const vtkProp*) const;
-    const vtkProp* prop() const { return _actor;}
-
-    // This actor can only be set in a single viewer since its scale depends
-    // upon the position of the camera in the viewer it's been added to.
-    // Initially, the actor is not set in a viewer. Move this actor between
-    // viewers by calling setInViewer with a different viewer parameter.
-    // Call with nullptr (default) to remove from the viewer.
-    void setInViewer( VtkActorViewer* v=nullptr);
-    const VtkActorViewer* viewer() const { return _viewer;}
-
     void pokeTransform( const vtkMatrix4x4*);   // Directly adjust the actor's transform.
     void fixTransform();                        // Actor transform is Identity on return.
+
+    // Copy properties from the provided actor to this one (including renderer).
+    void copyProperties( const VtkScalingActor&);
 
 private:
     vtkNew<vtkGlyph3D> _glyph;
     vtkNew<vtkDistanceToCamera> _d2cam;
     vtkNew<vtkActor> _actor;
-    VtkActorViewer *_viewer;
 
-    void init( vtkPolyDataAlgorithm*, const cv::Vec3f&);
     VtkScalingActor( const VtkScalingActor&) = delete;
     void operator=( const VtkScalingActor&) = delete;
 };  // end class
