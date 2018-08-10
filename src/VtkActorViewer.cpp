@@ -29,18 +29,20 @@ using QTools::KeyPressHandler;
 using RFeatures::CameraParams;
 
 VtkActorViewer::VtkActorViewer( QWidget *parent)
-    : QVTKOpenGLWidget( parent), _autoUpdateRender(false), _rpicker(nullptr), _resetCamera()
-    //: QVTKWidget( parent), _autoUpdateRender(false), _rpicker(nullptr), _resetCamera()
+    //: QVTKOpenGLWidget( parent), _autoUpdateRender(false), _rpicker(nullptr), _resetCamera()
+    : QVTKWidget( parent), _autoUpdateRender(false), _rpicker(nullptr), _resetCamera()
 {
     _ren = vtkRenderer::New();
     _ren->SetBackground( 0., 0., 0.);
     _ren->SetTwoSidedLighting( true);   // Don't light occluded sides
     _ren->SetAutomaticLightCreation( false);
-
+    /*
     _rwin = vtkGenericOpenGLRenderWindow::New();
     SetRenderWindow( _rwin);
+    */
+    _rwin = this->GetRenderWindow();  // Only when inheriting from QVTKWidget
+    assert(_rwin);
 
-    //_rwin = this->GetRenderWindow();
     _rwin->SetPointSmoothing( false);
     _rwin->AddRenderer( _ren);
 
@@ -56,7 +58,7 @@ VtkActorViewer::~VtkActorViewer()
     delete _iman;
     delete _rpicker;
     _ren->Delete();
-    _rwin->Delete();
+    //_rwin->Delete();
 }   // end dtor
 
 
@@ -67,8 +69,7 @@ void VtkActorViewer::setInteractor( vtkInteractorStyle* iStyle) { _rwin->GetInte
 void VtkActorViewer::updateRender()
 {
     _ren->ResetCameraClippingRange();
-    //this->GetRenderWindow()->Render();
-    update();   // Called on the widget
+    _rwin->Render();
 }   // end updateRender
 
 
@@ -349,7 +350,8 @@ void VtkActorViewer::keyPressEvent( QKeyEvent* event)
     for ( KeyPressHandler* kph : _keyPressHandlers)
         accepted |= kph->handleKeyPress(event);
     if ( !accepted)
-        QVTKOpenGLWidget::keyPressEvent( event);
+        QVTKWidget::keyPressEvent( event);
+        //QVTKOpenGLWidget::keyPressEvent( event);
 }   // end keyPressEvent
 
 
@@ -360,5 +362,6 @@ void VtkActorViewer::keyReleaseEvent( QKeyEvent* event)
     for ( KeyPressHandler* kph : _keyPressHandlers)
         accepted |= kph->handleKeyRelease(event);
     if ( !accepted)
-        QVTKOpenGLWidget::keyReleaseEvent( event);
+        QVTKWidget::keyReleaseEvent( event);
+        //QVTKOpenGLWidget::keyReleaseEvent( event);
 }   // end keyReleaseEvent

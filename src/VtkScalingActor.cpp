@@ -86,18 +86,13 @@ bool VtkScalingActor::visible() const { return _actor->GetVisibility();}
 
 void VtkScalingActor::setPosition( const cv::Vec3f& v)
 {
+    _pos = v;
     vtkNew<vtkPolyData> pointSet;
     vtkNew<vtkPoints> points;
     points->InsertPoint( 0, &std::vector<double>({v[0], v[1], v[2]})[0]);
     pointSet->SetPoints( points);
     _d2cam->SetInputData( pointSet);
 }   // end setPosition
-
-cv::Vec3f VtkScalingActor::position() const
-{
-    const vtkMatrix4x4* m = _actor->GetMatrix();
-    return cv::Vec3f( (float)m->GetElement(0,3), (float)m->GetElement(1,3), (float)m->GetElement(2,3));
-}   // end position
 
 
 void VtkScalingActor::setColour( double r, double g, double b) { _actor->GetProperty()->SetColor( r, g, b);}
@@ -108,15 +103,16 @@ void VtkScalingActor::setOpacity( double a) { _actor->GetProperty()->SetOpacity(
 double VtkScalingActor::opacity() const { return _actor->GetProperty()->GetOpacity();}
 
 
+// Makes temporary updates to the actor.
 void VtkScalingActor::pokeTransform( const vtkMatrix4x4* vm) { _actor->PokeMatrix( const_cast<vtkMatrix4x4*>(vm));}
 
 
+// Update the actual position with the temporary changes to the actor's matrix.
 void VtkScalingActor::fixTransform()
 {
-    cv::Vec3f vpos = position();
-    const vtkMatrix4x4* vm = _actor->GetMatrix();
-    const RFeatures::Transformer mover( RVTK::toCV(vm));
-    mover.transform(vpos);  // In-place
-    setPosition(vpos);
+    cv::Vec3f pos = position();
+    const RFeatures::Transformer mover( RVTK::toCV(_actor->GetMatrix()));
+    mover.transform(pos);  // In-place
+    setPosition(pos);
 }   // end fixTransform
 

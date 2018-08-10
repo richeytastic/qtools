@@ -58,7 +58,7 @@ public:
     bool visible() const;
 
     void setPosition( const cv::Vec3f&);
-    cv::Vec3f position() const;
+    const cv::Vec3f& position() const { return _pos;}
 
     void setColour( double r, double g, double b);
     void setColour( const double[3]);
@@ -74,6 +74,7 @@ public:
     void copyProperties( const VtkScalingActor&);
 
 private:
+    cv::Vec3f _pos;
     vtkNew<vtkGlyph3D> _glyph;
     vtkNew<vtkDistanceToCamera> _d2cam;
     vtkNew<vtkActor> _actor;

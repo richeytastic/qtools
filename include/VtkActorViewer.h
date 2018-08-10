@@ -24,13 +24,13 @@
 #include <CameraParams.h>   // RFeatures
 #include <VtkTools.h>       // RVTK
 #include <QApplication>     // All callers will have this anyway
-//#include <QVTKWidget.h>
+#include <QVTKWidget.h>
 #include <QVTKOpenGLWidget.h>
 #include <vtkInteractorStyle.h>
 #include <vtkActor.h>
 #include <vtkRenderer.h>
-#include <vtkGenericOpenGLRenderWindow.h>
-//#include <vtkRenderWindow.h>
+//#include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkRenderWindow.h>
 #include <iostream>
 #include <vector>
 
@@ -38,7 +38,8 @@ namespace RVTK { class RendererPicker;}
 
 namespace QTools {
 
-class QTools_EXPORT VtkActorViewer : public QVTKOpenGLWidget
+class QTools_EXPORT VtkActorViewer : public QVTKWidget
+//class QTools_EXPORT VtkActorViewer : public QVTKOpenGLWidget
 { Q_OBJECT
 public:
     explicit VtkActorViewer( QWidget *parent = nullptr);
@@ -180,8 +181,8 @@ private:
     RFeatures::CameraParams _resetCamera;
     std::unordered_set<KeyPressHandler*> _keyPressHandlers;
     mutable vtkRenderer* _ren;
-    //mutable vtkRenderWindow* _rwin;
-    vtkGenericOpenGLRenderWindow* _rwin;
+    mutable vtkRenderWindow* _rwin;
+    //vtkGenericOpenGLRenderWindow* _rwin;
 };	// end class
 
 }	// end namespace
