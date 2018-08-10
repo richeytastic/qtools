@@ -59,7 +59,9 @@ public:
     void addInteractor( VVI*);
     void removeInteractor( VVI*);
 
-    QPoint getMouseCoords();    // With top left origin
+    // Returns the current mouse coordinates with top left origin.
+    const QPoint& mouseCoords() const { return _mousePos;}
+    bool mouseOnRenderer() const { return _onRenderer;} // Returns true iff on render window.
 
     // Lock/unlock camera/actor interaction. Locking key matched since many interactors
     // may be active; one interactor should not be able to unlock interaction when another
@@ -90,6 +92,7 @@ private:
     bool doOnMouseMove();
     bool doOnEnter();
     bool doOnLeave();
+    void updateMouseCoords();
 
     void doAfterCameraRotate();
     void doAfterCameraPan();
@@ -106,6 +109,8 @@ private:
     friend class VtkViewerSwitchInteractor;
 
     VtkActorViewer *_qviewer;
+    QPoint _mousePos;
+    bool _onRenderer;
     bool _lbdown, _rbdown, _mbdown;
     InteractionMode _imode;
     qint64 _lbDownTime;

@@ -162,8 +162,8 @@ public:
     bool unlockInteraction( int key) { return _iman->unlockInteraction(key);}
     bool isInteractionLocked() const { return _iman->isInteractionLocked();}
 
-    // Return the current mouse coordinates.
-    QPoint getMouseCoords() const { return _iman->getMouseCoords();}
+    const QPoint& mouseCoords() const { return _iman->mouseCoords();} // The current mouse coordinates.
+    bool mouseOnRenderer() const { return _iman->mouseOnRenderer();}  // If mouse is on the render window.
 
     // Add/remove a key press handlers. Note that these functions are called as part of the
     // attach/detach process for VtkViewerInteractor instances if they define KeyPressHandlers.

@@ -38,7 +38,7 @@ using QTools::VVI;
 
 // public
 VtkViewerInteractorManager::VtkViewerInteractorManager( VtkActorViewer *qv)
-    : _qviewer(qv), _lbdown(false), _rbdown(false), _mbdown(false), _lbDownTime(0),
+    : _qviewer(qv), _mousePos(0,0), _onRenderer(false), _lbdown(false), _rbdown(false), _mbdown(false), _lbDownTime(0),
       _rng( std::chrono::system_clock::now().time_since_epoch().count()), _istyle(nullptr)
 {
     assert(qv);
@@ -103,12 +103,13 @@ bool VtkViewerInteractorManager::isInteractionLocked() const { return !_lockKeys
 
 
 // VTK 2D origin is at bottom left of render window so need to set to top left.
-QPoint VtkViewerInteractorManager::getMouseCoords()
+void VtkViewerInteractorManager::updateMouseCoords()
 {
     vtkRenderWindowInteractor* rint = _istyle->GetInteractor();
-    vtkSmartPointer<vtkRenderer> ren = rint->GetRenderWindow()->GetRenderers()->GetFirstRenderer();
-    return QPoint( rint->GetEventPosition()[0], ren->GetSize()[1] - rint->GetEventPosition()[1] - 1);
-}   // end getMouseCoords
+    vtkRenderer* ren = rint->GetRenderWindow()->GetRenderers()->GetFirstRenderer();
+    _mousePos.rx() = rint->GetEventPosition()[0];
+    _mousePos.ry() = ren->GetSize()[1] - rint->GetEventPosition()[1] - 1;
+}   // end updateMouseCoords
 
 
 namespace {
@@ -129,19 +130,18 @@ bool dofunction( const std::unordered_set<VVI*>& ifaces, std::function<bool(VVI*
 
 bool VtkViewerInteractorManager::doOnLeftButtonDown()
 {
-    const QPoint p = getMouseCoords();
     _lbdown = true;
     bool swallowed = false;
     const qint64 tnow = QDateTime::currentDateTime().currentMSecsSinceEpoch();
     if ( (tnow - _lbDownTime) < QApplication::doubleClickInterval())    // Check for double click
     {
         _lbDownTime = 0;
-        swallowed = dofunction( _vvis, [&p](VVI* vvi){ return vvi->leftDoubleClick(p);});
+        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->leftDoubleClick(_mousePos);});
     }   // end if
     else
     {
         _lbDownTime = tnow;
-        swallowed = dofunction( _vvis, [&p](VVI* vvi){ return vvi->leftButtonDown(p);});
+        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->leftButtonDown(_mousePos);});
     }   // end else
     return swallowed;
 }   // end doOnLeftButtonDown
@@ -149,85 +149,78 @@ bool VtkViewerInteractorManager::doOnLeftButtonDown()
 
 bool VtkViewerInteractorManager::doOnLeftButtonUp()
 {
-    const QPoint p = getMouseCoords();
     _lbdown = false;
-    bool swallowed = dofunction( _vvis, [&p](VVI* vvi){ return vvi->leftButtonUp(p);});
-    return swallowed;
+    return dofunction( _vvis, [this](VVI* vvi){ return vvi->leftButtonUp(_mousePos);});
 }   // end doOnLeftButtonUp
 
 
 bool VtkViewerInteractorManager::doOnRightButtonDown()
 {
-    const QPoint p = getMouseCoords();
     _rbdown = true;
-    return dofunction( _vvis, [&p](VVI* vvi){ return vvi->rightButtonDown(p);});
+    return dofunction( _vvis, [this](VVI* vvi){ return vvi->rightButtonDown(_mousePos);});
 }   // end doOnRightButtonDown
 
 
 bool VtkViewerInteractorManager::doOnRightButtonUp()
 {
-    const QPoint p = getMouseCoords();
     _rbdown = false;
-    return dofunction( _vvis, [&p](VVI* vvi){ return vvi->rightButtonUp(p);});
+    return dofunction( _vvis, [this](VVI* vvi){ return vvi->rightButtonUp(_mousePos);});
 }   // end doOnRightButtonUp
 
 
 bool VtkViewerInteractorManager::doOnMiddleButtonDown()
 {
-    const QPoint p = getMouseCoords();
     _mbdown = true;
-    return dofunction( _vvis, [&p](VVI* vvi){ return vvi->middleButtonDown(p);});
+    return dofunction( _vvis, [this](VVI* vvi){ return vvi->middleButtonDown(_mousePos);});
 }   // end doOnMiddleButtonDown
 
 
 bool VtkViewerInteractorManager::doOnMiddleButtonUp()
 {
-    const QPoint p = getMouseCoords();
     _mbdown = false;
-    return dofunction( _vvis, [&p](VVI* vvi){ return vvi->middleButtonUp(p);});
+    return dofunction( _vvis, [this](VVI* vvi){ return vvi->middleButtonUp(_mousePos);});
 }   // end doOnMiddleButtonUp
 
 
 bool VtkViewerInteractorManager::doOnMouseWheelForward()
 {
-    const QPoint p = getMouseCoords();
-    return dofunction( _vvis, [&p](VVI* vvi){ return vvi->mouseWheelForward(p);});
+    return dofunction( _vvis, [this](VVI* vvi){ return vvi->mouseWheelForward(_mousePos);});
 }   // end doOnMouseWheelForward
 
 
 bool VtkViewerInteractorManager::doOnMouseWheelBackward()
 {
-    const QPoint p = getMouseCoords();
-    return dofunction( _vvis, [&p](VVI* vvi){ return vvi->mouseWheelBackward(p);});
+    return dofunction( _vvis, [this](VVI* vvi){ return vvi->mouseWheelBackward(_mousePos);});
 }   // end doOnMouseWheelBackward
 
 
 bool VtkViewerInteractorManager::doOnMouseMove()
 {
-    const QPoint p = getMouseCoords();
+    updateMouseCoords();
     bool swallowed = false;
     if ( _lbdown)
-        swallowed = dofunction( _vvis, [&p](VVI* vvi){ return vvi->leftDrag(p);});
+        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->leftDrag(_mousePos);});
     else if ( _rbdown)
-        swallowed = dofunction( _vvis, [&p](VVI* vvi){ return vvi->rightDrag(p);});
+        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->rightDrag(_mousePos);});
     else if ( _mbdown)
-        swallowed = dofunction( _vvis, [&p](VVI* vvi){ return vvi->middleDrag(p);});
+        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->middleDrag(_mousePos);});
     else
-        swallowed = dofunction( _vvis, [&p](VVI* vvi){ return vvi->mouseMove(p);});
+        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->mouseMove(_mousePos);});
     return swallowed;
 }   // end doOnMouseMove
 
 
 bool VtkViewerInteractorManager::doOnEnter()
 {
-    const QPoint p = getMouseCoords();
-    return dofunction( _vvis, [&p](VVI* vvi){ return vvi->mouseEnter(p);});
+    _onRenderer = true;
+    updateMouseCoords();
+    return dofunction( _vvis, [this](VVI* vvi){ return vvi->mouseEnter(_mousePos);});
 }   // end doOnEnter
 
 bool VtkViewerInteractorManager::doOnLeave()
 {
-    const QPoint p = getMouseCoords();
-    return dofunction( _vvis, [&p](VVI* vvi){ return vvi->mouseLeave(p);});
+    _onRenderer = false;
+    return dofunction( _vvis, [this](VVI* vvi){ return vvi->mouseLeave(_mousePos);});
 }   // end doOnLeave
 
 
@@ -251,5 +244,3 @@ void VtkViewerInteractorManager::doAfterActorDolly() { docamera( _vvis, [](VVI* 
 void VtkViewerInteractorManager::doAfterActorSpin() { docamera( _vvis, [](VVI* vvi){ vvi->actorSpin();});}
 void VtkViewerInteractorManager::doAfterActorPan() { docamera( _vvis, [](VVI* vvi){ vvi->actorPan();});}
 void VtkViewerInteractorManager::doAfterActorStop() { docamera( _vvis, [](VVI* vvi){ vvi->actorStop();});}
-
-
