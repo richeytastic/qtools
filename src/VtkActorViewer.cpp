@@ -23,6 +23,7 @@
 #include <vtkLight.h>
 #include <vtkRendererCollection.h>
 #include <vtkRenderer.h>
+#include <vtkFollower.h>
 using QTools::VtkActorViewer;
 using QTools::VVI;
 using QTools::KeyPressHandler;
@@ -97,18 +98,20 @@ cv::Mat_<cv::Vec3b> VtkActorViewer::getColourImg() const
 
 
 // public
-void VtkActorViewer::add( const vtkProp* prop)
+void VtkActorViewer::add( vtkProp* prop)
 {
-    _ren->AddViewProp( const_cast<vtkProp*>(prop));
+    _ren->AddViewProp( prop);
+    if ( prop->IsA("vtkFollower"))
+        vtkFollower::SafeDownCast(prop)->SetCamera( _ren->GetActiveCamera());
     if ( _autoUpdateRender)
         updateRender();
 }   // end add
 
 
 // public
-void VtkActorViewer::remove( const vtkProp* prop)
+void VtkActorViewer::remove( vtkProp* prop)
 {
-    _ren->RemoveViewProp( const_cast<vtkProp*>(prop));
+    _ren->RemoveViewProp( prop);
     if ( _autoUpdateRender)
         updateRender();
 }   // end remove

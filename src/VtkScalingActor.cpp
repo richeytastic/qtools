@@ -79,10 +79,10 @@ void VtkScalingActor::setScaleFactor( double f) { _glyph->SetScaleFactor(f);}
 double VtkScalingActor::scaleFactor() const { return _glyph->GetScaleFactor();}
 
 void VtkScalingActor::setPickable( bool v) { _actor->SetPickable(v);}
-bool VtkScalingActor::pickable() const { return _actor->GetPickable();}
+bool VtkScalingActor::pickable() const { return _actor->GetPickable() != 0;}
 
 void VtkScalingActor::setVisible( bool v) { _actor->SetVisibility(v);}
-bool VtkScalingActor::visible() const { return _actor->GetVisibility();}
+bool VtkScalingActor::visible() const { return _actor->GetVisibility() != 0;}
 
 void VtkScalingActor::setPosition( const cv::Vec3f& v)
 {

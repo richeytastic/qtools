@@ -69,8 +69,8 @@ public:
     cv::Mat_<cv::Vec3b> getColourImg() const; // Grab snapshot of whatever's currently displayed (3 byte BGR order)
 
     // Adding and removing props will cause a re-rendering of the scene if auto-rendering is on.
-    void add( const vtkProp*);
-    void remove( const vtkProp*);
+    void add( vtkProp*);
+    void remove( vtkProp*);
     void clear();   // Remove all props
 
     // Will cause a re-rendering if auto rendering is on.

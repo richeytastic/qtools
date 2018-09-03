@@ -41,7 +41,8 @@ public:
     // added to is provided as a parameter to setRenderer. It is possible
     // to assign a different renderer (for distance calculations) than the
     // one the prop is added to.
-    const vtkActor* prop() const { return _actor;}  // Get the prop to add to the renderer.
+    const vtkActor* prop() const { return _actor;}
+    vtkActor* prop() { return _actor;}
     void setRenderer( vtkRenderer*);                // Set the associated renderer.
     vtkRenderer* renderer() const;                  // Return the associated renderer.
 
