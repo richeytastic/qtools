@@ -21,7 +21,7 @@ using QTools::ScalarColourRangeMapper;
 
 // public
 ScalarColourRangeMapper::ScalarColourRangeMapper( const std::string& smap)
-    : _smap(smap), _ncols(100), _range(0.0f,1.0f), _lastr(0.0f,1.0f)
+    : _smap(smap), _ncols(100), _rngl(0.0f,1.0f), _visl(0.0f,1.0f)
 {
     _cols[0] = cv::Vec3b(180,0,0);       // Blue
     _cols[1] = cv::Vec3b(255,255,255);   // White
@@ -31,22 +31,22 @@ ScalarColourRangeMapper::ScalarColourRangeMapper( const std::string& smap)
 
 // public
 void ScalarColourRangeMapper::setRangeLimits( float minv, float maxv) { setRangeLimits( std::pair<float,float>( minv, maxv));}
-void ScalarColourRangeMapper::setRangeLimits( const std::pair<float,float>& rng) { _range = _lastr = rng;}
+void ScalarColourRangeMapper::setRangeLimits( const std::pair<float,float>& rng) { _rngl = _visl = rng;}
 
 
 // public
-void ScalarColourRangeMapper::setVisibleRange( float smin, float smax)
+void ScalarColourRangeMapper::setVisibleLimits( float smin, float smax)
 {
-    std::pair<float,float>& mm = _lastr;
+    std::pair<float,float>& mm = _visl;
     mm.first = smin;
     mm.second = smax;
     // Bound within initial range
-    const std::pair<float,float>& rmm = _range;
+    const std::pair<float,float>& rmm = _rngl;
     if ( mm.first < rmm.first)
         mm.first = rmm.first;
     if ( mm.second > rmm.second)
         mm.second = rmm.second;
-}   // end setVisibleRange
+}   // end setVisibleLimits
 
 
 // public
@@ -80,10 +80,10 @@ void ScalarColourRangeMapper::colours( QColor& c0, QColor& c1, QColor& c2) const
 
 
 // public
-void ScalarColourRangeMapper::rebuildLookupTable()
+void ScalarColourRangeMapper::rebuild()
 {
-    const float minv = _lastr.first;
-    const float maxv = _lastr.second;
+    const float minv = _visl.first;
+    const float maxv = _visl.second;
 
     size_t nc0 = _ncols;
     size_t nc1 = _ncols;
@@ -103,4 +103,6 @@ void ScalarColourRangeMapper::rebuildLookupTable()
         _ltable.setColours( _cols[1], _cols[2], nc1);
     else
         _ltable.setColours( _cols[0], _cols[1], _cols[2], nc0, nc1);
-}   // end rebuildLookupTable
+
+    emit rebuilt();
+}   // end rebuild
