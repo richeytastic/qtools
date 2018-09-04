@@ -37,15 +37,9 @@ void ScalarColourRangeMapper::setRangeLimits( const std::pair<float,float>& rng)
 // public
 void ScalarColourRangeMapper::setVisibleLimits( float smin, float smax)
 {
-    std::pair<float,float>& mm = _visl;
-    mm.first = smin;
-    mm.second = smax;
-    // Bound within initial range
-    const std::pair<float,float>& rmm = _rngl;
-    if ( mm.first < rmm.first)
-        mm.first = rmm.first;
-    if ( mm.second > rmm.second)
-        mm.second = rmm.second;
+    assert(smin <= smax);
+    _visl.first = std::max( smin, _rngl.first);
+    _visl.second = std::min( smax, _rngl.second);
 }   // end setVisibleLimits
 
 
