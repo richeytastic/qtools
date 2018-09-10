@@ -48,6 +48,8 @@ void RangeMinMax::setVerticalOrientation()
 RangeMinMax::RangeMinMax( QWidget* parent)
     : QWidget(parent), _minSpin( new QDoubleSpinBox), _maxSpin( new QDoubleSpinBox)
 {
+    _minSpin->setButtonSymbols(QAbstractSpinBox::PlusMinus);
+    _maxSpin->setButtonSymbols(QAbstractSpinBox::PlusMinus);
     _minSpin->setAlignment( Qt::AlignRight);
     _maxSpin->setAlignment( Qt::AlignRight);
     setHorizontalOrientation();

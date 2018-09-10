@@ -41,11 +41,14 @@ public:
     void setNumDecimals(int);       // Default is 2
     void setSingleStepSize(float);  // Default is 0.1
 
-    // Programmatically set the min/max value without causing rangeChanged to fire.
+    // Sets the allowed range for the min/max values.
     void setRange( float minv, float maxv);
+
+    // Programmatically set the displayed min/max value without causing rangeChanged to fire.
     void setMin( float);
     void setMax( float);
 
+    // Get the displayed min/max values.
     float min() const { return (float)_minSpin->value();}
     float max() const { return (float)_maxSpin->value();}
 

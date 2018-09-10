@@ -76,6 +76,8 @@ RangeSlider::RangeSlider( QWidget* parent)
       _maxSpin(makeDoubleSpinBox())
 {
     // TODO make QTools::TwoHandleSlider to allow dynamic switching between horizontal and vertical orientations
+    _minSpin->setButtonSymbols(QAbstractSpinBox::PlusMinus);
+    _maxSpin->setButtonSymbols(QAbstractSpinBox::PlusMinus);
     _minSpin->setAlignment(Qt::AlignRight);
     _maxSpin->setAlignment(Qt::AlignRight);
     setHorizontalOrientation();
