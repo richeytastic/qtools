@@ -27,7 +27,7 @@ class QTools_EXPORT TwoHandleSlider : public QWidget
 { Q_OBJECT
 public:
     // Default range is [0,1] with page step of 0.1 and single step of 0.01
-    TwoHandleSlider( QWidget *parent=NULL, bool orientVertically=false);
+    TwoHandleSlider( QWidget *parent=nullptr, bool orientVertically=false);
     virtual ~TwoHandleSlider();
 
     void resetRange( float min, float max); // Also calls reset

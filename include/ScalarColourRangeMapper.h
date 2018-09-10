@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#ifndef QTOOLS_SCALAR_COLOUR_rngl_MAPPER_H
-#define QTOOLS_SCALAR_COLOUR_rngl_MAPPER_H
+#ifndef QTOOLS_SCALAR_COLOUR_RANGE_MAPPER_H
+#define QTOOLS_SCALAR_COLOUR_RANGE_MAPPER_H
 
 /**
  * Store and manage scalar colours via lookup table.
@@ -38,14 +38,17 @@ public:
 
     // Set the min/max bounds of the mapping range.
     void setRangeLimits( float minv, float maxv);
-    void setRangeLimits( const std::pair<float,float>&);
 
     // Set the visible limits (won't set outside of bounded range).
     void setVisibleLimits( float smin, float smax);
 
-    // Set/get the colours to be used for the current range.
+    // Set the colours to be used for the current range.
     void setColours( const cv::Vec3b& c0, const cv::Vec3b& c1, const cv::Vec3b& c2);
     void setColours( const QColor& c0, const QColor& c1, const QColor& c2);
+    void setMinColour( const QColor&);
+    void setMidColour( const QColor&);
+    void setMaxColour( const QColor&);
+
     void setNumColours( size_t);
 
     // Call after calls to setRangeLimits, setColours, setNumColours.
@@ -64,8 +67,11 @@ public:
     float minVisible() const { return _visl.first;}
     float maxVisible() const { return _visl.second;}
 
-    // Get the colours being used.
+    // Get the colours being used for the mapping range.
     void colours( QColor& c0, QColor& c1, QColor& c2) const;
+    QColor minColour() const;
+    QColor midColour() const;
+    QColor maxColour() const;
 
     // Get the number of colours being used.
     size_t numColours() const { return _ncols;}

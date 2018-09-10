@@ -66,7 +66,7 @@ struct TwoHandleSlider::Slider
 TwoHandleSlider::TwoHandleSlider( QWidget* parent, bool orientVertically)
     : QWidget(parent), _s0( new Slider), _s1( new Slider), _isVertical(orientVertically)
 {
-    QBoxLayout* layout = NULL;
+    QBoxLayout* layout = nullptr;
     if ( orientVertically)
     {
         layout = new QVBoxLayout;

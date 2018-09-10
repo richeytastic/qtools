@@ -19,35 +19,44 @@
 using QTools::ScalarColourRangeMapper;
 
 
-// public
 ScalarColourRangeMapper::ScalarColourRangeMapper( const std::string& smap)
     : _smap(smap), _ncols(100), _rngl(0.0f,1.0f), _visl(0.0f,1.0f)
 {
-    _cols[0] = cv::Vec3b(180,0,0);       // Blue
-    _cols[1] = cv::Vec3b(255,255,255);   // White
-    _cols[2] = cv::Vec3b(0,0,180);       // Red
+    _cols[0] = cv::Vec3b(255,  0,  0);  // Blue
+    _cols[1] = cv::Vec3b(255,255,255);  // White
+    _cols[2] = cv::Vec3b(  0,  0,255);  // Red
 }   // end ctor
 
 
-// public
-void ScalarColourRangeMapper::setRangeLimits( float minv, float maxv) { setRangeLimits( std::pair<float,float>( minv, maxv));}
-void ScalarColourRangeMapper::setRangeLimits( const std::pair<float,float>& rng) { _rngl = _visl = rng;}
-
-
-// public
-void ScalarColourRangeMapper::setVisibleLimits( float smin, float smax)
+void ScalarColourRangeMapper::setRangeLimits( float rmin, float rmax)
 {
-    assert(smin <= smax);
-    _visl.first = std::max( smin, _rngl.first);
-    _visl.second = std::min( smax, _rngl.second);
+    assert(rmin <= rmax);
+    _rngl.first = rmin;
+    _rngl.second = rmax;
+    setVisibleLimits( _visl.first, _visl.second);
+}   // end setRangeLimits
+
+
+void ScalarColourRangeMapper::setVisibleLimits( float vmin, float vmax)
+{
+    // If the visible range sits outside of the range limits, set to the range limits.
+    const float rmin = _rngl.first;
+    const float rmax = _rngl.second;
+
+    if ( vmin < rmin || vmin > rmax)
+        vmin = rmin;
+    if ( vmax < rmin || vmax > rmax)
+        vmax = rmax;
+
+    assert(vmin <= vmax);
+
+    _visl.first = vmin;
+    _visl.second = vmax;
 }   // end setVisibleLimits
 
 
-// public
 void ScalarColourRangeMapper::setNumColours( size_t nc) { _ncols = std::max<size_t>(2, nc);}
 
-
-// public
 void ScalarColourRangeMapper::setColours( const cv::Vec3b& c0, const cv::Vec3b& c1, const cv::Vec3b& c2)
 {
     _cols[0] = c0;
@@ -64,16 +73,22 @@ void ScalarColourRangeMapper::setColours( const QColor& c0, const QColor& c1, co
     setColours( minCol, midCol, maxCol);
 }   // end setColours
 
+void ScalarColourRangeMapper::setMinColour( const QColor& c) { _cols[0] = cv::Vec3b( c.red(), c.green(), c.blue());}
+void ScalarColourRangeMapper::setMidColour( const QColor& c) { _cols[1] = cv::Vec3b( c.red(), c.green(), c.blue());}
+void ScalarColourRangeMapper::setMaxColour( const QColor& c) { _cols[2] = cv::Vec3b( c.red(), c.green(), c.blue());}
 
 void ScalarColourRangeMapper::colours( QColor& c0, QColor& c1, QColor& c2) const
 {
-    c0 = QColor( _cols[0][0], _cols[0][1], _cols[0][2]);
-    c1 = QColor( _cols[1][0], _cols[1][1], _cols[1][2]);
-    c2 = QColor( _cols[2][0], _cols[2][1], _cols[2][2]);
+    c0 = minColour();
+    c1 = midColour();
+    c2 = maxColour();
 }   // end colours
 
+QColor ScalarColourRangeMapper::minColour() const { return QColor( _cols[0][0], _cols[0][1], _cols[0][2]);}
+QColor ScalarColourRangeMapper::midColour() const { return QColor( _cols[1][0], _cols[1][1], _cols[1][2]);}
+QColor ScalarColourRangeMapper::maxColour() const { return QColor( _cols[2][0], _cols[2][1], _cols[2][2]);}
 
-// public
+
 void ScalarColourRangeMapper::rebuild()
 {
     const float minv = _visl.first;

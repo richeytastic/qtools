@@ -31,7 +31,7 @@ class TwoHandleSlider;
 class QTools_EXPORT ColourMappingWidget : public QWidget
 { Q_OBJECT
 public:
-    explicit ColourMappingWidget( QWidget *parent = 0);
+    explicit ColourMappingWidget( QWidget *parent = nullptr);
     ~ColourMappingWidget();
 
     // Set/get whether displays three colour values in the widget
