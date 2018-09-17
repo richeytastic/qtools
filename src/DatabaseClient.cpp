@@ -58,7 +58,7 @@ bool DatabaseClient::reconnect()
     QString oldType;
     QString oldDBname;
     QString oldhost;
-    int oldport;
+    int oldport = -1;
     QString olduname;
     QString oldpword;
 

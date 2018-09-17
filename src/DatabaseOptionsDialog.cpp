@@ -50,7 +50,7 @@ void DatabaseOptionsDialog::addDatabaseTypes()
     _dbTypes[7] = "QDB2";
     _dbTypes[8] = "QIBASE";
 
-    for ( int i = 0; i < _dbTypes.size(); ++i)
+    for ( int i = 0; i < (int)_dbTypes.size(); ++i)
         _dbTypeMap[ _dbTypes[i]] = i;
 
     /*

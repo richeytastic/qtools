@@ -394,9 +394,9 @@ void ImagerWidget::updateCursorIcon( int x, int y)
         const bool topEdge = extractHelper_->onTopEdge( x, y, 4);
         const bool bottomEdge = extractHelper_->onBottomEdge( x, y, 4);
 
-        if ( leftEdge && topEdge || rightEdge && bottomEdge)
+        if ( (leftEdge && topEdge) || (rightEdge && bottomEdge))
             ui->imageLabel->setCursor(Qt::SizeFDiagCursor);
-        else if ( leftEdge && bottomEdge || rightEdge && topEdge)
+        else if ( (leftEdge && bottomEdge) || (rightEdge && topEdge))
             ui->imageLabel->setCursor(Qt::SizeBDiagCursor);
         else if ( topEdge || bottomEdge)
             ui->imageLabel->setCursor(Qt::SizeVerCursor);

@@ -101,6 +101,8 @@ void ViewNavigator::setViewDirection( ViewFace vf)
         case RIGHT:
             ui->rightRadioButton->setChecked(true);
             break;
+        default:
+            break;  // No-op
     }   // end switch
 }   // end setViewDirection
 

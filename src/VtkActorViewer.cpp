@@ -261,7 +261,7 @@ int VtkActorViewer::pickActorCells( const cv::Mat& inmask, vtkActor* actor, std:
     if ( actor == nullptr)
         return 0;
 
-    assert( inmask.rows == getHeight() && inmask.cols == getWidth());
+    assert( inmask.rows == (int)getHeight() && inmask.cols == (int)getWidth());
     assert( inmask.channels() == 1);
 
     cv::Mat_<byte> mask;
