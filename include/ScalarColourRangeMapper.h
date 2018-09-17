@@ -23,18 +23,15 @@
  */
 
 #include "QTools_Export.h"
-#include <QObject>
 #include <QColor>
 #include <LookupTable.h>    // RVTK
 
 namespace QTools {
 
-class QTools_EXPORT ScalarColourRangeMapper : public QObject
-{ Q_OBJECT
+class QTools_EXPORT ScalarColourRangeMapper
+{
 public:
-    explicit ScalarColourRangeMapper( const std::string& smap);
-
-    const std::string& rangeName() const { return _smap;}
+    ScalarColourRangeMapper();
 
     // Set the min/max bounds of the mapping range.
     void setRangeLimits( float minv, float maxv);
@@ -51,7 +48,7 @@ public:
 
     void setNumColours( size_t);
 
-    // Call after calls to setRangeLimits, setColours, setNumColours.
+    // Rebuild the lookup table: call after updating with fns setRangeLimits, setColours, setNumColours.
     void rebuild();
 
     RVTK::LookupTable& lookupTable() { return _ltable;}
@@ -76,16 +73,7 @@ public:
     // Get the number of colours being used.
     size_t numColours() const { return _ncols;}
 
-signals:
-    // Signal rebuilt is emitted at the end of every call to rebuild.
-    // In scope of this class, to set mapped range on actor and its viewer:
-    // actor->GetMapper()->SetLookupTable( this->lookupTable())
-    // actor->GetMapper()->SetScalarRange( this->minVisible(), this->maxVisible())
-    // viewer->setLegendLookup( this->rangeName(), this->lookupTable())
-    void rebuilt();
-
 private:
-    const std::string _smap;
     size_t _ncols;                  // Number of colours
     std::pair<float,float> _rngl;   // Allowed range
     std::pair<float,float> _visl;   // Visible range

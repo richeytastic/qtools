@@ -57,15 +57,15 @@ public:
     // Returns this object if it expresses the correct interface, or the interface for
     // the specified class. The return type should be changed to the derived class.
     // Plugin types are not required to implement this function.
-    virtual PluginInterface* getInterface( const QString& id) const { return NULL;}
+    virtual PluginInterface* getInterface( const QString& id) const { return nullptr;}
 
     // Returns the icon for this plugin.
     // Plugin types are not required to implement this function.
-    virtual const QIcon* getIcon() const { return NULL;}
+    virtual const QIcon* getIcon() const { return nullptr;}
 
     // Returns the key shortcut for this plugin.
     // Plugin types are not required to implement this function.
-    virtual const QKeySequence* getShortcut() const { return NULL;}
+    virtual const QKeySequence* getShortcut() const { return nullptr;}
 
     // The name used to display this plugin interface for menus, legend, etc.
     // Plugin types are not required to implement this function but the
@@ -76,7 +76,7 @@ public:
     virtual QString getToolTip() const { return "";}
 
     // Complex plugins may want to define a widget to handle configuration.
-    virtual QWidget* getWidget() const { return NULL;}
+    virtual QWidget* getWidget() const { return nullptr;}
 };  // end class
 
 }   // end namespace

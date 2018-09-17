@@ -19,12 +19,13 @@
 using QTools::ScalarColourRangeMapper;
 
 
-ScalarColourRangeMapper::ScalarColourRangeMapper( const std::string& smap)
-    : _smap(smap), _ncols(100), _rngl(0.0f,1.0f), _visl(0.0f,1.0f)
+ScalarColourRangeMapper::ScalarColourRangeMapper()
+    : _ncols(100), _rngl(0.0f,1.0f), _visl(0.0f,1.0f)
 {
     _cols[0] = cv::Vec3b(255,  0,  0);  // Blue
     _cols[1] = cv::Vec3b(255,255,255);  // White
     _cols[2] = cv::Vec3b(  0,  0,255);  // Red
+    rebuild();
 }   // end ctor
 
 
@@ -112,6 +113,5 @@ void ScalarColourRangeMapper::rebuild()
         _ltable.setColours( _cols[1], _cols[2], nc1);
     else
         _ltable.setColours( _cols[0], _cols[1], _cols[2], nc0, nc1);
-
-    emit rebuilt();
 }   // end rebuild
+

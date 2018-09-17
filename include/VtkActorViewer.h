@@ -46,6 +46,7 @@ public:
     virtual ~VtkActorViewer();
 
     inline const vtkRenderWindow* getRenderWindow() const { return _rwin;}
+    inline vtkRenderWindow* getRenderWindow() { return _rwin;}
     inline const vtkRenderer* getRenderer() const { return _ren;}
     inline vtkRenderer* getRenderer() { return _ren;}
 
