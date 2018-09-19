@@ -43,8 +43,10 @@ VtkActorViewer::VtkActorViewer( QWidget *parent)
     */
     _rwin = this->GetRenderWindow();  // Only when inheriting from QVTKWidget
     assert(_rwin);
+    _rwin->SetStereoCapableWindow(1);
+    _rwin->SetStereoTypeToRedBlue();
 
-    _rwin->SetPointSmoothing( false);
+    //_rwin->SetPointSmoothing( false);
     _rwin->AddRenderer( _ren);
 
     _rpicker = new RVTK::RendererPicker( _ren, RVTK::RendererPicker::TOP_LEFT);
