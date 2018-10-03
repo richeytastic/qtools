@@ -22,8 +22,7 @@
 #include <QList>
 #include <QDir>
 
-namespace QTools
-{
+namespace QTools {
 
 class PluginInterface;
 
@@ -63,8 +62,8 @@ private:
     QDir _pluginsDir;
     QList<PluginMeta> _plugins;
 
-    PluginsLoader( const PluginsLoader&);   // No copy
-    void operator=( const PluginsLoader&);  // No copy
+    PluginsLoader( const PluginsLoader&) = delete;
+    void operator=( const PluginsLoader&) = delete;
 };  // end class
 
 }   // end namespace

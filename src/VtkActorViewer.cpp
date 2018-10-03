@@ -252,7 +252,7 @@ int VtkActorViewer::pickActorCells( const std::vector<cv::Point>& points, vtkAct
 int VtkActorViewer::pickActorCells( const std::vector<QPoint>& points, vtkActor* actor, std::vector<int>& cellIds) const
 {
     std::vector<cv::Point> pts;
-    std::for_each( std::begin(points), std::end(points), [&](auto p){ pts.push_back(cv::Point(p.x(), p.y()));});
+    std::for_each( std::begin(points), std::end(points), [&](QPoint p){ pts.push_back(cv::Point(p.x(), p.y()));});
     return pickActorCells( pts, actor, cellIds);
 }   // end pickActorCells
 

@@ -52,7 +52,7 @@ size_t PluginsLoader::loadPlugins()
 {
     size_t numLoaded = 0;
     // Load the static plugins
-    foreach ( QObject *plugin, QPluginLoader::staticInstances())
+    for ( QObject *plugin : QPluginLoader::staticInstances())
     {
         QString cname = plugin->metaObject()->className();
         std::cerr << "[STATUS] QTools::PluginsLoader::loadPlugins(): Found static library " << cname.toStdString() << std::endl;
@@ -62,7 +62,7 @@ size_t PluginsLoader::loadPlugins()
             std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins(): "
                 << "Qt statically loaded plugin does not implement QTools::PluginInterface so skipping it!" << std::endl;
             std::cerr << "Tried to load plugin: " + cname.toStdString() << std::endl;
-            emit loadedPlugin( NULL, cname);
+            emit loadedPlugin( nullptr, cname);
             continue;
         }   // end if
         numLoaded++;
@@ -71,13 +71,13 @@ size_t PluginsLoader::loadPlugins()
 
     // Load the dynamic plugins and store them
     const QStringList fnames = _pluginsDir.entryList( QDir::Files | QDir::Readable, QDir::Type | QDir::Name);
-    foreach ( const QString& fname, fnames)
+    for ( const QString& fname : fnames)
     {
         const QString fpath = _pluginsDir.absoluteFilePath(fname);
         QPluginLoader loader( fpath);
 
         QObject *plugin = loader.instance();
-        QTools::PluginInterface* pluginInterface = NULL;
+        QTools::PluginInterface* pluginInterface = nullptr;
         if ( !plugin)
             std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins: Qt dynamically loaded plugin is not a QObject (Qt issue?)!" << std::endl;
         else
@@ -91,8 +91,8 @@ size_t PluginsLoader::loadPlugins()
         if ( !plugin || !pluginInterface)
         {
             std::cerr << "Tried to load plugin: " << fpath.toStdString();
-            emit loadedPlugin( NULL, fpath);
-            PluginMeta pmeta( fpath, NULL, false);
+            emit loadedPlugin( nullptr, fpath);
+            PluginMeta pmeta( fpath, nullptr, false);
             _plugins << pmeta;
             continue;
         }   // end if
