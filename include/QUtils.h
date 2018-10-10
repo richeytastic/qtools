@@ -24,13 +24,9 @@
 namespace QTools {
 
 // Get the directory part of fname and place the remainder without file
-// extension (if any) in rem (if not NULL).
-QTools_EXPORT QString getDirectory( const QString& fname, QString* rem=NULL);
+// extension (if any) in rem (if not null).
+QTools_EXPORT QString getDirectory( const QString &fname, QString* rem=nullptr);
 
 }   // end namespace
 
 #endif
-
-
-
-
