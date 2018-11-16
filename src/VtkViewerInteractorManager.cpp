@@ -70,6 +70,7 @@ const std::unordered_set<VVI*>& VtkViewerInteractorManager::interactors() const 
 
 void VtkViewerInteractorManager::addInteractor( VVI* iface)
 {
+    assert(iface);
     _vvis.insert(iface);
     if ( iface->keyPressHandler())
         _qviewer->attachKeyPressHandler( iface->keyPressHandler());
@@ -77,8 +78,9 @@ void VtkViewerInteractorManager::addInteractor( VVI* iface)
 
 void VtkViewerInteractorManager::removeInteractor( VVI* iface)
 {
-    _vvis.erase(iface);
+    assert(iface);
     _qviewer->detachKeyPressHandler( iface->keyPressHandler());
+    _vvis.erase(iface);
 }   // end removeInteractor
 
 
@@ -113,14 +115,14 @@ void VtkViewerInteractorManager::updateMouseCoords()
 
 
 namespace {
-bool dofunction( const std::unordered_set<VVI*>& ifaces, std::function<bool(VVI*)> func)
+bool dofunction( const std::unordered_set<VVI*>& vvis, std::function<bool(VVI*)> func)
 {
+    // If vvis are instead in a priority queue then the highest priority interactor can be
+    // handled first and then no other interactors should be called to handle the interaction.
     bool swallowed = false;
-    for ( VVI* vvi : ifaces)
+    for ( VVI* vvi : vvis)
     {
-        const bool enabled = vvi->isEnabled();
-        if ( enabled && func(vvi))
-            swallowed = true;
+        swallowed |= vvi->isEnabled() && func(vvi);
     }   // end for
     return swallowed;
 }   // end dofunction
@@ -225,9 +227,9 @@ bool VtkViewerInteractorManager::doOnLeave()
 
 
 namespace {
-void docamera( const std::unordered_set<VVI*>& ifaces, std::function<void(VVI*)> func)
+void docamera( const std::unordered_set<VVI*>& vvis, std::function<void(VVI*)> func)
 {
-    for ( VVI* vvi : ifaces)
+    for ( VVI* vvi : vvis)
         func(vvi);
 }   // end docamera
 }   // end namespace

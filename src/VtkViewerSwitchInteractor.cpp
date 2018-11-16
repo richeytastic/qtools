@@ -20,6 +20,8 @@
 #include <vtkObjectFactory.h>   // vtkStandardNewMacro
 #include <vtkCallbackCommand.h>
 #include <vtkRenderWindowInteractor.h>
+#include <vtkRenderWindow.h>
+#include <vtkRenderer.h>
 using QTools::VtkViewerSwitchInteractor;
 
 vtkStandardNewMacro( VtkViewerSwitchInteractor)
@@ -107,92 +109,105 @@ void VtkViewerSwitchInteractor::doEndState()
 void VtkViewerSwitchInteractor::OnLeftButtonDown()
 {
     this->GrabFocus(this->EventCallbackCommand);
-    if ( _iman->doOnLeftButtonDown())
-        return;
-
-    if ( !_iman->isInteractionLocked())
+    if ( !_iman->doOnLeftButtonDown())
     {
-        if ( GetInteractor()->GetControlKey())
-            doStartState( VTKIS_DOLLY);
-        else if ( GetInteractor()->GetShiftKey())
-            doStartState( VTKIS_PAN);
-        else
-            doStartState( VTKIS_ROTATE);
+        if ( !_iman->isInteractionLocked())
+        {
+            if ( GetInteractor()->GetControlKey())
+                doStartState( VTKIS_DOLLY);
+            else if ( GetInteractor()->GetShiftKey())
+                doStartState( VTKIS_PAN);
+            else
+                doStartState( VTKIS_ROTATE);
+        }   // end if
     }   // end if
+    _istyle->GetDefaultRenderer()->GetRenderWindow()->Render();
 }   // end OnLeftButtonDown
 
 
 void VtkViewerSwitchInteractor::OnLeftButtonUp()
 {
-    if ( _iman->doOnLeftButtonUp())
-        return;
-
-    if ( !_iman->isInteractionLocked())
-        doEndState();
-    this->ReleaseFocus();
+    if ( !_iman->doOnLeftButtonUp())
+    {
+        if ( !_iman->isInteractionLocked())
+            doEndState();
+    }   // end if
+    _istyle->GetDefaultRenderer()->GetRenderWindow()->Render();
 }   // end OnLeftButtonUp
 
 
 void VtkViewerSwitchInteractor::OnRightButtonDown()
 {
     this->GrabFocus(this->EventCallbackCommand);
-    if ( _iman->doOnRightButtonDown())
-        return;
-    if ( !_iman->isInteractionLocked())
+    if ( !_iman->doOnRightButtonDown())
     {
-        if ( GetInteractor()->GetControlKey())
-            doStartState( VTKIS_DOLLY);
-        else
-            doStartState( VTKIS_PAN);
+        if ( !_iman->isInteractionLocked())
+        {
+            if ( GetInteractor()->GetControlKey())
+                doStartState( VTKIS_DOLLY);
+            else
+                doStartState( VTKIS_PAN);
+        }   // end if
     }   // end if
+    _istyle->GetDefaultRenderer()->GetRenderWindow()->Render();
 }   // end OnRightButtonDown
 
 
 void VtkViewerSwitchInteractor::OnRightButtonUp()
 {
-    if ( _iman->doOnRightButtonUp())
-        return;
-    if ( !_iman->isInteractionLocked())
-        doEndState();
-    this->ReleaseFocus();
+    if ( !_iman->doOnRightButtonUp())
+    {
+        if ( !_iman->isInteractionLocked())
+            doEndState();
+    }   // end if
+    _istyle->GetDefaultRenderer()->GetRenderWindow()->Render();
 }   // end OnRightButtonUp
 
 
 void VtkViewerSwitchInteractor::OnMiddleButtonDown()
 {
     this->GrabFocus(this->EventCallbackCommand);
-    if ( _iman->doOnMiddleButtonDown())
-        return;
-    if ( !_iman->isInteractionLocked())
-        doStartState( VTKIS_DOLLY);
+    if ( !_iman->doOnMiddleButtonDown())
+    {
+        if ( !_iman->isInteractionLocked())
+            doStartState( VTKIS_DOLLY);
+    }   // end if
+    _istyle->GetDefaultRenderer()->GetRenderWindow()->Render();
 }   // end OnMiddleButtonDown
 
 
 void VtkViewerSwitchInteractor::OnMiddleButtonUp()
 {
-    if ( _iman->doOnMiddleButtonUp())
-        return;
-    if ( !_iman->isInteractionLocked())
-        doEndState();
-    this->ReleaseFocus();
+    if ( !_iman->doOnMiddleButtonUp())
+    {
+        if ( !_iman->isInteractionLocked())
+            doEndState();
+    }   // end if
+    _istyle->GetDefaultRenderer()->GetRenderWindow()->Render();
 }   // end OnMiddleButtonUp
 
 
 void VtkViewerSwitchInteractor::OnMouseWheelForward()
 {
-    if ( _iman->doOnMouseWheelForward())
-        return;
-    if ( !_iman->isInteractionLocked())
-        doChunkAction( VTKIS_DOLLY, [this](){ doDolly( pow(1.1, _istyle->GetMouseWheelMotionFactor()));});
+    this->GrabFocus(this->EventCallbackCommand);
+    if ( !_iman->doOnMouseWheelForward())
+    {
+        if ( !_iman->isInteractionLocked())
+            doChunkAction( VTKIS_DOLLY, [this](){ doDolly( pow(1.1, _istyle->GetMouseWheelMotionFactor()));});
+    }   // end if
+    _istyle->GetDefaultRenderer()->GetRenderWindow()->Render();
 }   // end OnMouseWheelForward
 
 
 void VtkViewerSwitchInteractor::OnMouseWheelBackward()
 {
-    if ( _iman->doOnMouseWheelBackward())
-        return;
-    if ( !_iman->isInteractionLocked())
-        doChunkAction( VTKIS_DOLLY, [this](){ doDolly( pow(1.1, -_istyle->GetMouseWheelMotionFactor()));});
+    this->GrabFocus(this->EventCallbackCommand);
+    if ( !_iman->doOnMouseWheelBackward())
+    {
+        if ( !_iman->isInteractionLocked())
+            doChunkAction( VTKIS_DOLLY, [this](){ doDolly( pow(1.1, -_istyle->GetMouseWheelMotionFactor()));});
+    }   // end if
+    _istyle->GetDefaultRenderer()->GetRenderWindow()->Render();
 }   // end OnMouseWheelBackward
 
 

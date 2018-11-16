@@ -33,23 +33,26 @@ namespace QTools {
 class QTools_EXPORT QProgressUpdater : public QObject, public rlib::ProgressDelegate
 { Q_OBJECT
 public:
-    typedef std::shared_ptr<QProgressUpdater> Ptr;
-    static Ptr create( QProgressBar* bar=NULL, int numThreads=1);
+    using Ptr = std::shared_ptr<QProgressUpdater>;
+    static Ptr create( QProgressBar* bar=nullptr, int numThreads=1);
 
     void reset();   // Reset complete flag (and the progress bar if set)
     void processUpdate( float propComplete) override;    // Called inside critical section
 
 signals:
-    void progressUpdated( float propComplete);  // propComplete in [0,1]
-    void progressComplete();    // Emitted at >= 100% (emitted at least once!)
+    void progressUpdated( float);   // propComplete in [0,1]
+    void progressComplete();        // Emitted at >= 100% (emitted at least once!)
+
+private slots:
+    void doOnProgressUpdated( float);
 
 private:
     QProgressBar* _pbar;
     bool _complete;
 
-    QProgressUpdater( QProgressBar* bar=NULL, int numThreads=1);
-    QProgressUpdater( const QProgressUpdater&); // No copy
-    void operator=(const QProgressUpdater&);    // No copy
+    QProgressUpdater( QProgressBar*, int numThreads);
+    QProgressUpdater( const QProgressUpdater&) = delete;
+    void operator=(const QProgressUpdater&) = delete;
 };  // end class
 
 }   // end namespace

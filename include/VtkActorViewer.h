@@ -24,22 +24,20 @@
 #include <CameraParams.h>   // RFeatures
 #include <VtkTools.h>       // RVTK
 #include <QApplication>     // All callers will have this anyway
-#include <QVTKWidget.h>
+//#include <QVTKWidget.h>
 #include <QVTKOpenGLWidget.h>
 #include <vtkInteractorStyle.h>
 #include <vtkActor.h>
 #include <vtkRenderer.h>
-//#include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkRenderWindow.h>
 #include <iostream>
 #include <vector>
 
-namespace RVTK { class RendererPicker;}
-
 namespace QTools {
 
-class QTools_EXPORT VtkActorViewer : public QVTKWidget
-//class QTools_EXPORT VtkActorViewer : public QVTKOpenGLWidget
+//class QTools_EXPORT VtkActorViewer : public QVTKWidget
+class QTools_EXPORT VtkActorViewer : public QVTKOpenGLWidget
 { Q_OBJECT
 public:
     explicit VtkActorViewer( QWidget *parent = nullptr);
@@ -125,11 +123,6 @@ public:
     // As above, but specify view coordinates from top left as a proportion of the window dimensions.
     cv::Vec3f pickWorldPosition( const cv::Point2f&) const;
 
-    // Pick the surface normal at the given 2D point having TOP LEFT origin.
-    // If no surface is picked at p, (0,0,0) is returned.
-    cv::Vec3f pickNormal( const cv::Point&) const;
-    cv::Vec3f pickNormal( const QPoint&) const;
-
     // Find the display position in 2D (using TOP LEFT origin) of a 3D world coordinate point.
     cv::Point projectToDisplay( const cv::Vec3f&) const;
 
@@ -177,13 +170,11 @@ protected:
 
 private:
     bool _autoUpdateRender;
-    RVTK::RendererPicker *_rpicker;
     VtkViewerInteractorManager *_iman;
     RFeatures::CameraParams _resetCamera;
     std::unordered_set<KeyPressHandler*> _keyPressHandlers;
-    mutable vtkRenderer* _ren;
-    mutable vtkRenderWindow* _rwin;
-    //vtkGenericOpenGLRenderWindow* _rwin;
+    vtkNew<vtkRenderer> _ren;
+    vtkNew<vtkGenericOpenGLRenderWindow> _rwin;
 };	// end class
 
 }	// end namespace

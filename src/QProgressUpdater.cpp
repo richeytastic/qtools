@@ -29,6 +29,8 @@ QProgressUpdater::Ptr QProgressUpdater::create( QProgressBar* pb, int nt)
 QProgressUpdater::QProgressUpdater( QProgressBar* pbar, int numThreads)
     : ProgressDelegate(numThreads), _pbar(pbar), _complete(false)
 {
+    if ( _pbar)
+        connect( this, &QProgressUpdater::progressUpdated, this, &QProgressUpdater::doOnProgressUpdated);
 }   // end ctor
 
 
@@ -47,14 +49,19 @@ void QProgressUpdater::processUpdate( float propComplete)
         return;
 
     propComplete = std::max( 0.0f, std::min( 1.0f, propComplete));
-    if ( _pbar)
-        _pbar->setValue( _pbar->maximum()*propComplete);
     emit progressUpdated( propComplete); // Cause update on the GUI thread
-
     if ( propComplete >= 1.0f)
     {
         emit progressComplete();
         _complete = true;
     }   // end if
 }   // end processUpdate
+
+
+// private slot
+void QProgressUpdater::doOnProgressUpdated( float propComplete)
+{
+    if ( _pbar)
+        _pbar->setValue( _pbar->maximum()*propComplete);
+}   // end doOnProgressUpdated
 
