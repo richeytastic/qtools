@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
 project( QTools)
 
-set( WITH_QT TRUE)
 set( WITH_RVTK TRUE)
+set( WITH_QT TRUE)
 include( "cmake/FindLibs.cmake")
 
 set( INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
@@ -14,8 +14,8 @@ include_directories( ${PROJECT_BINARY_DIR}) # Req. for generated Qt form headers
 
 set( SRC_FILES
     "${SRC_DIR}/ColourMappingWidget.cpp"
-    "${SRC_DIR}/DatabaseClient.cpp"
-    "${SRC_DIR}/DatabaseOptionsDialog.cpp"
+    #"${SRC_DIR}/DatabaseClient.cpp"
+    #"${SRC_DIR}/DatabaseOptionsDialog.cpp"
     "${SRC_DIR}/ImagerWidget.cpp"
     "${SRC_DIR}/KeyPressHandler.cpp"
     "${SRC_DIR}/PluginInterface.cpp"
@@ -40,7 +40,7 @@ set( SRC_FILES
 
 set( QOBJECTS
     "${INCLUDE_DIR}/ColourMappingWidget.h"
-    "${INCLUDE_DIR}/DatabaseOptionsDialog.h"
+    #"${INCLUDE_DIR}/DatabaseOptionsDialog.h"
     "${INCLUDE_DIR}/ImagerWidget.h"
     "${INCLUDE_DIR}/VtkActorViewer.h"
     "${INCLUDE_DIR}/PluginInterface.h"
@@ -58,7 +58,7 @@ set( QOBJECTS
 # Super set of header files
 set( INCLUDE_FILES
     "${QOBJECTS}"
-    "${INCLUDE_DIR}/DatabaseClient.h"
+    #"${INCLUDE_DIR}/DatabaseClient.h"
     "${INCLUDE_DIR}/KeyPressHandler.h"
     "${INCLUDE_DIR}/QImageTools.h"
     "${INCLUDE_DIR}/QUtils.h"
@@ -72,7 +72,7 @@ set( INCLUDE_FILES
 
 set( FORMS
     "${FORMS_DIR}/ColourMappingWidget.ui"
-    "${FORMS_DIR}/DatabaseOptionsDialog.ui"
+    #"${FORMS_DIR}/DatabaseOptionsDialog.ui"
     "${FORMS_DIR}/ImagerWidget.ui"
     "${FORMS_DIR}/PluginsDialog.ui"
     "${FORMS_DIR}/ViewNavigator.ui"
