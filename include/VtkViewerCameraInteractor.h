@@ -31,7 +31,6 @@ public:
 
     void OnChar() override {}   // Override VTK key press handling
 
-    void findPickedActor( int, int) {}
     void dolly( double f) { Dolly(f);}  // Needed to call protected function from outside.
 
 protected:

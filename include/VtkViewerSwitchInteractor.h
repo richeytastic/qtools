@@ -19,6 +19,7 @@
 #define QTOOLS_VTK_VIEWER_SWITCH_INTERACTOR_H
 
 #include "QTools_Export.h"
+#include <vtkNew.h>
 #include "VtkViewerActorInteractor.h"
 #include "VtkViewerCameraInteractor.h"
 #include <functional>
@@ -54,24 +55,23 @@ public:
     void setTrackballActor();
     void setTrackballCamera();
 
-    bool isActor() const { return _istyle == _iactor;}
-    bool isCamera() const { return _istyle == _icamera;}
+    void setUseCameraOffActor( bool v) { _useCamOffAct = v;}
+    bool useCameraOffActor() const { return _useCamOffAct;}
 
-    void SetDefaultRenderer(vtkRenderer*) override;
     void SetCurrentRenderer(vtkRenderer*) override;
 
 protected:
     VtkViewerSwitchInteractor();
-    ~VtkViewerSwitchInteractor() override;
 
 private:
+    vtkNew<VtkViewerActorInteractor> _iact;
+    vtkNew<VtkViewerCameraInteractor> _icam;
     VtkViewerInteractorManager *_iman;
-    VtkViewerActorInteractor *_iactor;
-    VtkViewerCameraInteractor *_icamera;
-    vtkInteractorStyle *_istyle;
+    vtkInteractorStyle *_isel, *_iuse;
+    bool _useCamOffAct;
 
-    void doStartState(int);
-    void doEndState();
+    void setStartState(int);
+    void setEndState();
     void doChunkAction(int, std::function<void()>);
     void doDolly(double);
     void doDolly();

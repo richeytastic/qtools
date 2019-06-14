@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2019 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,17 +22,19 @@
 #include <iostream>
 #include <vtkLight.h>
 #include <vtkRendererCollection.h>
+#include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 #include <vtkFollower.h>
 #include <RendererPicker.h>
 using QTools::VtkActorViewer;
 using QTools::VVI;
+using QTools::VMH;
 using QTools::KeyPressHandler;
 using RFeatures::CameraParams;
 
 
 VtkActorViewer::VtkActorViewer( QWidget *parent)
-    : QVTKOpenGLWidget( parent), _autoUpdateRender(false), _resetCamera()
+    : QVTKOpenGLWidget( parent), _autoUpdateRender(false)
 {
     //setUpdateBehavior( QOpenGLWidget::NoPartialUpdate);
     //requireRenderWindowInitialization();
@@ -50,7 +52,7 @@ VtkActorViewer::VtkActorViewer( QWidget *parent)
     _rwin->AddRenderer( _ren);
 
     _iman = new VtkViewerInteractorManager(this);
-    //setEnableHiDPI(true);
+    setEnableHiDPI(true);
 }	// end ctor
 
 
@@ -63,7 +65,7 @@ VtkActorViewer::~VtkActorViewer()
 
 void VtkActorViewer::setInteractor( vtkInteractorStyle* iStyle)
 {
-    iStyle->SetDefaultRenderer( _ren);
+    //iStyle->SetDefaultRenderer( _ren);
     _rwin->GetInteractor()->SetInteractorStyle( iStyle);
 }   // end setInteractor
 
@@ -71,7 +73,7 @@ void VtkActorViewer::setInteractor( vtkInteractorStyle* iStyle)
 // public
 void VtkActorViewer::updateRender()
 {
-    _ren->ResetCameraClippingRange();
+    //_ren->ResetCameraClippingRange();
     _rwin->Render();
 }   // end updateRender
 
@@ -129,23 +131,9 @@ void VtkActorViewer::clear()
 
 
 // public
-void VtkActorViewer::setResetCamera( const CameraParams& cp)
+CameraParams VtkActorViewer::camera() const
 {
-    _resetCamera = cp;
-    resetCamera();
-}   // end setResetCamera
-
-
-// public
-void VtkActorViewer::resetCamera()
-{
-    setCamera( _resetCamera);
-}   // end resetCamera
-
-
-// public
-void VtkActorViewer::getCamera( CameraParams& cp) const
-{
+    CameraParams cp;
     vtkCamera* cam = _ren->GetActiveCamera();
     const double *arr = cam->GetPosition();
     cp.pos = cv::Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
@@ -157,7 +145,8 @@ void VtkActorViewer::getCamera( CameraParams& cp) const
     cp.up = cv::Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
 
     cp.fov = cam->GetViewAngle();
-}   // end getCamera
+    return cp;
+}   // end camera
 
 
 // public
@@ -168,20 +157,10 @@ void VtkActorViewer::setCamera( const CameraParams& cp)
     cam->SetPosition( cp.pos[0], cp.pos[1], cp.pos[2]);
     cam->SetViewUp( cp.up[0], cp.up[1], cp.up[2]);
     cam->SetViewAngle( cp.fov);
-    _ren->ResetCameraClippingRange();
+    //_ren->ResetCameraClippingRange();
     if ( _autoUpdateRender)
         updateRender();
 }   // end setCamera
-
-
-// public
-void VtkActorViewer::setBackgroundWhite( bool on)
-{
-    const double c = on ? 255 : 0;
-    _ren->SetBackground( c, c, c);
-    if ( _autoUpdateRender)
-        updateRender();
-}	// end setBackgroundWhite
 
 
 // public
@@ -200,15 +179,15 @@ void VtkActorViewer::setOrthogonal( bool on)
     if ( on)
     {
         cam->ParallelProjectionOn();
-        cam->SetParallelScale( 10.0); // For parallel projection
+        //cam->SetParallelScale( 10.0); // For parallel projection
     }   // end if
     else
     {
         cam->ParallelProjectionOff();
-        cam->SetViewAngle( _resetCamera.fov);   // For perspective
+        //cam->SetViewAngle( _resetCamera.fov);   // For perspective
     }   // end else
 
-    _ren->ResetCameraClippingRange();
+    //_ren->ResetCameraClippingRange();
     if ( _autoUpdateRender)
         updateRender();
 }	// end setOrthogonal
@@ -226,8 +205,12 @@ void VtkActorViewer::setLights( const std::vector<RVTK::Light>& lights)
 // public
 bool VtkActorViewer::pointedAt( const cv::Point& p, const vtkProp* prop) const
 {
-    RVTK::RendererPicker picker( _ren, RVTK::RendererPicker::TOP_LEFT);
-    return prop && prop == picker.pickActor( p);
+    if ( prop)
+    {
+        RVTK::RendererPicker picker( _ren, RVTK::RendererPicker::TOP_LEFT);
+        return prop == picker.pickActor( p);
+    }   // end if
+    return false;
 }   // end pointedAt
 
 
@@ -362,7 +345,9 @@ void VtkActorViewer::detachKeyPressHandler( KeyPressHandler* kph) { _keyPressHan
 
 
 // public
-bool VtkActorViewer::isAttached( VVI* vvi) const { return _iman->interactors().count(vvi) > 0;}
+bool VtkActorViewer::isAttached( VMH* v) const { return _iman->isAttached(v);}
+bool VtkActorViewer::isAttached( VVI* v) const { return _iman->isAttached(v);}
+
 
 // public
 bool VtkActorViewer::attach( VVI* vvi)
@@ -370,6 +355,15 @@ bool VtkActorViewer::attach( VVI* vvi)
     if (isAttached(vvi))
         return false;
     _iman->addInteractor(vvi);
+    return true;
+}   // end attach
+
+// public
+bool VtkActorViewer::attach( VMH* vmh)
+{
+    if (isAttached(vmh))
+        return false;
+    _iman->addMouseHandler(vmh);
     return true;
 }   // end attach
 
@@ -383,26 +377,22 @@ bool VtkActorViewer::detach( VVI* vvi)
 }   // end detach
 
 // public
-size_t VtkActorViewer::transferInteractors( VtkActorViewer* tv)
+bool VtkActorViewer::detach( VMH* vmh)
 {
-    if ( tv == this)
-        return 0;
-    std::unordered_set<VVI*> interactors = _iman->interactors();    // Copy out since moving
-    for ( VVI* vvi : interactors)
-    {
-        detach(vvi);
-        tv->attach(vvi);
-    }   // end for
-    return interactors.size();
-}   // end transferInteractors
+    if (!isAttached(vmh))
+        return false;
+    _iman->removeMouseHandler(vmh);
+    return true;
+}   // end detach
 
 
 // protected
 void VtkActorViewer::keyPressEvent( QKeyEvent* event)
 {
+    //std::cerr << "QTools::VtkActorViewer:: KEY PRESSED" << std::endl;
     bool accepted = false;
     for ( KeyPressHandler* kph : _keyPressHandlers)
-        accepted |= kph->handleKeyPress(event);
+        accepted = accepted || kph->handleKeyPress(event);
     if ( !accepted)
         QVTKOpenGLWidget::keyPressEvent( event);
 }   // end keyPressEvent
@@ -413,7 +403,7 @@ void VtkActorViewer::keyReleaseEvent( QKeyEvent* event)
 {
     bool accepted = false;
     for ( KeyPressHandler* kph : _keyPressHandlers)
-        accepted |= kph->handleKeyRelease(event);
+        accepted = accepted || kph->handleKeyRelease(event);
     if ( !accepted)
         QVTKOpenGLWidget::keyReleaseEvent( event);
 }   // end keyReleaseEvent

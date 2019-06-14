@@ -38,7 +38,14 @@ public:
 
     void OnChar() override {}   // Override VTK key press handling
 
-    void findPickedActor( int x, int y);    // Encapsulates protected vtkInteractorStyleTrackballActor::FindPickedActor
+    // Returns true if a vtkProp3D picked.
+    bool findPickedActor( int x, int y);
+
+    // Same as return value from findPickedActor.
+    bool isOnActor() const;
+
+    const vtkProp3D* prop() const;
+
     void dolly( double);
 
 protected:

@@ -56,16 +56,16 @@ void PluginsDialog::addPlugins( const PluginsLoader& ploader)
             // TODO Add in user selected enabling/disabling of dynamic plugins (requires restart).
             //pluginItem->setCheckState(0, Qt::CheckState::Checked);
             // Get the names of the available interfaces in this plugin
-            const QStringList pnames = pmeta.plugin->getInterfaceIds();
+            const QStringList pnames = pmeta.plugin->interfaceIds();
             for ( const QString& pname : pnames)
             {
-                const QTools::PluginInterface* iface = pmeta.plugin->getInterface(pname);
+                const QTools::PluginInterface* iface = pmeta.plugin->iface(pname);
                 if (iface)
                 {
                     QTreeWidgetItem *iitem = new QTreeWidgetItem(pluginItem);
                     const QString cname = iface->metaObject()->className();
-                    iitem->setText(0, iface->getDisplayName() + " (" + cname + ")");
-                    iitem->setIcon(0, *iface->getIcon());
+                    iitem->setText(0, iface->displayName() + " (" + cname + ")");
+                    iitem->setIcon(0, *iface->icon());
                     QFont font = iitem->font(0);
                     font.setItalic(true);
                     iitem->setFont(0, font);

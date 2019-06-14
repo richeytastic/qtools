@@ -28,12 +28,13 @@
  * (getIcon, getDisplayName, and any others defined in child classes)
  * so that the correct functionality is obtained.
  *
- * Note that this interface needs to inherit from QObject so that plugin
- * types can be checked as instantiations of this interface using qobject_cast.
+ * Note that this interface needs to inherit from QObject so that plugins
+ * can be checked as instantiations of this interface using qobject_cast.
  */
 
 #include <QStringList>
 #include <QKeySequence>
+#include <QString>
 #include <QIcon>
 #include <QtPlugin>
 #include "QTools_Export.h"
@@ -51,32 +52,32 @@ public:
     // If class derived from this interface definition only defines and implements a single
     // object, the returned list will have only a single member: what's returned from this
     // instance's implementation of getDisplayName().
-    virtual QStringList getInterfaceIds() const;
+    virtual QStringList interfaceIds() const;
 
-    // Gets the interface accessible through this interface. Allows collection classes.
+    // Gets the plugin interface. Allows collection classes.
     // Returns this object if it expresses the correct interface, or the interface for
-    // the specified class. The return type should be changed to the derived class.
-    // Plugin types are not required to implement this function.
-    virtual PluginInterface* getInterface( const QString& id) const { return nullptr;}
+    // the specified class. The returned object should be cast to the derived class.
+    // Plugins are not required to implement this function.
+    virtual PluginInterface* iface( const QString&) const { return nullptr;}
 
     // Returns the icon for this plugin.
-    // Plugin types are not required to implement this function.
-    virtual const QIcon* getIcon() const { return nullptr;}
+    // Plugins are not required to implement this function.
+    virtual const QIcon* icon() const { return nullptr;}
 
     // Returns the key shortcut for this plugin.
-    // Plugin types are not required to implement this function.
-    virtual const QKeySequence* getShortcut() const { return nullptr;}
+    // Plugins are not required to implement this function.
+    virtual const QKeySequence* shortcut() const { return nullptr;}
 
     // The name used to display this plugin interface for menus, legend, etc.
-    // Plugin types are not required to implement this function but the
+    // Plugins are not required to implement this function but the
     // default is the name of the class.
-    virtual QString getDisplayName() const { return metaObject()->className();}
+    virtual QString displayName() const { return metaObject()->className();}
 
     // Define a tool tip to be displayed for this action (none by default).
-    virtual QString getToolTip() const { return "";}
+    virtual QString toolTip() const { return "";}
 
     // Complex plugins may want to define a widget to handle configuration.
-    virtual QWidget* getWidget() const { return nullptr;}
+    virtual QWidget* widget() const { return nullptr;}
 };  // end class
 
 }   // end namespace

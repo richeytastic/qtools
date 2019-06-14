@@ -32,4 +32,4 @@ set( QTools_LIBRARIES     ${QTools_LIBRARIES}         CACHE FILE "The QTools imp
 
 # handle QUIETLY and REQUIRED args and set QTools_FOUND to TRUE if all listed variables are TRUE
 include( "${CMAKE_ROOT}/Modules/FindPackageHandleStandardArgs.cmake")
-find_package_handle_standard_args( QTools "Found:\t${QTools_LIBRARIES}" QTools_LIBRARIES QTools_INCLUDE_DIRS)
+find_package_handle_standard_args( QTools QTools_FOUND QTools_LIBRARIES QTools_INCLUDE_DIRS)

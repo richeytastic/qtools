@@ -34,11 +34,11 @@ void ScalarColourRangeMapper::setRangeLimits( float rmin, float rmax)
     assert(rmin <= rmax);
     _rngl.first = rmin;
     _rngl.second = rmax;
-    setVisibleLimits( _visl.first, _visl.second);
+    setVisibleRange( _visl.first, _visl.second);
 }   // end setRangeLimits
 
 
-void ScalarColourRangeMapper::setVisibleLimits( float vmin, float vmax)
+void ScalarColourRangeMapper::setVisibleRange( float vmin, float vmax)
 {
     // If the visible range sits outside of the range limits, set to the range limits.
     const float rmin = _rngl.first;
@@ -53,7 +53,7 @@ void ScalarColourRangeMapper::setVisibleLimits( float vmin, float vmax)
 
     _visl.first = vmin;
     _visl.second = vmax;
-}   // end setVisibleLimits
+}   // end setVisibleRange
 
 
 void ScalarColourRangeMapper::setNumColours( size_t nc) { _ncols = std::max<size_t>(2, nc);}

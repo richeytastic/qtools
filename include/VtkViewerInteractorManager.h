@@ -31,6 +31,7 @@
  * client must manage the priority of the attached VtkViewerInteractor objects.
  */
 
+#include "VtkMouseHandler.h"
 #include "VtkViewerInteractor.h"
 #include "VtkViewerSwitchInteractor.h"
 #include <QPoint>
@@ -53,15 +54,14 @@ class QTools_EXPORT VtkViewerInteractorManager
 {
 public:
     explicit VtkViewerInteractorManager( VtkActorViewer*);
-    virtual ~VtkViewerInteractorManager();
 
-    const std::unordered_set<VVI*>& interactors() const;
     void addInteractor( VVI*);
     void removeInteractor( VVI*);
+    bool isAttached( VVI* v) const { return _vvis.count(v) > 0;}
 
-    // Returns the current mouse coordinates with top left origin.
-    const QPoint& mouseCoords() const { return _mousePos;}
-    bool mouseOnRenderer() const { return _onRenderer;} // Returns true iff on render window.
+    void addMouseHandler( VMH*);
+    void removeMouseHandler( VMH*);
+    bool isAttached( VMH* v) const { return _vmhs.count(v) > 0;}
 
     // Lock/unlock camera/actor interaction. Locking key matched since many interactors
     // may be active; one interactor should not be able to unlock interaction when another
@@ -72,12 +72,15 @@ public:
     // Returns true iff interaction currently locked.
     bool isInteractionLocked() const;
 
-    // Camera mode can be camera transform (default), or actor tansform.
-    // Interaction simply moves the underlying actors on the GPU and
-    // adjusts their internal transformations. Poly data for actors must
-    // be updated externally.
-    void setInteractionMode( InteractionMode);
+    // Camera mode can be camera transform (default), or actor tansform. Interaction moves the
+    // underlying actors on the GPU and adjusts their internal transformations. Poly data for actors
+    // must be updated externally.
+    // If in actor interaction mode, no movement will occur if no actor is picked under the mouse cursor.
+    // Use useCamOffActor=true to revert to camera interaction if in actor interaction mode and no
+    // actor is under the cursor. Otherwise, no movement will occur until set back in camera mode.
+    void setInteractionMode( InteractionMode, bool useCameraOffActor=false);
     InteractionMode interactionMode() const { return _imode;}
+    bool useCameraOffActor() const { return _iswitch->useCameraOffActor();}
 
 private:
     bool doOnLeftButtonDown();
@@ -88,40 +91,40 @@ private:
     bool doOnRightButtonUp();
     bool doOnMouseWheelForward();
     bool doOnMouseWheelBackward();
-    
     bool doOnMouseMove();
-    bool doOnEnter();
-    bool doOnLeave();
-    void updateMouseCoords();
 
+    void doOnEnter();
+    void doOnLeave();
+
+    void doBeforeCameraStart();
     void doAfterCameraRotate();
     void doAfterCameraPan();
     void doAfterCameraDolly();
     void doAfterCameraSpin();
     void doAfterCameraStop();
 
-    void doAfterActorRotate();
-    void doAfterActorDolly();
-    void doAfterActorSpin();
-    void doAfterActorPan();
-    void doAfterActorStop();
+    void doBeforeActorStart( const vtkProp3D*);
+    void doAfterActorRotate( const vtkProp3D*);
+    void doAfterActorDolly( const vtkProp3D*);
+    void doAfterActorSpin( const vtkProp3D*);
+    void doAfterActorPan( const vtkProp3D*);
+    void doAfterActorStop( const vtkProp3D*);
 
     friend class VtkViewerSwitchInteractor;
 
     VtkActorViewer *_qviewer;
-    QPoint _mousePos;
-    bool _onRenderer;
     bool _lbdown, _rbdown, _mbdown;
     InteractionMode _imode;
     qint64 _lbDownTime;
     std::minstd_rand0 _rng; // Random number generator for _lockKeys
 
-    VtkViewerSwitchInteractor* _istyle;
+    vtkNew<VtkViewerSwitchInteractor> _iswitch;
     std::unordered_set<VVI*> _vvis;   // The interactors
+    std::unordered_set<VMH*> _vmhs;   // The mouse handlers
     std::unordered_set<int> _lockKeys;
 
-    VtkViewerInteractorManager( const VtkViewerInteractorManager&); // No copy
-    void operator=( const VtkViewerInteractorManager&);             // No copy
+    VtkViewerInteractorManager( const VtkViewerInteractorManager&) = delete;
+    void operator=( const VtkViewerInteractorManager&) = delete;
 };  // end class
 
 }   // end namespace

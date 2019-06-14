@@ -28,4 +28,7 @@
 *.app
 
 *~
+
+test/
 testing/
+compile_commands.json

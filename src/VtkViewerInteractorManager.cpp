@@ -18,11 +18,13 @@
 #include <VtkViewerInteractorManager.h>
 #include <VtkActorViewer.h>
 
+/*
 // For getMouseCoords
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRendererCollection.h>
+*/
 
 #include <QApplication>
 #include <QDateTime>
@@ -34,39 +36,31 @@ using QTools::VtkViewerInteractorManager;
 using QTools::VtkActorViewer;
 using QTools::InteractionMode;
 using QTools::VVI;
+using QTools::VMH;
 
 
 // public
 VtkViewerInteractorManager::VtkViewerInteractorManager( VtkActorViewer *qv)
-    : _qviewer(qv), _mousePos(0,0), _onRenderer(false), _lbdown(false), _rbdown(false), _mbdown(false), _lbDownTime(0),
-      _rng( std::chrono::system_clock::now().time_since_epoch().count()), _istyle(nullptr)
+    : _qviewer(qv), _lbdown(false), _rbdown(false), _mbdown(false), _lbDownTime(0),
+      _rng( std::chrono::system_clock::now().time_since_epoch().count())
 {
     assert(qv);
-    _istyle = VtkViewerSwitchInteractor::New();
-    _istyle->setDelegate(this);
-    _qviewer->setInteractor( _istyle);
-    setInteractionMode( CAMERA_INTERACTION);
+    _iswitch->setDelegate(this);
+    _qviewer->setInteractor( _iswitch);
+    setInteractionMode( CAMERA_INTERACTION, false);
 }   // end ctor
 
 
-// public
-VtkViewerInteractorManager::~VtkViewerInteractorManager()
-{
-    _istyle->Delete();
-}   // end dtor
-
-
-void VtkViewerInteractorManager::setInteractionMode( InteractionMode m)
+void VtkViewerInteractorManager::setInteractionMode( InteractionMode m, bool v)
 {
     _imode = m;
     if (_imode == CAMERA_INTERACTION)
-        _istyle->setTrackballCamera();
+        _iswitch->setTrackballCamera();
     else
-        _istyle->setTrackballActor();
+        _iswitch->setTrackballActor();
+    _iswitch->setUseCameraOffActor(v);
 }   // end setInteractionMode
 
-
-const std::unordered_set<VVI*>& VtkViewerInteractorManager::interactors() const { return _vvis;}
 
 void VtkViewerInteractorManager::addInteractor( VVI* iface)
 {
@@ -82,6 +76,19 @@ void VtkViewerInteractorManager::removeInteractor( VVI* iface)
     _qviewer->detachKeyPressHandler( iface->keyPressHandler());
     _vvis.erase(iface);
 }   // end removeInteractor
+
+
+void VtkViewerInteractorManager::addMouseHandler( VMH* mh)
+{
+    assert(mh);
+    _vmhs.insert(mh);
+}   // end addMouseHandler
+
+void VtkViewerInteractorManager::removeMouseHandler( VMH* mh)
+{
+    assert(mh);
+    _vmhs.erase(mh);
+}   // end removeMouseHandler
 
 
 int VtkViewerInteractorManager::lockInteraction()
@@ -103,29 +110,53 @@ bool VtkViewerInteractorManager::unlockInteraction( int lkey)
 
 bool VtkViewerInteractorManager::isInteractionLocked() const { return !_lockKeys.empty();}
 
-
+/*
 // VTK 2D origin is at bottom left of render window so need to set to top left.
 void VtkViewerInteractorManager::updateMouseCoords()
 {
-    vtkRenderWindowInteractor* rint = _istyle->GetInteractor();
-    vtkRenderer* ren = rint->GetRenderWindow()->GetRenderers()->GetFirstRenderer();
-    _mousePos.rx() = rint->GetEventPosition()[0];
-    _mousePos.ry() = ren->GetSize()[1] - rint->GetEventPosition()[1] - 1;
+    vtkRenderWindowInteractor* rint = _iswitch->GetInteractor();
+    const int xpos = rint->GetEventPosition()[0];
+    const int ypos = rint->GetEventPosition()[1];
+    vtkRenderer* ren = rint->FindPokedRenderer( xpos, ypos);
+    _mPos.rx() = xpos;
+    _mPos.ry() = ren->GetSize()[1] - ypos - 1;   // Inversion of mouse coords
 }   // end updateMouseCoords
+*/
 
 
 namespace {
+
 bool dofunction( const std::unordered_set<VVI*>& vvis, std::function<bool(VVI*)> func)
 {
-    // If vvis are instead in a priority queue then the highest priority interactor can be
-    // handled first and then no other interactors should be called to handle the interaction.
     bool swallowed = false;
     for ( VVI* vvi : vvis)
     {
-        swallowed |= vvi->isEnabled() && func(vvi);
+        if ( vvi->isEnabled())
+            swallowed |= func(vvi);
     }   // end for
     return swallowed;
 }   // end dofunction
+
+bool dofunction( const std::unordered_set<VMH*>& vmhs, std::function<bool(VMH*)> func)
+{
+    bool swallowed = false;
+    for ( VMH* vmh : vmhs)
+    {
+        if ( vmh->isEnabled())
+            swallowed |= func(vmh);
+    }   // end for
+    return swallowed;
+}   // end dofunction
+
+void docamera( const std::unordered_set<VVI*>& vvis, std::function<void(VVI*)> func)
+{
+    for ( VVI* vvi : vvis)
+    {
+        if ( vvi->isEnabled())
+            func(vvi);
+    }   // end for
+}   // end docamera
+
 }   // end namespace
 
 
@@ -138,12 +169,12 @@ bool VtkViewerInteractorManager::doOnLeftButtonDown()
     if ( (tnow - _lbDownTime) < QApplication::doubleClickInterval())    // Check for double click
     {
         _lbDownTime = 0;
-        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->leftDoubleClick(_mousePos);});
+        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->leftDoubleClick();});
     }   // end if
     else
     {
         _lbDownTime = tnow;
-        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->leftButtonDown(_mousePos);});
+        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->leftButtonDown();});
     }   // end else
     return swallowed;
 }   // end doOnLeftButtonDown
@@ -152,97 +183,92 @@ bool VtkViewerInteractorManager::doOnLeftButtonDown()
 bool VtkViewerInteractorManager::doOnLeftButtonUp()
 {
     _lbdown = false;
-    return dofunction( _vvis, [this](VVI* vvi){ return vvi->leftButtonUp(_mousePos);});
+    return dofunction( _vmhs, [this](VMH* v){ return v->leftButtonUp();});
 }   // end doOnLeftButtonUp
 
 
 bool VtkViewerInteractorManager::doOnRightButtonDown()
 {
     _rbdown = true;
-    return dofunction( _vvis, [this](VVI* vvi){ return vvi->rightButtonDown(_mousePos);});
+    return dofunction( _vmhs, [this](VMH* v){ return v->rightButtonDown();});
 }   // end doOnRightButtonDown
 
 
 bool VtkViewerInteractorManager::doOnRightButtonUp()
 {
     _rbdown = false;
-    return dofunction( _vvis, [this](VVI* vvi){ return vvi->rightButtonUp(_mousePos);});
+    return dofunction( _vmhs, [this](VMH* v){ return v->rightButtonUp();});
 }   // end doOnRightButtonUp
 
 
 bool VtkViewerInteractorManager::doOnMiddleButtonDown()
 {
     _mbdown = true;
-    return dofunction( _vvis, [this](VVI* vvi){ return vvi->middleButtonDown(_mousePos);});
+    return dofunction( _vmhs, [this](VMH* v){ return v->middleButtonDown();});
 }   // end doOnMiddleButtonDown
 
 
 bool VtkViewerInteractorManager::doOnMiddleButtonUp()
 {
     _mbdown = false;
-    return dofunction( _vvis, [this](VVI* vvi){ return vvi->middleButtonUp(_mousePos);});
+    return dofunction( _vmhs, [this](VMH* v){ return v->middleButtonUp();});
 }   // end doOnMiddleButtonUp
 
 
 bool VtkViewerInteractorManager::doOnMouseWheelForward()
 {
-    return dofunction( _vvis, [this](VVI* vvi){ return vvi->mouseWheelForward(_mousePos);});
+    return dofunction( _vmhs, [this](VMH* v){ return v->mouseWheelForward();});
 }   // end doOnMouseWheelForward
 
 
 bool VtkViewerInteractorManager::doOnMouseWheelBackward()
 {
-    return dofunction( _vvis, [this](VVI* vvi){ return vvi->mouseWheelBackward(_mousePos);});
+    return dofunction( _vmhs, [this](VMH* v){ return v->mouseWheelBackward();});
 }   // end doOnMouseWheelBackward
 
 
 bool VtkViewerInteractorManager::doOnMouseMove()
 {
-    updateMouseCoords();
+    //updateMouseCoords();
     bool swallowed = false;
     if ( _lbdown)
-        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->leftDrag(_mousePos);});
+        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->leftDrag();});
     else if ( _rbdown)
-        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->rightDrag(_mousePos);});
+        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->rightDrag();});
     else if ( _mbdown)
-        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->middleDrag(_mousePos);});
+        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->middleDrag();});
     else
-        swallowed = dofunction( _vvis, [this](VVI* vvi){ return vvi->mouseMove(_mousePos);});
+        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->mouseMove();});
     return swallowed;
 }   // end doOnMouseMove
 
 
-bool VtkViewerInteractorManager::doOnEnter()
+void VtkViewerInteractorManager::doOnEnter()
 {
-    _onRenderer = true;
-    updateMouseCoords();
-    return dofunction( _vvis, [this](VVI* vvi){ return vvi->mouseEnter(_mousePos);});
+    //updateMouseCoords();
+    dofunction( _vvis, [this](VVI* v){ v->mouseEnter( _qviewer); return false;});
+    dofunction( _vmhs, [this](VMH* v){ v->mouseEnter( _qviewer); return false;});
 }   // end doOnEnter
 
-bool VtkViewerInteractorManager::doOnLeave()
+void VtkViewerInteractorManager::doOnLeave()
 {
-    _onRenderer = false;
-    return dofunction( _vvis, [this](VVI* vvi){ return vvi->mouseLeave(_mousePos);});
+    dofunction( _vvis, [this](VVI* v){ v->mouseLeave( _qviewer); return false;});
+    dofunction( _vmhs, [this](VMH* v){ v->mouseLeave( _qviewer); return false;});
 }   // end doOnLeave
 
 
-namespace {
-void docamera( const std::unordered_set<VVI*>& vvis, std::function<void(VVI*)> func)
-{
-    for ( VVI* vvi : vvis)
-        func(vvi);
-}   // end docamera
-}   // end namespace
+void VtkViewerInteractorManager::doAfterCameraRotate() { docamera( _vvis, [](VVI* v){ v->cameraRotate(); v->cameraMove();});}
+void VtkViewerInteractorManager::doAfterCameraDolly() { docamera( _vvis, [](VVI* v){ v->cameraDolly(); v->cameraMove();});}
+void VtkViewerInteractorManager::doAfterCameraSpin() { docamera( _vvis, [](VVI* v){ v->cameraSpin(); v->cameraMove();});}
+void VtkViewerInteractorManager::doAfterCameraPan() { docamera( _vvis, [](VVI* v){ v->cameraPan(); v->cameraMove();});}
 
+void VtkViewerInteractorManager::doBeforeCameraStart() { docamera( _vvis, [](VVI* v){ v->cameraStart();});}
+void VtkViewerInteractorManager::doAfterCameraStop() { docamera( _vvis, [](VVI* v){ v->cameraStop();});}
 
-void VtkViewerInteractorManager::doAfterCameraRotate() { docamera( _vvis, [](VVI* vvi){ vvi->cameraRotate();});}
-void VtkViewerInteractorManager::doAfterCameraDolly() { docamera( _vvis, [](VVI* vvi){ vvi->cameraDolly();});}
-void VtkViewerInteractorManager::doAfterCameraSpin() { docamera( _vvis, [](VVI* vvi){ vvi->cameraSpin();});}
-void VtkViewerInteractorManager::doAfterCameraPan() { docamera( _vvis, [](VVI* vvi){ vvi->cameraPan();});}
-void VtkViewerInteractorManager::doAfterCameraStop() { docamera( _vvis, [](VVI* vvi){ vvi->cameraStop();});}
+void VtkViewerInteractorManager::doAfterActorRotate( const vtkProp3D* p) { docamera( _vvis, [=](VVI* v){ v->actorRotate(p); v->actorMove(p);});}
+void VtkViewerInteractorManager::doAfterActorDolly( const vtkProp3D* p) { docamera( _vvis, [=](VVI* v){ v->actorDolly(p); v->actorMove(p);});}
+void VtkViewerInteractorManager::doAfterActorSpin( const vtkProp3D* p) { docamera( _vvis, [=](VVI* v){ v->actorSpin(p); v->actorMove(p);});}
+void VtkViewerInteractorManager::doAfterActorPan( const vtkProp3D* p) { docamera( _vvis, [=](VVI* v){ v->actorPan(p); v->actorMove(p);});}
 
-void VtkViewerInteractorManager::doAfterActorRotate() { docamera( _vvis, [](VVI* vvi){ vvi->actorRotate();});}
-void VtkViewerInteractorManager::doAfterActorDolly() { docamera( _vvis, [](VVI* vvi){ vvi->actorDolly();});}
-void VtkViewerInteractorManager::doAfterActorSpin() { docamera( _vvis, [](VVI* vvi){ vvi->actorSpin();});}
-void VtkViewerInteractorManager::doAfterActorPan() { docamera( _vvis, [](VVI* vvi){ vvi->actorPan();});}
-void VtkViewerInteractorManager::doAfterActorStop() { docamera( _vvis, [](VVI* vvi){ vvi->actorStop();});}
+void VtkViewerInteractorManager::doBeforeActorStart( const vtkProp3D* p) { docamera( _vvis, [=](VVI* v){ v->actorStart(p);});}
+void VtkViewerInteractorManager::doAfterActorStop( const vtkProp3D* p) { docamera( _vvis, [=](VVI* v){ v->actorStop(p);});}

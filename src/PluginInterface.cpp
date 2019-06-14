@@ -18,7 +18,7 @@
 #include "PluginInterface.h"
 using QTools::PluginInterface;
 
-QStringList PluginInterface::getInterfaceIds() const
+QStringList PluginInterface::interfaceIds() const
 {
-    return QStringList() << this->getDisplayName();
-}   // end getInterfaceIds
+    return QStringList() << this->displayName();
+}   // end interfaceIds

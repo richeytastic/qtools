@@ -36,8 +36,8 @@ public:
     // Set the min/max bounds of the mapping range.
     void setRangeLimits( float minv, float maxv);
 
-    // Set the visible limits (won't set outside of bounded range).
-    void setVisibleLimits( float smin, float smax);
+    // Set the visible range (won't set outside of bounded range).
+    void setVisibleRange( float smin, float smax);
 
     // Set the colours to be used for the current range.
     void setColours( const cv::Vec3b& c0, const cv::Vec3b& c1, const cv::Vec3b& c2);

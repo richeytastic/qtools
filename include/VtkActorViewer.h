@@ -24,7 +24,6 @@
 #include <CameraParams.h>   // RFeatures
 #include <VtkTools.h>       // RVTK
 #include <QApplication>     // All callers will have this anyway
-//#include <QVTKWidget.h>
 #include <QVTKOpenGLWidget.h>
 #include <vtkInteractorStyle.h>
 #include <vtkActor.h>
@@ -73,17 +72,10 @@ public:
     void clear();   // Remove all props
 
     // Will cause a re-rendering if auto rendering is on.
-    void setBackgroundWhite( bool);	// Background white if true, else black (automatic rendering update)
     void setStereoRendering( bool);	// Points are stereo if true else normal (automatic rendering update)
-    void setOrthogonal( bool);        // Projection orthogonal if true else perspective (automatic rendering update)
+    void setOrthogonal( bool);      // Projection orthogonal if true else perspective (automatic rendering update)
 
-    // All camera adjustments will cause a re-rendering if auto-rendering is on.
-    // Sets the parameters to reset the camera to when calling reset camera.
-    // See CameraParams default ctor for default initial reset camera params.
-    void setResetCamera( const RFeatures::CameraParams&);
-    void resetCamera(); // Reset camera parameters to those set in last call to setResetCamera
-
-    void getCamera( RFeatures::CameraParams&) const;
+    RFeatures::CameraParams camera() const;
     void setCamera( const RFeatures::CameraParams&);   // Move camera to given position
 
     void setLights( const std::vector<RVTK::Light>&);
@@ -136,15 +128,15 @@ public:
 
     bool attach( VVI*); // Attach given interactor returning false iff already attached.
     bool detach( VVI*); // Detach given interactor returning false iff already detached.
+    bool attach( VMH*); // Attach given mouse handler returning false iff already attached.
+    bool detach( VMH*); // Detach given mouse handler returning false iff already detached.
     bool isAttached( VVI*) const;   // Returns whether the given interactor is attached.
-
-    // Transfer to parameter viewer all VVIs attached to this one (returns # moved).
-    // If the parameter viewer is this viewer, nothing happens and zero is returnd.
-    size_t transferInteractors( VtkActorViewer*);
+    bool isAttached( VMH*) const;   // Returns whether the given mouse handler is attached.
 
     // Set/get the interaction mode (Camera or Actor)
-    void setInteractionMode( InteractionMode m) { _iman->setInteractionMode(m);}
+    void setInteractionMode( InteractionMode m, bool v) { _iman->setInteractionMode(m,v);}
     InteractionMode interactionMode() const { return _iman->interactionMode();}
+    bool useCameraOffActor() const { return _iman->useCameraOffActor();}
 
     // Set/get locking of call pass-through for mouse events bound to camera/actor movement.
     // Interaction locking is key matched; interaction will not necessarily be unlocked if
@@ -155,9 +147,6 @@ public:
     int lockInteraction() { return _iman->lockInteraction();}
     bool unlockInteraction( int key) { return _iman->unlockInteraction(key);}
     bool isInteractionLocked() const { return _iman->isInteractionLocked();}
-
-    const QPoint& mouseCoords() const { return _iman->mouseCoords();} // The current mouse coordinates.
-    bool mouseOnRenderer() const { return _iman->mouseOnRenderer();}  // If mouse is on the render window.
 
     // Add/remove a key press handlers. Note that these functions are called as part of the
     // attach/detach process for VtkViewerInteractor instances if they define KeyPressHandlers.
@@ -171,7 +160,6 @@ protected:
 private:
     bool _autoUpdateRender;
     VtkViewerInteractorManager *_iman;
-    RFeatures::CameraParams _resetCamera;
     std::unordered_set<KeyPressHandler*> _keyPressHandlers;
     vtkNew<vtkRenderer> _ren;
     vtkNew<vtkGenericOpenGLRenderWindow> _rwin;

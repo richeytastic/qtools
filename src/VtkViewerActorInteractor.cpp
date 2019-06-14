@@ -30,10 +30,18 @@ vtkStandardNewMacro( VtkViewerActorInteractor)
 VtkViewerActorInteractor::VtkViewerActorInteractor() {}
 VtkViewerActorInteractor::~VtkViewerActorInteractor() {}
 
-void VtkViewerActorInteractor::findPickedActor( int x, int y)
+
+bool VtkViewerActorInteractor::findPickedActor( int x, int y)
 {
     FindPickedActor(x,y);   // Protected
+    return isOnActor();
 }   // findPickedActor
+
+
+bool VtkViewerActorInteractor::isOnActor() const { return prop() != nullptr;}
+
+
+const vtkProp3D* VtkViewerActorInteractor::prop() const { return InteractionProp;}
 
 
 // Source code copied and edited from vtkInteractorStyleTrackballActor.cxx

@@ -52,6 +52,7 @@ set( QOBJECTS
     "${INCLUDE_DIR}/RangeSlider.h"
     "${INCLUDE_DIR}/TwoHandleSlider.h"
     "${INCLUDE_DIR}/ViewNavigator.h"
+    "${INCLUDE_DIR}/VtkMouseHandler.h"
     "${INCLUDE_DIR}/VtkViewerInteractor.h"
     )
 
