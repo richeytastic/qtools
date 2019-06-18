@@ -76,6 +76,9 @@ public:
     // Define a tool tip to be displayed for this action (none by default).
     virtual QString toolTip() const { return "";}
 
+    // Specify more informative text (can include rich text formatting) for help.
+    virtual QString whatsThis() const { return "";}
+
     // Complex plugins may want to define a widget to handle configuration.
     virtual QWidget* widget() const { return nullptr;}
 };  // end class
