@@ -48,7 +48,7 @@ PluginsLoader::PluginMeta::PluginMeta( const QString& fp, const PluginInterface*
 }   // end ctor
 
 
-size_t PluginsLoader::loadPlugins()
+size_t PluginsLoader::loadPlugins( const std::string& appcode)
 {
     size_t numLoaded = 0;
     // Load the static plugins
@@ -69,7 +69,7 @@ size_t PluginsLoader::loadPlugins()
         emit loadedPlugin( pluginInterface, cname);
     }   // end foreach
 
-    // Load the dynamic plugins and store them
+    // Load the shared libraries and store them
     const QStringList fnames = _pluginsDir.entryList( QDir::Files | QDir::Readable, QDir::Type | QDir::Name);
     for ( const QString& fname : fnames)
     {
@@ -94,6 +94,13 @@ size_t PluginsLoader::loadPlugins()
             emit loadedPlugin( nullptr, fpath);
             PluginMeta pmeta( fpath, nullptr, false);
             _plugins << pmeta;
+            continue;
+        }   // end if
+
+        // Check for matching application code
+        if ( pluginInterface->applicationCode() != appcode)
+        {
+            std::cerr << "Ignoring loaded plugin with mismatching application code." << std::endl;
             continue;
         }   // end if
 

@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2019 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,10 +15,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "PluginInterface.h"
+#include <PluginInterface.h>
 using QTools::PluginInterface;
 
 QStringList PluginInterface::interfaceIds() const
 {
-    return QStringList() << this->displayName();
+    if ( _iids.isEmpty())
+        return QStringList() << this->displayName();
+    return _iids;
 }   // end interfaceIds
+
+
+PluginInterface* PluginInterface::iface( const QString& qs) const
+{
+    return _plugins.count(qs) > 0 ? _plugins.value(qs) : nullptr;
+}   // end iface
+
+
+void PluginInterface::appendPlugin( PluginInterface* plugin)
+{
+    _iids << plugin->displayName();
+    _plugins.insert( plugin->displayName(), plugin);
+}   // end appendPlugin

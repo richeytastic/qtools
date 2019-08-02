@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2019 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,11 +32,11 @@
  * can be checked as instantiations of this interface using qobject_cast.
  */
 
-#include <QStringList>
 #include <QKeySequence>
-#include <QString>
-#include <QIcon>
+#include <QStringList>
 #include <QtPlugin>
+#include <QIcon>
+#include <QMap>
 #include "QTools_Export.h"
 
 namespace QTools {
@@ -47,18 +47,27 @@ class QTools_EXPORT PluginInterface : public QObject
 public:
     virtual ~PluginInterface(){}
 
+    // Return an application specific code that the PluginsLoader uses
+    // to verify for each loaded plugin that it is suitable for the client application.
+    // Must be overridden to something other than an empty string otherwise all
+    // loaded plugins will be rejected out of hand.
+    virtual std::string applicationCode() const { return "";}
+
     // If this PluginInterface object is a collection of different interfaces,
     // get the list of unique interface ids that are accessible through this collection.
     // If class derived from this interface definition only defines and implements a single
     // object, the returned list will have only a single member: what's returned from this
     // instance's implementation of getDisplayName().
-    virtual QStringList interfaceIds() const;
+    QStringList interfaceIds() const;
 
     // Gets the plugin interface. Allows collection classes.
     // Returns this object if it expresses the correct interface, or the interface for
     // the specified class. The returned object should be cast to the derived class.
     // Plugins are not required to implement this function.
-    virtual PluginInterface* iface( const QString&) const { return nullptr;}
+    PluginInterface* iface( const QString&) const;
+
+    // Convenience function for collection classes.
+    void appendPlugin( PluginInterface*);
 
     // Returns the icon for this plugin.
     // Plugins are not required to implement this function.
@@ -81,8 +90,15 @@ public:
 
     // Complex plugins may want to define a widget to handle configuration.
     virtual QWidget* widget() const { return nullptr;}
+
+private:
+    QMap<QString, PluginInterface*> _plugins;
+    QStringList _iids;
 };  // end class
 
 }   // end namespace
+
+#define QToolsPluginInterface_iid "com.github.richeytastic.qtools.PluginInterface"
+Q_DECLARE_INTERFACE( QTools::PluginInterface, QToolsPluginInterface_iid)
 
 #endif

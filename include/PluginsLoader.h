@@ -32,13 +32,14 @@ public:
     // Searches for shared plugins in the given absolute directory path.
     // If not given, or path doesn't resolve to a readable directory, searches
     // for the 'plugins' directory in the application root directory.
-    PluginsLoader( const std::string& sharedPluginsDir="");
+    explicit PluginsLoader( const std::string& sharedPluginsDir="");
     virtual ~PluginsLoader(){}
 
-    // Loads all plugins returning the number of static libraries found plus the number
-    // of dynamic plugins loaded. Fires onLoadedPlugin for each new plugin loaded,
-    // and foundStaticLibrary for each compile time linked library.
-    size_t loadPlugins();
+    // Loads all plugins returning the number of static libraries found plus the number of shared
+    // plugins loaded. Only shared libraries with matching appcode are loaded; shared libraries
+    // with non-matching appcodes are ignored. The appcode parameter is ignored for statically
+    // linked libraries. Fires loadedPlugin for each new plugin loaded (static or shared).
+    size_t loadPlugins( const std::string& appcode);
 
     // Get dynamically loaded library data.
     const QDir& getPluginsDir() const { return _pluginsDir;}    // The dynamic library location
@@ -59,6 +60,7 @@ signals:
     void loadedPlugin( PluginInterface*, QString);
 
 private:
+    std::string _appcode;
     QDir _pluginsDir;
     QList<PluginMeta> _plugins;
 
