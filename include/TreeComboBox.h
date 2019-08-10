@@ -26,7 +26,7 @@ namespace QTools {
 class QTools_EXPORT TreeComboBox : public QComboBox
 { Q_OBJECT
 public:
-    TreeComboBox( QWidget* parent=nullptr);
+    explicit TreeComboBox( QWidget* parent=nullptr);
 
 protected:
     bool eventFilter( QObject*, QEvent*) override;

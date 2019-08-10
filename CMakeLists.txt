@@ -16,6 +16,8 @@ set( SRC_FILES
     "${SRC_DIR}/ColourMappingWidget.cpp"
     #"${SRC_DIR}/DatabaseClient.cpp"
     #"${SRC_DIR}/DatabaseOptionsDialog.cpp"
+    "${SRC_DIR}/HelpAssistant.cpp"
+    "${SRC_DIR}/HelpDialog.cpp"
     "${SRC_DIR}/ImagerWidget.cpp"
     "${SRC_DIR}/KeyPressHandler.cpp"
     "${SRC_DIR}/PluginInterface.cpp"
@@ -43,6 +45,7 @@ set( SRC_FILES
 set( QOBJECTS
     "${INCLUDE_DIR}/ColourMappingWidget.h"
     #"${INCLUDE_DIR}/DatabaseOptionsDialog.h"
+    "${INCLUDE_DIR}/HelpDialog.h"
     "${INCLUDE_DIR}/ImagerWidget.h"
     "${INCLUDE_DIR}/VtkActorViewer.h"
     "${INCLUDE_DIR}/PluginInterface.h"
@@ -64,6 +67,7 @@ set( QOBJECTS
 set( INCLUDE_FILES
     "${QOBJECTS}"
     #"${INCLUDE_DIR}/DatabaseClient.h"
+    "${INCLUDE_DIR}/HelpAssistant.h"
     "${INCLUDE_DIR}/KeyPressHandler.h"
     "${INCLUDE_DIR}/QImageTools.h"
     "${INCLUDE_DIR}/QUtils.h"

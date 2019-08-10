@@ -104,3 +104,27 @@ QVariant TreeModel::headerData( int section, Qt::Orientation orientation, int ro
 {
     return orientation == Qt::Horizontal && role == Qt::DisplayRole ? _rootItem->data(section) : QVariant();
 }   // end headerDataa
+
+
+QModelIndex TreeModel::_find( TreeItem* item, const QVariant& data, int col) const
+{
+    if ( item->data(col) == data)
+        return createIndex( item->row(), col, item);
+
+    QModelIndex idx;
+    const int n = item->childCount();
+    for ( int i = 0; i < n; ++i)
+    {
+        idx = _find( item->child(i), data, col);
+        if ( idx.isValid())
+            break;
+    }   // end for
+
+    return idx;
+}   // end _find
+
+
+QModelIndex TreeModel::find( const QVariant& data, int col) const
+{
+    return _find( _rootItem, data, col);
+}   // end find

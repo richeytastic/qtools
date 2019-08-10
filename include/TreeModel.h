@@ -41,7 +41,10 @@ public:
      */
     TreeItem* setNewRoot( const QVector<QVariant>& data);
 
-    QVariant data( const QModelIndex &index, int role) const override;
+    /**
+     * Only Qt::DisplayRole is supported for now.
+     */
+    QVariant data( const QModelIndex &index, int role=Qt::DisplayRole) const override;
 
     Qt::ItemFlags flags( const QModelIndex &index) const override;
     QVariant headerData( int section, Qt::Orientation, int role = Qt::DisplayRole) const override;
@@ -50,8 +53,14 @@ public:
     int rowCount( const QModelIndex &parent = QModelIndex()) const override;
     int columnCount( const QModelIndex &parent = QModelIndex()) const override;
 
+    /**
+     * Linear search of the model to find the index with the given data at the given column.
+     */
+    QModelIndex find( const QVariant& data, int col) const;
+
 private:
     TreeItem *_rootItem;
+    QModelIndex _find( TreeItem*, const QVariant&, int) const;
 };  // end class
 
 }   // end namespace
