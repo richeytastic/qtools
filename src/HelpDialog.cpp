@@ -20,6 +20,8 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTextDocument>
+#include <QTextStream>
+#include <QFile>
 #include <iostream>
 using QTools::HelpDialog;
 using QTools::TreeModel;
@@ -135,14 +137,30 @@ void HelpDialog::setContent( const QString& htmlfile)
         _tview->setCurrentIndex( idx); // Ensure corresponding entry in TOC is highlighted.
     }   // end if
     else
-        std::cerr << "Tried to set HTML content to something not even in the TOC." << std::endl;
+        std::cerr << "Tried to set HTML content to " << htmlfile.toStdString() << "; something not even in the TOC." << std::endl;
 }   // end setContent
 
 
 void HelpDialog::_setContent( const QString& htmlfile)
 {
-    _tbrowser->setSource( htmlfile);
+    QString html;
+    QFile f(htmlfile);
+    if ( f.open(QFile::ReadOnly | QFile::Text))
+    {
+        QTextStream in(&f);
+        html = in.readAll();
+    }   // end if
+
+    if ( html.isEmpty())
+    {
+        std::cerr << "Unable to read in HTML from " << htmlfile.toStdString() << std::endl;
+        return;
+    }   // end if
+
+    _tbrowser->setHtml( html);
+
+    // Get the title from the HTML's head section.
     QTextDocument doc;
-    doc.setHtml( _tbrowser->toHtml());
+    doc.setHtml( html);
     setWindowTitle( _wprfx + " | " + doc.metaInformation( QTextDocument::MetaInformation::DocumentTitle));
 }   // end _setContent

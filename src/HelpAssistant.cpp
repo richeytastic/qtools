@@ -58,22 +58,20 @@ bool readSubSection( const std::string& tdir, const PTree& section, TreeItem* ro
     }   // end else
 
     // If the given file reference does not exist, it is skipped.
-    BFS::path fpath(tdir);
-    fpath /= fileref;
-    if ( !BFS::exists(fpath))
+    const std::string htmlfile = tdir + "/" + fileref;
+    if ( !BFS::exists(htmlfile))
     {
-        std::cerr << "WARNING - skipping section with file path: " << fpath.string() << "; it does not exist!" << std::endl;
+        std::cerr << "WARNING - skipping section with file path: " << htmlfile << "; it does not exist!" << std::endl;
         return true;
     }   // end if
 
     // Get if this section specifies a directory to read in arbitrary HTML files placed there.
     const std::string dirref = section.get<std::string>("<xmlattr>.dir", "");
-    BFS::path dpath(tdir);
-    dpath /= dirref;
+    const std::string dpath = tdir + "/" + dirref;
     // If the directory reference was given but it does not exist, then skip this section.
     if ( !dirref.empty() && !BFS::is_directory(dpath))
     {
-        std::cerr << "WARNING - skipping section with directory path: " << dpath.string() << "; it does not exist!" << std::endl;
+        std::cerr << "WARNING - skipping section with directory path: " << dpath << "; it does not exist!" << std::endl;
         return true;
     }   // end if
 
@@ -81,7 +79,6 @@ bool readSubSection( const std::string& tdir, const PTree& section, TreeItem* ro
 
     // Get this section's title (if explicitly defined - otherwise it's obtained from HTML head).
     std::string title = section.get<std::string>("<xmlattr>.title", "");
-    const std::string& htmlfile = fpath.string();
     if ( title.empty())
         title = titleFromHTMLHead( htmlfile);
     if ( title.empty())
@@ -90,6 +87,7 @@ bool readSubSection( const std::string& tdir, const PTree& section, TreeItem* ro
         return true;
     }   // end if
 
+    //std::cerr << "Making help section: " << title << " --> " << htmlfile << std::endl;
     node = new TreeItem( {QString::fromStdString(title), QString::fromStdString(htmlfile)}, root);
 
     // If the section specifies a directory reference then the title must be given and all html files
@@ -102,18 +100,17 @@ bool readSubSection( const std::string& tdir, const PTree& section, TreeItem* ro
             const std::string lowRelPathStr = boost::algorithm::to_lower_copy(path.string());
             if ( boost::algorithm::ends_with( lowRelPathStr, ".html"))
             {
-                const std::string& htmlfile = path.string();
-                //std::cerr << "Got " << htmlfile << " from directory" << std::endl;
-                const std::string htitle = titleFromHTMLHead( htmlfile);
+                const std::string dhtmlfile = dpath + "/" + path.filename().string();
+                //std::cerr << "Got " << dhtmlfile << " from directory" << std::endl;
+                const std::string htitle = titleFromHTMLHead( dhtmlfile);
                 if ( !htitle.empty())
-                    node->appendChild( new TreeItem( {QString::fromStdString(htitle), QString::fromStdString(htmlfile)}));
+                    node->appendChild( new TreeItem( {QString::fromStdString(htitle), QString::fromStdString(dhtmlfile)}));
                 else
-                    std::cerr << "WARNING - skipping " << htmlfile << "; no title tag given in its head section." << std::endl;
+                    std::cerr << "WARNING - skipping " << dhtmlfile << "; no title tag given in its head section." << std::endl;
             }   // end if
         }   // end for
     }   // end if
 
-    //std::cerr << "Read title: " << title << ", ref: " << fileref << std::endl;
     // Recursively get this section's sections (if it has any).
     for ( const PTree::value_type& v : section)
     {
@@ -259,7 +256,7 @@ void HelpAssistant::refreshContents()
 
 bool HelpAssistant::show( const QString& token)
 {
-    QString hfile = _tdir.path() + QDir::separator() + "index.html";
+    QString hfile = _tdir.path() + "/index.html";
     if ( !token.isEmpty())
         hfile = token;
 
