@@ -27,7 +27,7 @@
 #include <boost/filesystem.hpp>
 #include <iostream>
 using QTools::HelpAssistant;
-using QTools::HelpDialog;
+using QTools::HelpBrowser;
 using QTools::TreeModel;
 using QTools::TreeItem;
 using PTree = boost::property_tree::ptree;
@@ -48,12 +48,13 @@ std::string titleFromHTMLHead( const std::string& htmlfile)
 }   // end titleFromHTMLHead
 
 
-bool readSubSection( const std::string& tdir, const PTree& section, TreeItem* root)
+bool readSection( const std::string& tdir, const PTree& section, TreeItem* root)
 {
+    static const std::string istr = " QTools::HelpAssistant::readSection: ";
     std::string fileref = section.get<std::string>("<xmlattr>.ref", "");
     if ( fileref.empty())
     {
-        std::cerr << "ERROR - section has no ref (file path) attribute!" << std::endl;
+        std::cerr << "[WARNING]" << istr << "Section has no ref (file path) attribute!" << std::endl;
         return false;
     }   // end else
 
@@ -61,7 +62,7 @@ bool readSubSection( const std::string& tdir, const PTree& section, TreeItem* ro
     const std::string htmlfile = tdir + "/" + fileref;
     if ( !BFS::exists(htmlfile))
     {
-        std::cerr << "WARNING - skipping section with file path: " << htmlfile << "; it does not exist!" << std::endl;
+        std::cerr << "[WARNING]" << istr << "Skipping section with file path: " << htmlfile << "; it does not exist!" << std::endl;
         return true;
     }   // end if
 
@@ -71,7 +72,7 @@ bool readSubSection( const std::string& tdir, const PTree& section, TreeItem* ro
     // If the directory reference was given but it does not exist, then skip this section.
     if ( !dirref.empty() && !BFS::is_directory(dpath))
     {
-        std::cerr << "WARNING - skipping section with directory path: " << dpath << "; it does not exist!" << std::endl;
+        std::cerr << "[WARNING]" << istr << "Skipping section with directory path: " << dpath << "; it does not exist!" << std::endl;
         return true;
     }   // end if
 
@@ -83,7 +84,7 @@ bool readSubSection( const std::string& tdir, const PTree& section, TreeItem* ro
         title = titleFromHTMLHead( htmlfile);
     if ( title.empty())
     {
-        std::cerr << "WARNING - skipping section; title not given explicitly in section, and HTML has no title tag in head!" << std::endl;
+        std::cerr << "[WARNING]" << istr << "Skipping section; title not given explicitly in section, and HTML has no title tag in head!" << std::endl;
         return true;
     }   // end if
 
@@ -106,7 +107,7 @@ bool readSubSection( const std::string& tdir, const PTree& section, TreeItem* ro
                 if ( !htitle.empty())
                     node->appendChild( new TreeItem( {QString::fromStdString(htitle), QString::fromStdString(dhtmlfile)}));
                 else
-                    std::cerr << "WARNING - skipping " << dhtmlfile << "; no title tag given in its head section." << std::endl;
+                    std::cerr << "[WARNING]" << istr << " Skipping " << dhtmlfile << "; no title tag given in its head section." << std::endl;
             }   // end if
         }   // end for
     }   // end if
@@ -117,38 +118,44 @@ bool readSubSection( const std::string& tdir, const PTree& section, TreeItem* ro
         if ( v.first != "section")
             continue;
 
-        if ( !readSubSection( tdir, v.second, node))
+        if ( !readSection( tdir, v.second, node))
             return false;
     }   // end for
 
     return true;
-}   // end readSubSection
+}   // end readSection
 
 
-TreeModel* readTableOfContents( const QString& tdir)
+TreeModel* readTableOfContents( const QString& tdir, const QString& tocXMLFile)
 {
-    const std::string tocxml = (tdir + QDir::separator() + "toc.xml").toStdString();
-    std::ifstream ifs;
-    ifs.open( tocxml);
-    if ( !ifs.is_open())
+    QFile tocfile(tocXMLFile);
+    if ( !tocfile.open( QIODevice::ReadOnly | QIODevice::Text))
+    {
+        std::cerr << "[WARNING] QTools::HelpAssistant::readTableOfContents: Unable to read TOC file!" << std::endl;
         return nullptr;
+    }   // end if
+
+    QTextStream in(&tocfile);
+    QString tocdata = in.readAll();
+    tocfile.close();
+
+    std::istringstream iss(tocdata.toStdString());
 
     PTree tree;
-    boost::property_tree::read_xml( ifs, tree);
+    boost::property_tree::read_xml( iss, tree);
 
     if ( tree.count("TableOfContents") == 0)
         return nullptr;
 
     TreeModel *toc = new TreeModel;
     TreeItem *root = toc->setNewRoot({"Table Of Contents"});
-
     const PTree& xmltoc = tree.get_child("TableOfContents");
     for ( const PTree::value_type& v : xmltoc)
     {
         if ( v.first != "section")
             continue;
 
-        if ( !readSubSection( tdir.toStdString(), v.second, root))
+        if ( !readSection( tdir.toStdString(), v.second, root))
         {
             delete toc;
             toc = nullptr;
@@ -162,7 +169,7 @@ TreeModel* readTableOfContents( const QString& tdir)
 }   // end namespace
 
 
-HelpAssistant::HelpAssistant( const QString& hdir, QWidget *prnt) : _dialog(new HelpDialog(prnt))
+HelpAssistant::HelpAssistant( const QString& hdir, QWidget *prnt) : _dialog(new HelpBrowser(prnt))
 {
     _initTempHtmlDir(hdir);
     _dialog->setSearchPath( _tdir.path());
@@ -173,6 +180,12 @@ HelpAssistant::~HelpAssistant()
 {
     delete _dialog;
 }   // end dtor
+
+
+bool HelpAssistant::addSubDirectory( const QString& dir)
+{
+    return QDir(_tdir.path()).mkdir(dir);
+}   // end addSubDirectory
 
 
 void HelpAssistant::_initTempHtmlDir( const QString& srcDir)
@@ -246,10 +259,10 @@ QString HelpAssistant::addDocument( const QString& dir, const QString& hfile)
 }   // end addDocument
 
 
-void HelpAssistant::refreshContents()
+void HelpAssistant::refreshContents( const QString& tocXmlFile)
 {
     // Read in the toc.xml file if it exists
-    TreeModel *toc = readTableOfContents( _tdir.path());
+    TreeModel *toc = readTableOfContents( _tdir.path(), tocXmlFile);
     _dialog->setTableOfContents(toc);
 }   // end refreshContents
 

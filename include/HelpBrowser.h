@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#ifndef QTOOLS_HELP_DIALOG_H
-#define QTOOLS_HELP_DIALOG_H
+#ifndef QTOOLS_HELP_BROWSER_H
+#define QTOOLS_HELP_BROWSER_H
 
 #include "TreeModel.h"
 #include <QDialog>
@@ -26,11 +26,11 @@
 
 namespace QTools {
 
-class QTools_EXPORT HelpDialog : public QDialog
+class QTools_EXPORT HelpBrowser : public QDialog
 { Q_OBJECT
 public:
-    explicit HelpDialog( QWidget *parent = nullptr);
-    ~HelpDialog() override;
+    explicit HelpBrowser( QWidget *parent = nullptr);
+    ~HelpBrowser() override;
 
     /**
      * The search path is the root of all content. Relative paths specified in HTML
@@ -48,10 +48,13 @@ public:
     /**
      * Set the TextBrowser with content from the given file returning false iff the file couldn't be read.
      */
-    void setContent( const QString& htmlfile);
+    bool setContent( const QString& htmlfile);
 
 protected:
     QSize sizeHint() const override;
+
+private slots:
+    void _doOnSourceChanged( const QUrl&);
 
 private:
     QString _wprfx;
@@ -59,9 +62,11 @@ private:
     QTreeView *_tview;
     QTextBrowser *_tbrowser;
     class TreeView;
-    void _setContent( const QString&);
-    HelpDialog( const HelpDialog&) = delete;
-    void operator=( const HelpDialog&) = delete;
+    bool _updateTOCIndex( const QString&);
+    void _updateTitleFromContent();
+    bool _setContent( const QString&);
+    HelpBrowser( const HelpBrowser&) = delete;
+    void operator=( const HelpBrowser&) = delete;
 };  // end class
 
 }   // end namespace
