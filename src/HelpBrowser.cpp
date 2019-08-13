@@ -23,6 +23,7 @@
 #include <QTextDocument>
 #include <QTextStream>
 #include <QFile>
+#include <QDir>
 #include <iostream>
 using QTools::HelpBrowser;
 using QTools::TreeModel;
@@ -93,8 +94,8 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QDialog(parent)
     connect( backButton, &QToolButton::clicked, [this](){ _tbrowser->backward();});
 
     QHBoxLayout *hlayout = new QHBoxLayout;
-    hlayout->addWidget( homeButton);
     hlayout->addWidget( backButton);
+    hlayout->addWidget( homeButton);
     hlayout->insertStretch(2);
     hlayout->addWidget( closeButton);
 
@@ -160,7 +161,7 @@ bool HelpBrowser::_setContent( const QString& htmlfile)
 void HelpBrowser::_doOnSourceChanged( const QUrl &src)
 {
     if ( !_updateTOCIndex( src.path()))
-        _updateTOCIndex( _tbrowser->searchPaths().first() + "/" + src.path());
+        _updateTOCIndex( src.path());
     _updateTitleFromContent();
 }   // end _doOnSourceChanged
 

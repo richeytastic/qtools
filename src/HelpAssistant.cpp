@@ -88,8 +88,8 @@ bool readSection( const std::string& tdir, const PTree& section, TreeItem* root)
         return true;
     }   // end if
 
-    //std::cerr << "Making help section: " << title << " --> " << htmlfile << std::endl;
-    node = new TreeItem( {QString::fromStdString(title), QString::fromStdString(htmlfile)}, root);
+    //std::cerr << "Set TOC node: " << title << " --> " << fileref << std::endl;
+    node = new TreeItem( {QString::fromStdString(title), QString::fromStdString(fileref)}, root);
 
     // If the section specifies a directory reference then the title must be given and all html files
     // within the directory will be added to the model under it.
@@ -102,10 +102,13 @@ bool readSection( const std::string& tdir, const PTree& section, TreeItem* root)
             if ( boost::algorithm::ends_with( lowRelPathStr, ".html"))
             {
                 const std::string dhtmlfile = dpath + "/" + path.filename().string();
-                //std::cerr << "Got " << dhtmlfile << " from directory" << std::endl;
                 const std::string htitle = titleFromHTMLHead( dhtmlfile);
                 if ( !htitle.empty())
-                    node->appendChild( new TreeItem( {QString::fromStdString(htitle), QString::fromStdString(dhtmlfile)}));
+                {
+                    const std::string relfile = dirref + "/" + path.filename().string();
+                    //std::cerr << "Set TOC node " << relfile << std::endl;
+                    node->appendChild( new TreeItem( {QString::fromStdString(htitle), QString::fromStdString(relfile)}));
+                }   // end if
                 else
                     std::cerr << "[WARNING]" << istr << " Skipping " << dhtmlfile << "; no title tag given in its head section." << std::endl;
             }   // end if
