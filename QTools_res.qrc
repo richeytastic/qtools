@@ -1,5 +1,9 @@
-<RCC>
-    <qresource>
-        <file alias="HANDLE_IMG">res/images/TwoHandleSlider_handle.png</file>
-    </qresource>
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/icons">
+    <file alias="HOME">res/icons/home.png</file>
+    <file alias="GO_BACK">res/icons/go-back.png</file>
+</qresource>
+<qresource prefix="/images">
+    <file alias="HANDLE_IMG">res/images/TwoHandleSlider_handle.png</file>
+</qresource>
 </RCC>

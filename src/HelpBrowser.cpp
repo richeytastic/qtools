@@ -17,6 +17,7 @@
 
 #include <HelpBrowser.h>
 #include <QPushButton>
+#include <QToolButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTextDocument>
@@ -83,14 +84,24 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QDialog(parent)
     connect( closeButton, &QPushButton::clicked, this, &HelpBrowser::close);
     closeButton->setSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum);
 
+    QToolButton *homeButton = new QToolButton(this);
+    homeButton->setIcon( QPixmap(":/icons/HOME"));
+    connect( homeButton, &QToolButton::clicked, [this](){ _tbrowser->home();});
+
+    QToolButton *backButton = new QToolButton(this);
+    backButton->setIcon( QPixmap(":/icons/GO_BACK"));
+    connect( backButton, &QToolButton::clicked, [this](){ _tbrowser->backward();});
+
     QHBoxLayout *hlayout = new QHBoxLayout;
-    hlayout->addWidget( new QWidget);
+    hlayout->addWidget( homeButton);
+    hlayout->addWidget( backButton);
+    hlayout->insertStretch(2);
     hlayout->addWidget( closeButton);
 
     layout()->addItem(hlayout);
 
     _tview->setSelectionMode(QAbstractItemView::SingleSelection);
-    _tview->setTabKeyNavigation(true);
+    _tbrowser->setOpenExternalLinks(true);
 
     connect( _tbrowser, &QTextBrowser::sourceChanged, this, &HelpBrowser::_doOnSourceChanged);
 }   // end ctor
@@ -101,7 +112,7 @@ HelpBrowser::~HelpBrowser()
 }   // end dtor
 
 
-QSize HelpBrowser::sizeHint() const { return QSize( 900,680);}
+QSize HelpBrowser::sizeHint() const { return QSize( 1024, 680);}
 
 
 void HelpBrowser::setSearchPath( const QString& spath)
@@ -140,21 +151,7 @@ bool HelpBrowser::setContent( const QString& htmlfile)
 
 bool HelpBrowser::_setContent( const QString& htmlfile)
 {
-    QString html;
-    QFile f(htmlfile);
-    if ( f.open(QFile::ReadOnly | QFile::Text))
-    {
-        QTextStream in(&f);
-        html = in.readAll();
-    }   // end if
-
-    if ( html.isEmpty())
-    {
-        std::cerr << "[WARNING QTools::HelpBrowser::_setContent: Unable to read in HTML from " << htmlfile.toStdString() << std::endl;
-        return false;
-    }   // end if
-
-    _tbrowser->setHtml( html);
+    _tbrowser->setSource( htmlfile);
     _updateTitleFromContent();
     return true;
 }   // end _setContent
@@ -162,7 +159,8 @@ bool HelpBrowser::_setContent( const QString& htmlfile)
 
 void HelpBrowser::_doOnSourceChanged( const QUrl &src)
 {
-    _updateTOCIndex( _tbrowser->searchPaths().first() + "/" + src.path());
+    if ( !_updateTOCIndex( src.path()))
+        _updateTOCIndex( _tbrowser->searchPaths().first() + "/" + src.path());
     _updateTitleFromContent();
 }   // end _doOnSourceChanged
 
@@ -182,11 +180,6 @@ bool HelpBrowser::_updateTOCIndex( const QString& htmlfile)
     QModelIndex idx = static_cast<const TreeModel*>(_tview->model())->find( htmlfile, 1);
     if ( idx.isValid())
         _tview->setCurrentIndex( idx); // Ensure corresponding entry in TOC is highlighted.
-    else
-    {
-        std::cerr << "[WARNING] QTools::HelpBrowser::_updateTOCIndex: Tried to set HTML content to "
-                  << htmlfile.toStdString() << "; something not even in the TOC." << std::endl;
-    }   // end else
     return idx.isValid();
 }   // end _updateTOCIndex
 
