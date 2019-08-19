@@ -16,6 +16,7 @@
  ************************************************************************/
 
 #include <PluginInterface.h>
+#include <iostream>
 using QTools::PluginInterface;
 
 QStringList PluginInterface::interfaceIds() const

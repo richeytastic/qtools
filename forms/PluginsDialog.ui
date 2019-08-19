@@ -32,7 +32,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>The following plugins are available:</string>
+      <string>The following plugins are available (those in red failed to load):</string>
      </property>
     </widget>
    </item>

@@ -49,8 +49,7 @@ void ScalarColourRangeMapper::setVisibleRange( float vmin, float vmax)
     if ( vmax < rmin || vmax > rmax)
         vmax = rmax;
 
-    assert(vmin <= vmax);
-
+    //assert(vmin <= vmax);
     _visl.first = vmin;
     _visl.second = vmax;
 }   // end setVisibleRange
@@ -103,7 +102,9 @@ void ScalarColourRangeMapper::rebuild()
         nc0 = 0;    // Will use lower (negative) colour range only
     else
     {   // Calculate the proportional number of colours below zero (nc0) and above zero (nc1)
-        nc0 = (size_t)(double(_ncols) * fabs(minv)/double(maxv - minv) + 0.5);
+        const double vrng = maxv - minv;
+        if ( vrng > 0.0)
+            nc0 = (size_t)(double(_ncols) * fabs(minv)/vrng + 0.5);
         nc1 = _ncols - nc0;
     }   // end else
 

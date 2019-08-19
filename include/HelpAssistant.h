@@ -37,15 +37,12 @@ public:
     ~HelpAssistant();
 
     /**
-     * Add a new subdirectory to the working directory.
+     * Add an html file (absolute path to input file) in the working directory within the
+     * given subdirectory and return the identifying token for the page to be used later
+     * in calls to show. If the subdirectory does not exist, it will be created.
+     * Note that the subdirectory cannot be empty.
      */
-    bool addSubDirectory( const QString& dir);
-
-    /**
-     * Add an html file at the given location within the working directory and
-     * return the identifying token for the page to be used later in calls to show.
-     */
-    QString addDocument( const QString& dir, const QString& htmlFile);
+    QString addDocument( const QString& subdir, const QString& htmlFileAbspath);
 
     /**
      * Call after all documentation added to refresh what's displayed in the dialog.
@@ -62,7 +59,7 @@ public:
 
 private:
     HelpBrowser *_dialog;
-    QTemporaryDir _tdir;
+    QTemporaryDir _workdir;
     void _initTempHtmlDir( const QString&);
 };  // end class
 

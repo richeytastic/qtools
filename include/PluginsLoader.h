@@ -57,7 +57,7 @@ public:
 signals:
     // Signal discovery of statically linked libraries emitting the class name,
     // or signal loading of dynamically linked libraries with absolute filepath.
-    void loadedPlugin( PluginInterface*, QString);
+    void loadedPlugin( PluginInterface*, const QString&);
 
 private:
     std::string _appcode;

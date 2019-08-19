@@ -90,7 +90,6 @@ size_t PluginsLoader::loadPlugins( const std::string& appcode)
 
         if ( !plugin || !pluginInterface)
         {
-            std::cerr << "Tried to load plugin: " << fpath.toStdString();
             emit loadedPlugin( nullptr, fpath);
             PluginMeta pmeta( fpath, nullptr, false);
             _plugins << pmeta;

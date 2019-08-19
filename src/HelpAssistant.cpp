@@ -19,6 +19,7 @@
 #include <TreeModel.h>
 #include <QFile>
 #include <QDir>
+#include <QFileInfo>
 #include <QTextStream>
 #include <QTemporaryFile>
 #include <QTextDocument>
@@ -88,7 +89,7 @@ bool readSection( const std::string& tdir, const PTree& section, TreeItem* root)
         return true;
     }   // end if
 
-    //std::cerr << "Set TOC node: " << title << " --> " << fileref << std::endl;
+    //std::cerr << "Set explicit TOC node: " << title << " --> " << fileref << std::endl;
     node = new TreeItem( {QString::fromStdString(title), QString::fromStdString(fileref)}, root);
 
     // If the section specifies a directory reference then the title must be given and all html files
@@ -106,7 +107,7 @@ bool readSection( const std::string& tdir, const PTree& section, TreeItem* root)
                 if ( !htitle.empty())
                 {
                     const std::string relfile = dirref + "/" + path.filename().string();
-                    //std::cerr << "Set TOC node " << relfile << std::endl;
+                    //std::cerr << "Set directory entry TOC node: " << htitle << " --> " << relfile << std::endl;
                     node->appendChild( new TreeItem( {QString::fromStdString(htitle), QString::fromStdString(relfile)}));
                 }   // end if
                 else
@@ -175,7 +176,7 @@ TreeModel* readTableOfContents( const QString& tdir, const QString& tocXMLFile)
 HelpAssistant::HelpAssistant( const QString& hdir, QWidget *prnt) : _dialog(new HelpBrowser(prnt))
 {
     _initTempHtmlDir(hdir);
-    _dialog->setSearchPath( _tdir.path());
+    _dialog->setSearchPath( _workdir.path());
 }   // end ctor
 
 
@@ -185,12 +186,6 @@ HelpAssistant::~HelpAssistant()
 }   // end dtor
 
 
-bool HelpAssistant::addSubDirectory( const QString& dir)
-{
-    return QDir(_tdir.path()).mkdir(dir);
-}   // end addSubDirectory
-
-
 void HelpAssistant::_initTempHtmlDir( const QString& srcDir)
 {
     QDir sdir(srcDir);
@@ -198,9 +193,9 @@ void HelpAssistant::_initTempHtmlDir( const QString& srcDir)
         return;
 
     const BFS::path src = sdir.absolutePath().toStdString();
-    const BFS::path dst = _tdir.path().toStdString();
+    const BFS::path dst = _workdir.path().toStdString();
 
-    // Copy all content from hdir into _tdir
+    // Copy all content from hdir into _workdir
     for ( const auto& dirEnt : BFS::recursive_directory_iterator{src})
     {
         const auto& path = dirEnt.path();
@@ -211,68 +206,65 @@ void HelpAssistant::_initTempHtmlDir( const QString& srcDir)
 }   // end _initTempHtmlDir
 
 
-QString HelpAssistant::addDocument( const QString& dir, const QString& hfile)
+QString HelpAssistant::addDocument( const QString& subdir, const QString& hfile)
 {
     static const std::string werr = "[WARNING] QTools::HelpAssistant::addDocument: ";
     static const std::string istr = "[INFO] QTools::HelpAssistant::addDocument: ";
 
-    QFile file(hfile);  // Input file (resource)
-    if ( !file.exists())
+    if ( !QFile::exists(hfile))
     {
         std::cerr << werr << "Input file doesn't exist!" << std::endl;
         return "";
     }   // end if
 
-    BFS::path dst = _tdir.path().toStdString();  // Temporary directory
-    dst /= dir.toStdString();   // Subdirectory
-    if ( !BFS::exists(dst) || !BFS::is_directory(dst))
+    if ( subdir.isEmpty())
     {
-        std::cerr << werr << "Invalid directory: '" << dst.string() << "'" << std::endl;
+        std::cerr << werr << "Subdirectory of working temporary directory was not given!" << std::endl;
         return "";
     }   // end if
 
-    if ( !file.open( QIODevice::ReadOnly | QIODevice::Text))
+    QString dstdir = _workdir.path() + "/" + subdir;
+    if ( !QDir(_workdir.path()).mkpath(dstdir))  // Will return true if the path to this directory already exists
     {
-        std::cerr << werr << "Unable to read content of file!" << std::endl;
+        std::cerr << werr << "Invalid directory: '" << dstdir.toStdString() << "'" << std::endl;
         return "";
     }   // end if
 
-    QTextStream in(&file);
-    QString fcontents = in.readAll();
+    // Append filename (with template for temporary unique filename setting).
+    QString tpath;
+    { QTemporaryFile tmp( dstdir + "/XXXXXX.html");
+        if ( tmp.open())
+            tpath = tmp.fileName();
+    }   // end scope
 
-    dst /= "XXXXXX.html"; // Append the filename
-    QString tok = QString::fromStdString( dst.string());
-    QTemporaryFile tfile( tok);
-    tfile.setAutoRemove(false);
-    tfile.open();
-    tok = tfile.fileName();
-
-    QFile ofile( tok);
-    if ( !ofile.open( QIODevice::WriteOnly | QIODevice::Text))
+    if ( tpath.isEmpty())
     {
-        std::cerr << werr << "Unable to open file for writing!" << std::endl;
+        std::cerr << werr << "Unable to create temporary file in working directory!" << std::endl;
         return "";
     }   // end if
 
-    QTextStream out(&ofile);
-    out << fcontents;
-    ofile.close();
+    if ( !QFile::copy(hfile, tpath))   // Copy the input file to the temporary location
+    {
+        std::cerr << werr << "Unable to copy file to location " << tpath.toStdString() << " - cannot overwrite!" << std::endl;
+        return "";
+    }   // end if
 
-    return tok;
+    // The token returned is just the name of the temporary file (excluding path) appended to the given subdirectory
+    return subdir + "/" + QFileInfo( tpath).fileName();
 }   // end addDocument
 
 
 void HelpAssistant::refreshContents( const QString& tocXmlFile)
 {
     // Read in the toc.xml file if it exists
-    TreeModel *toc = readTableOfContents( _tdir.path(), tocXmlFile);
+    TreeModel *toc = readTableOfContents( _workdir.path(), tocXmlFile);
     _dialog->setTableOfContents(toc);
 }   // end refreshContents
 
 
 bool HelpAssistant::show( const QString& token)
 {
-    QString hfile = _tdir.path() + "/index.html";
+    QString hfile = _workdir.path() + "/index.html";
     if ( !token.isEmpty())
         hfile = token;
 
