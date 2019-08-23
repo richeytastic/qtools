@@ -23,6 +23,7 @@ set( SRC_FILES
     "${SRC_DIR}/PluginInterface.cpp"
     "${SRC_DIR}/PluginsDialog.cpp"
     "${SRC_DIR}/PluginsLoader.cpp"
+    "${SRC_DIR}/PluginUIPoints.cpp"
     "${SRC_DIR}/PolyDrawer.cpp"
     "${SRC_DIR}/QImageTools.cpp"
     "${SRC_DIR}/QProgressUpdater.cpp"
@@ -71,6 +72,7 @@ set( INCLUDE_FILES
     "${INCLUDE_DIR}/KeyPressHandler.h"
     "${INCLUDE_DIR}/QImageTools.h"
     "${INCLUDE_DIR}/QUtils.h"
+    "${INCLUDE_DIR}/PluginUIPoints.h"
     "${INCLUDE_DIR}/ScalarColourRangeMapper.h"
     "${INCLUDE_DIR}/TreeItem.h"
     "${INCLUDE_DIR}/VtkViewerInteractorManager.h"
@@ -87,11 +89,11 @@ set( FORMS
     "${FORMS_DIR}/ViewNavigator.ui"
     )
 
-set( RESOURCE_FILE "QTools_res.qrc")  # Qt resource file
+set( RCC_FILE "QTools_res.qrc")  # Qt resource file
 
 qt5_wrap_ui( FORM_HEADERS ${FORMS})
 qt5_wrap_cpp( QOBJECT_MOCS ${QOBJECTS})
-qt5_add_resources( RESOURCE_FILE "${RESOURCE_FILE}")
+qt5_add_resources( RESOURCE_FILE "${RCC_FILE}")
 
-add_library( ${PROJECT_NAME} ${SRC_FILES} ${QOBJECT_MOCS} ${INCLUDE_FILES} ${FORM_HEADERS} ${FORMS} ${RESOURCE_FILE})
+add_library( ${PROJECT_NAME} ${SRC_FILES} ${QOBJECT_MOCS} ${INCLUDE_FILES} ${FORM_HEADERS} ${FORMS} ${RESOURCE_FILE} ${RCC_FILE})
 include( "cmake/LinkLibs.cmake")

@@ -45,15 +45,23 @@ public:
     QString addDocument( const QString& subdir, const QString& htmlFileAbspath);
 
     /**
-     * Call after all documentation added to refresh what's displayed in the dialog.
-     * Pass the path of the XML file which defines the table of contents. This can
-     * include references to directories added using addSubDirectory.
+     * As above, but instead of adding a file, the explicit HTML content is provided.
      */
-    void refreshContents( const QString& tocXMLFile);
+    QString addContent( const QString& subdir, const QString& htmlContent);
+
+    /**
+     * Call after all documentation added to refresh what's displayed in the dialog.
+     * Pass the path of the XML file which defines the table of contents (TOC). This can
+     * include references to directories added using addSubDirectory. After refreshing
+     * the TOC, sets the home page to "index.html". If "index.html" is not present, false
+     * is returned.
+     */
+    bool refreshContents( const QString& tocXMLFile);
 
     /**
      * Show the specified page by reference to its token.
-     * If token is empty, the index page is shown.
+     * If token is empty, the index page is shown. If the content
+     * cannot be found, false is returned.
      */
     bool show( const QString &token="");
 

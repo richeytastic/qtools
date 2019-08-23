@@ -42,14 +42,15 @@ PluginsLoader::PluginsLoader( const std::string& pluginsDir)
 }   // end ctor
 
 
-PluginsLoader::PluginMeta::PluginMeta( const QString& fp, const PluginInterface* pi, bool ok)
-    : filepath(fp), plugin(pi), loaded(ok)
+PluginsLoader::PluginMeta::PluginMeta( const QString& fp, const PluginInterface* pi)
+    : filepath(fp), plugin(pi)
 {
 }   // end ctor
 
 
 size_t PluginsLoader::loadPlugins( const std::string& appcode)
 {
+    const QString appCode = QString::fromStdString(appcode).toLower();
     size_t numLoaded = 0;
     // Load the static plugins
     for ( QObject *plugin : QPluginLoader::staticInstances())
@@ -91,19 +92,19 @@ size_t PluginsLoader::loadPlugins( const std::string& appcode)
         if ( !plugin || !pluginInterface)
         {
             emit loadedPlugin( nullptr, fpath);
-            PluginMeta pmeta( fpath, nullptr, false);
+            PluginMeta pmeta( fpath, nullptr);
             _plugins << pmeta;
             continue;
         }   // end if
 
         // Check for matching application code
-        if ( pluginInterface->applicationCode() != appcode)
+        if ( QString::fromStdString(pluginInterface->applicationCode()).toLower() != appCode)
         {
-            std::cerr << "Ignoring loaded plugin with mismatching application code." << std::endl;
+            std::cerr << "Rejected plugin with mismatching application compatibility code." << std::endl;
             continue;
         }   // end if
 
-        PluginMeta pmeta( fpath, pluginInterface, true);
+        PluginMeta pmeta( fpath, pluginInterface);
         _plugins << pmeta;
         numLoaded++;
         emit loadedPlugin( pluginInterface, fpath);

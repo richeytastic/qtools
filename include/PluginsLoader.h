@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2019 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,30 +29,38 @@ class PluginInterface;
 class QTools_EXPORT PluginsLoader : public QObject
 { Q_OBJECT
 public:
-    // Searches for shared plugins in the given absolute directory path.
-    // If not given, or path doesn't resolve to a readable directory, searches
-    // for the 'plugins' directory in the application root directory.
+    /**
+     * Searches for shared plugins in the given absolute directory path.
+     * If not given, or path doesn't resolve to a readable directory, searches
+     * for the 'plugins' directory in the application root directory.
+     */
     explicit PluginsLoader( const std::string& sharedPluginsDir="");
     virtual ~PluginsLoader(){}
 
-    // Loads all plugins returning the number of static libraries found plus the number of shared
-    // plugins loaded. Only shared libraries with matching appcode are loaded; shared libraries
-    // with non-matching appcodes are ignored. The appcode parameter is ignored for statically
-    // linked libraries. Fires loadedPlugin for each new plugin loaded (static or shared).
+    /**
+     * Loads all plugins returning the number of static libraries found plus the number of shared
+     * plugins loaded. Only shared libraries with matching appcode are loaded; shared libraries
+     * with non-matching appcodes are ignored. The appcode parameter is ignored for statically
+     * linked libraries. Emits loadedPlugin for each new plugin loaded (static or shared).
+     */
     size_t loadPlugins( const std::string& appcode);
 
-    // Get dynamically loaded library data.
-    const QDir& getPluginsDir() const { return _pluginsDir;}    // The dynamic library location
+    /**
+     * Returns the path to the directory where shared libraries are loaded from.
+     */
+    const QDir& pluginsDir() const { return _pluginsDir;}
 
     struct PluginMeta
     {
-        PluginMeta( const QString&, const PluginInterface*, bool);
-        QString filepath;               // Absolute path to the plugin discovered
-        const PluginInterface* plugin;  // The plugin itself (NULL if !loaded)
-        bool loaded;                    // True iff loaded okay
+        PluginMeta( const QString&, const PluginInterface*);
+        QString filepath;               /* Absolute path to the plugin discovered */
+        const PluginInterface* plugin;  /* The plugin itself (null if not loaded) */
     };  // end struct
 
-    const QList<PluginMeta>& getPlugins() const { return _plugins;}
+    /**
+     * Returns the list of loaded plugins.
+     */
+    const QList<PluginMeta>& plugins() const { return _plugins;}
 
 signals:
     // Signal discovery of statically linked libraries emitting the class name,

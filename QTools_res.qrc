@@ -2,6 +2,7 @@
 <qresource prefix="/icons">
     <file alias="HOME">res/icons/home.png</file>
     <file alias="GO_BACK">res/icons/go-back.png</file>
+    <file alias="GO_FWRD">res/icons/go-fwrd.png</file>
 </qresource>
 <qresource prefix="/images">
     <file alias="HANDLE_IMG">res/images/TwoHandleSlider_handle.png</file>

@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2019 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 #define QTOOLS_PLUGINS_DIALOG_H
 
 #include <QDialog>
-#include "PluginInterface.h"
 #include "PluginsLoader.h"
 
 namespace Ui { class PluginsDialog; }
@@ -29,7 +28,7 @@ namespace QTools {
 class QTools_EXPORT PluginsDialog : public QDialog
 { Q_OBJECT
 public:
-    explicit PluginsDialog(QWidget *parent = 0);
+    explicit PluginsDialog( QWidget *parent = nullptr);
     virtual ~PluginsDialog();
 
     // Add plugins to the tree
@@ -37,8 +36,8 @@ public:
 
 private:
     Ui::PluginsDialog *ui;
-    PluginsDialog( const PluginsDialog&);   // NO COPY
-    void operator=( const PluginsDialog&);  // NO COPY
+    PluginsDialog( const PluginsDialog&) = delete;
+    void operator=( const PluginsDialog&) = delete;
 };  // end class
 
 }   // end namespace

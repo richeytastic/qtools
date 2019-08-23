@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2019 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  ************************************************************************/
 
 #include <PluginsDialog.h>
+#include <PluginInterface.h>
 #include <ui_PluginsDialog.h>
 using QTools::PluginsDialog;
 using QTools::PluginsLoader;
@@ -30,10 +31,9 @@ PluginsDialog::PluginsDialog(QWidget *parent) : QDialog(parent), ui(new Ui::Plug
 PluginsDialog::~PluginsDialog() { delete ui;}   // end dtor
 
 
-// public
 void PluginsDialog::addPlugins( const PluginsLoader& ploader)
 {
-    const QList<PluginsLoader::PluginMeta>& plugins = ploader.getPlugins();
+    const QList<PluginsLoader::PluginMeta>& plugins = ploader.plugins();
 
     for ( const PluginsLoader::PluginMeta& pmeta : plugins)
     {
@@ -43,7 +43,7 @@ void PluginsDialog::addPlugins( const PluginsLoader& ploader)
         font.setBold(true);
         pluginItem->setFont(0, font);
 
-        if ( !pmeta.loaded)   // Show plugin in red italics if it couldn't be loaded
+        if ( !pmeta.plugin)   // Show plugin in red italics if it couldn't be loaded
         {
             pluginItem->setTextColor(0, QColor::fromRgbF(1,0,0));
             QFont font = pluginItem->font(0);
@@ -70,7 +70,7 @@ void PluginsDialog::addPlugins( const PluginsLoader& ploader)
                     font.setItalic(true);
                     iitem->setFont(0, font);
                 }   // end if
-            }   // end foreach
+            }   // end for
         }   // end if
-    }   // end foreach
+    }   // end for
 }   // end addPlugins

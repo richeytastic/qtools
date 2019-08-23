@@ -209,13 +209,36 @@ void HelpAssistant::_initTempHtmlDir( const QString& srcDir)
 QString HelpAssistant::addDocument( const QString& subdir, const QString& hfile)
 {
     static const std::string werr = "[WARNING] QTools::HelpAssistant::addDocument: ";
-    static const std::string istr = "[INFO] QTools::HelpAssistant::addDocument: ";
-
     if ( !QFile::exists(hfile))
     {
         std::cerr << werr << "Input file doesn't exist!" << std::endl;
         return "";
     }   // end if
+
+    // Read in the content from the file
+    QFile file(hfile);
+    if ( !file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        std::cerr << werr << "Unable to open file at location " << hfile.toStdString() << " for reading!" << std::endl;
+        return "";
+    }   /// end if
+
+    QTextStream in(&file);
+    QString contents = in.readAll().trimmed();
+    if ( contents.isEmpty())
+    {
+        std::cerr << werr << "File at " << hfile.toStdString() << " contains no non-whitespace text!" << std::endl;
+        return "";
+    }   // end if
+
+    return addContent( subdir, contents);
+}   // end addDocument
+
+
+QString HelpAssistant::addContent( const QString& subdir, const QString& content)
+{
+    static const std::string werr = "[WARNING] QTools::HelpAssistant::addContent: ";
+    static const std::string istr = "[INFO] QTools::HelpAssistant::addContent: ";
 
     if ( subdir.isEmpty())
     {
@@ -243,34 +266,41 @@ QString HelpAssistant::addDocument( const QString& subdir, const QString& hfile)
         return "";
     }   // end if
 
-    if ( !QFile::copy(hfile, tpath))   // Copy the input file to the temporary location
+    // Write the content to the temporary file location.
+    QFile ofile( tpath);
+    if ( !ofile.open(QIODevice::WriteOnly | QIODevice::Text))
     {
-        std::cerr << werr << "Unable to copy file to location " << tpath.toStdString() << " - cannot overwrite!" << std::endl;
+        std::cerr << werr << "Unable to open temporary file at location " << tpath.toStdString() << " for writing!" << std::endl;
         return "";
     }   // end if
 
+    QTextStream out(&ofile);
+    out << content << endl;
+    ofile.close();
+
     // The token returned is just the name of the temporary file (excluding path) appended to the given subdirectory
     return subdir + "/" + QFileInfo( tpath).fileName();
-}   // end addDocument
+}   // end addContent
 
 
-void HelpAssistant::refreshContents( const QString& tocXmlFile)
+bool HelpAssistant::refreshContents( const QString& tocXmlFile)
 {
     // Read in the toc.xml file if it exists
     TreeModel *toc = readTableOfContents( _workdir.path(), tocXmlFile);
     _dialog->setTableOfContents(toc);
+    return _dialog->setContent( "index.html");
 }   // end refreshContents
 
 
 bool HelpAssistant::show( const QString& token)
 {
-    QString hfile = _workdir.path() + "/index.html";
-    if ( !token.isEmpty())
-        hfile = token;
-
-    _dialog->setContent(hfile);
-    _dialog->show();
-    _dialog->raise();
-    _dialog->activateWindow();
-    return true;
+    const QString hfile = token.isEmpty() ? "index.html" : token;
+    const bool showing = _dialog->setContent(hfile);
+    if ( showing)
+    {
+        _dialog->show();
+        _dialog->raise();
+        _dialog->activateWindow();
+    }   // end if
+    return showing;
 }   // end show

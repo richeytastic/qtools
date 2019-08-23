@@ -17,7 +17,6 @@
 
 #include <HelpBrowser.h>
 #include <QPushButton>
-#include <QToolButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTextDocument>
@@ -49,8 +48,26 @@ private:
     HelpBrowser *_hd;
 };  // end class
 
+namespace {
 
-HelpBrowser::HelpBrowser( QWidget *parent) : QDialog(parent)
+QToolButton* makeToolButton( HelpBrowser* d, const QString& iconstr)
+{
+    QToolButton* tb = new QToolButton(d);
+    tb->setIcon( QPixmap( iconstr));
+    tb->setMinimumSize( QSize( 36, 26));
+    tb->setMaximumSize( QSize( 36, 26));
+    tb->setIconSize( QSize( 26, 26));
+    tb->setStyleSheet( "QToolButton{ border: none;} \
+                        QToolButton:hover{ \
+                            border:1px solid #8f8f91; \
+                            border-radius: 4px;}");
+    return tb;
+}   // end makeToolButton
+
+}   // end namespace
+
+
+HelpBrowser::HelpBrowser( QWidget *parent) : QMainWindow(parent)
 {
     if ( parent)
     {
@@ -58,7 +75,9 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QDialog(parent)
         setWindowTitle( _wprfx);
     }   // end if
 
-    setLayout( new QVBoxLayout);
+    QWidget* cwidget = new QWidget;
+    cwidget->setLayout( new QVBoxLayout);
+    setCentralWidget( cwidget);
 
     _splitter = new QSplitter(this);
     _tview = new TreeView(this);
@@ -78,28 +97,30 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QDialog(parent)
     _splitter->setCollapsible(0,false);
     _splitter->setCollapsible(1,false);
 
-    layout()->addWidget( _splitter);
+    cwidget->layout()->addWidget( _splitter);
 
     QPushButton *closeButton = new QPushButton(this);
     closeButton->setText(tr("Close"));
     connect( closeButton, &QPushButton::clicked, this, &HelpBrowser::close);
     closeButton->setSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum);
 
-    QToolButton *homeButton = new QToolButton(this);
-    homeButton->setIcon( QPixmap(":/icons/HOME"));
+    QToolButton *homeButton = makeToolButton( this, ":/icons/HOME");
     connect( homeButton, &QToolButton::clicked, [this](){ _tbrowser->home();});
 
-    QToolButton *backButton = new QToolButton(this);
-    backButton->setIcon( QPixmap(":/icons/GO_BACK"));
-    connect( backButton, &QToolButton::clicked, [this](){ _tbrowser->backward();});
+    _backButton = makeToolButton( this, ":/icons/GO_BACK");
+    connect( _backButton, &QToolButton::clicked, [this](){ _tbrowser->backward();});
+
+    _fwrdButton = makeToolButton( this, ":/icons/GO_FWRD");
+    connect( _fwrdButton, &QToolButton::clicked, [this](){ _tbrowser->forward();});
 
     QHBoxLayout *hlayout = new QHBoxLayout;
-    hlayout->addWidget( backButton);
+    hlayout->addWidget( _backButton);
+    hlayout->addWidget( _fwrdButton);
     hlayout->addWidget( homeButton);
-    hlayout->insertStretch(2);
+    hlayout->insertStretch(3);
     hlayout->addWidget( closeButton);
 
-    layout()->addItem(hlayout);
+    cwidget->layout()->addItem(hlayout);
 
     _tview->setSelectionMode(QAbstractItemView::SingleSelection);
     _tbrowser->setOpenExternalLinks(true);
@@ -154,6 +175,8 @@ bool HelpBrowser::_setContent( const QString& htmlfile)
 {
     _tbrowser->setSource( htmlfile);
     _updateTitleFromContent();
+    _backButton->setEnabled( _tbrowser->isBackwardAvailable());
+    _fwrdButton->setEnabled( _tbrowser->isForwardAvailable());
     return true;
 }   // end _setContent
 

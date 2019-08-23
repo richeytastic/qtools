@@ -19,14 +19,20 @@
 #define QTOOLS_HELP_BROWSER_H
 
 #include "TreeModel.h"
-#include <QDialog>
-#include <QTreeView>
+#include <QMainWindow>
+#include <QToolButton>
 #include <QTextBrowser>
+#include <QTreeView>
 #include <QSplitter>
+// TODO Switch to QtWebEngineView instead of QTextBrowser to use Javascript etc.
+// Note this requires optional Qt addon module which under Windows needs MSVC 2017.
+// Only do this after setting up MSVC 2017 compiler.
+//#include <QtWebEngineWidgets/QtWebEngineWidgets>
+
 
 namespace QTools {
 
-class QTools_EXPORT HelpBrowser : public QDialog
+class QTools_EXPORT HelpBrowser : public QMainWindow
 { Q_OBJECT
 public:
     explicit HelpBrowser( QWidget *parent = nullptr);
@@ -61,6 +67,10 @@ private:
     QSplitter *_splitter;
     QTreeView *_tview;
     QTextBrowser *_tbrowser;
+    QToolButton *_backButton;
+    QToolButton *_fwrdButton;
+    //QWebEngineView *_webview;
+
     class TreeView;
     bool _updateTOCIndex( const QString&);
     void _updateTitleFromContent();
