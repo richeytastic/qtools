@@ -224,14 +224,9 @@ QString HelpAssistant::addDocument( const QString& subdir, const QString& hfile)
     }   /// end if
 
     QTextStream in(&file);
-    QString contents = in.readAll().trimmed();
-    if ( contents.isEmpty())
-    {
-        std::cerr << werr << "File at " << hfile.toStdString() << " contains no non-whitespace text!" << std::endl;
-        return "";
-    }   // end if
+    const QString content = in.readAll().trimmed();
 
-    return addContent( subdir, contents);
+    return addContent( subdir, content);
 }   // end addDocument
 
 
@@ -252,6 +247,9 @@ QString HelpAssistant::addContent( const QString& subdir, const QString& content
         std::cerr << werr << "Invalid directory: '" << dstdir.toStdString() << "'" << std::endl;
         return "";
     }   // end if
+
+    if ( content.isEmpty())
+        return "";
 
     // Append filename (with template for temporary unique filename setting).
     QString tpath;

@@ -46,8 +46,9 @@ public:
 
     /**
      * As above, but instead of adding a file, the explicit HTML content is provided.
+     * Without any content provided, the subdirectory is created and "" is returned.
      */
-    QString addContent( const QString& subdir, const QString& htmlContent);
+    QString addContent( const QString& subdir, const QString& htmlContent="");
 
     /**
      * Call after all documentation added to refresh what's displayed in the dialog.

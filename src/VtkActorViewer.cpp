@@ -48,7 +48,7 @@ VtkActorViewer::VtkActorViewer( QWidget *parent)
     _rwin->SetStereoCapableWindow(1);
     _rwin->SetStereoTypeToRedBlue();
 
-    _rwin->SetPointSmoothing( false);
+    _rwin->SetPointSmoothing( true);
     _rwin->AddRenderer( _ren);
 
     _iman = new VtkViewerInteractorManager(this);
