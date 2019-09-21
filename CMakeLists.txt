@@ -14,8 +14,6 @@ include_directories( ${PROJECT_BINARY_DIR}) # Req. for generated Qt form headers
 
 set( SRC_FILES
     "${SRC_DIR}/ColourMappingWidget.cpp"
-    #"${SRC_DIR}/DatabaseClient.cpp"
-    #"${SRC_DIR}/DatabaseOptionsDialog.cpp"
     "${SRC_DIR}/HelpAssistant.cpp"
     "${SRC_DIR}/HelpBrowser.cpp"
     "${SRC_DIR}/ImagerWidget.cpp"
@@ -45,7 +43,6 @@ set( SRC_FILES
 
 set( QOBJECTS
     "${INCLUDE_DIR}/ColourMappingWidget.h"
-    #"${INCLUDE_DIR}/DatabaseOptionsDialog.h"
     "${INCLUDE_DIR}/HelpBrowser.h"
     "${INCLUDE_DIR}/ImagerWidget.h"
     "${INCLUDE_DIR}/VtkActorViewer.h"
@@ -60,14 +57,11 @@ set( QOBJECTS
     "${INCLUDE_DIR}/TreeModel.h"
     "${INCLUDE_DIR}/TwoHandleSlider.h"
     "${INCLUDE_DIR}/ViewNavigator.h"
-    "${INCLUDE_DIR}/VtkMouseHandler.h"
-    "${INCLUDE_DIR}/VtkViewerInteractor.h"
     )
 
 # Super set of header files
 set( INCLUDE_FILES
     "${QOBJECTS}"
-    #"${INCLUDE_DIR}/DatabaseClient.h"
     "${INCLUDE_DIR}/HelpAssistant.h"
     "${INCLUDE_DIR}/KeyPressHandler.h"
     "${INCLUDE_DIR}/QImageTools.h"
@@ -79,11 +73,12 @@ set( INCLUDE_FILES
     "${INCLUDE_DIR}/VtkViewerActorInteractor.h"
     "${INCLUDE_DIR}/VtkViewerCameraInteractor.h"
     "${INCLUDE_DIR}/VtkViewerSwitchInteractor.h"
+    "${INCLUDE_DIR}/VtkMouseHandler.h"
+    "${INCLUDE_DIR}/VtkViewerInteractor.h"
     )
 
 set( FORMS
     "${FORMS_DIR}/ColourMappingWidget.ui"
-    #"${FORMS_DIR}/DatabaseOptionsDialog.ui"
     "${FORMS_DIR}/ImagerWidget.ui"
     "${FORMS_DIR}/PluginsDialog.ui"
     "${FORMS_DIR}/ViewNavigator.ui"

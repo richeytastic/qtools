@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2019 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,14 +17,6 @@
 
 #include <VtkViewerInteractorManager.h>
 #include <VtkActorViewer.h>
-
-/*
-// For getMouseCoords
-#include <vtkRenderer.h>
-#include <vtkRenderWindow.h>
-#include <vtkRenderWindowInteractor.h>
-#include <vtkRendererCollection.h>
-*/
 
 #include <QApplication>
 #include <QDateTime>
@@ -70,6 +62,7 @@ void VtkViewerInteractorManager::addInteractor( VVI* iface)
         _qviewer->attachKeyPressHandler( iface->keyPressHandler());
 }   // end addInteractor
 
+
 void VtkViewerInteractorManager::removeInteractor( VVI* iface)
 {
     assert(iface);
@@ -110,19 +103,6 @@ bool VtkViewerInteractorManager::unlockInteraction( int lkey)
 
 bool VtkViewerInteractorManager::isInteractionLocked() const { return !_lockKeys.empty();}
 
-/*
-// VTK 2D origin is at bottom left of render window so need to set to top left.
-void VtkViewerInteractorManager::updateMouseCoords()
-{
-    vtkRenderWindowInteractor* rint = _iswitch->GetInteractor();
-    const int xpos = rint->GetEventPosition()[0];
-    const int ypos = rint->GetEventPosition()[1];
-    vtkRenderer* ren = rint->FindPokedRenderer( xpos, ypos);
-    _mPos.rx() = xpos;
-    _mPos.ry() = ren->GetSize()[1] - ypos - 1;   // Inversion of mouse coords
-}   // end updateMouseCoords
-*/
-
 
 namespace {
 
@@ -133,6 +113,8 @@ bool dofunction( const std::unordered_set<VVI*>& vvis, std::function<bool(VVI*)>
     {
         if ( vvi->isEnabled())
             swallowed |= func(vvi);
+        if ( swallowed)
+            break;
     }   // end for
     return swallowed;
 }   // end dofunction
@@ -144,6 +126,8 @@ bool dofunction( const std::unordered_set<VMH*>& vmhs, std::function<bool(VMH*)>
     {
         if ( vmh->isEnabled())
             swallowed |= func(vmh);
+        if ( swallowed)
+            break;
     }   // end for
     return swallowed;
 }   // end dofunction
@@ -169,13 +153,14 @@ bool VtkViewerInteractorManager::doOnLeftButtonDown()
     if ( (tnow - _lbDownTime) < QApplication::doubleClickInterval())    // Check for double click
     {
         _lbDownTime = 0;
-        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->leftDoubleClick();});
+        swallowed = dofunction( _vmhs, [](VMH* v){ return v->leftDoubleClick();});
     }   // end if
     else
     {
         _lbDownTime = tnow;
-        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->leftButtonDown();});
+        swallowed = dofunction( _vmhs, [](VMH* v){ return v->leftButtonDown();});
     }   // end else
+    _qviewer->updateRender();
     return swallowed;
 }   // end doOnLeftButtonDown
 
@@ -183,47 +168,61 @@ bool VtkViewerInteractorManager::doOnLeftButtonDown()
 bool VtkViewerInteractorManager::doOnLeftButtonUp()
 {
     _lbdown = false;
-    return dofunction( _vmhs, [this](VMH* v){ return v->leftButtonUp();});
+    const bool rval = dofunction( _vmhs, [](VMH* v){ return v->leftButtonUp();});
+    _qviewer->updateRender();
+    return rval;
 }   // end doOnLeftButtonUp
 
 
 bool VtkViewerInteractorManager::doOnRightButtonDown()
 {
     _rbdown = true;
-    return dofunction( _vmhs, [this](VMH* v){ return v->rightButtonDown();});
+    const bool rval = dofunction( _vmhs, [](VMH* v){ return v->rightButtonDown();});
+    _qviewer->updateRender();
+    return rval;
 }   // end doOnRightButtonDown
 
 
 bool VtkViewerInteractorManager::doOnRightButtonUp()
 {
     _rbdown = false;
-    return dofunction( _vmhs, [this](VMH* v){ return v->rightButtonUp();});
+    const bool rval = dofunction( _vmhs, [](VMH* v){ return v->rightButtonUp();});
+    _qviewer->updateRender();
+    return rval;
 }   // end doOnRightButtonUp
 
 
 bool VtkViewerInteractorManager::doOnMiddleButtonDown()
 {
     _mbdown = true;
-    return dofunction( _vmhs, [this](VMH* v){ return v->middleButtonDown();});
+    const bool rval = dofunction( _vmhs, [](VMH* v){ return v->middleButtonDown();});
+    _qviewer->updateRender();
+    return rval;
 }   // end doOnMiddleButtonDown
 
 
 bool VtkViewerInteractorManager::doOnMiddleButtonUp()
 {
     _mbdown = false;
-    return dofunction( _vmhs, [this](VMH* v){ return v->middleButtonUp();});
+    const bool rval = dofunction( _vmhs, [](VMH* v){ return v->middleButtonUp();});
+    _qviewer->updateRender();
+    return rval;
 }   // end doOnMiddleButtonUp
 
 
 bool VtkViewerInteractorManager::doOnMouseWheelForward()
 {
-    return dofunction( _vmhs, [this](VMH* v){ return v->mouseWheelForward();});
+    const bool rval = dofunction( _vmhs, [](VMH* v){ return v->mouseWheelForward();});
+    _qviewer->updateRender();
+    return rval;
 }   // end doOnMouseWheelForward
 
 
 bool VtkViewerInteractorManager::doOnMouseWheelBackward()
 {
-    return dofunction( _vmhs, [this](VMH* v){ return v->mouseWheelBackward();});
+    const bool rval = dofunction( _vmhs, [](VMH* v){ return v->mouseWheelBackward();});
+    _qviewer->updateRender();
+    return rval;
 }   // end doOnMouseWheelBackward
 
 
@@ -232,13 +231,25 @@ bool VtkViewerInteractorManager::doOnMouseMove()
     //updateMouseCoords();
     bool swallowed = false;
     if ( _lbdown)
-        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->leftDrag();});
+    {
+        swallowed = dofunction( _vmhs, [](VMH* v){ return v->leftDrag();});
+        _qviewer->updateRender();
+    }   // end if
     else if ( _rbdown)
-        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->rightDrag();});
+    {
+        swallowed = dofunction( _vmhs, [](VMH* v){ return v->rightDrag();});
+        _qviewer->updateRender();
+    }   // end else if
     else if ( _mbdown)
-        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->middleDrag();});
+    {
+        swallowed = dofunction( _vmhs, [](VMH* v){ return v->middleDrag();});
+        _qviewer->updateRender();
+    }   // end else if
     else
-        swallowed = dofunction( _vmhs, [this](VMH* v){ return v->mouseMove();});
+    {
+        swallowed = dofunction( _vmhs, [](VMH* v){ return v->mouseMove();});
+        _qviewer->updateRender();
+    }   // end else if
     return swallowed;
 }   // end doOnMouseMove
 
@@ -248,12 +259,14 @@ void VtkViewerInteractorManager::doOnEnter()
     //updateMouseCoords();
     dofunction( _vvis, [this](VVI* v){ v->mouseEnter( _qviewer); return false;});
     dofunction( _vmhs, [this](VMH* v){ v->mouseEnter( _qviewer); return false;});
+    _qviewer->updateRender();
 }   // end doOnEnter
 
 void VtkViewerInteractorManager::doOnLeave()
 {
     dofunction( _vvis, [this](VVI* v){ v->mouseLeave( _qviewer); return false;});
     dofunction( _vmhs, [this](VMH* v){ v->mouseLeave( _qviewer); return false;});
+    _qviewer->updateRender();
 }   // end doOnLeave
 
 

@@ -29,14 +29,13 @@
 
 #include "KeyPressHandler.h"
 #include <vtkProp3D.h>
-#include <QObject>
 
 namespace QTools {
 
 class VtkActorViewer;
 
-class QTools_EXPORT VtkViewerInteractor : public QObject
-{ Q_OBJECT
+class QTools_EXPORT VtkViewerInteractor
+{
 public:
     VtkViewerInteractor() : _enabled(true) {}
     virtual ~VtkViewerInteractor(){}

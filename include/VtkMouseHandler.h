@@ -24,14 +24,13 @@
  */
 
 #include "QTools_Export.h"
-#include <QObject>
 
 namespace QTools {
 
 class VtkActorViewer;
 
-class QTools_EXPORT VtkMouseHandler : public QObject
-{ Q_OBJECT
+class QTools_EXPORT VtkMouseHandler
+{
 public:
     VtkMouseHandler() : _enabled(true) {}
     virtual ~VtkMouseHandler() {}

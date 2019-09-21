@@ -73,7 +73,7 @@ void VtkActorViewer::setInteractor( vtkInteractorStyle* iStyle)
 // public
 void VtkActorViewer::updateRender()
 {
-    //_ren->ResetCameraClippingRange();
+    _ren->ResetCameraClippingRange();
     _rwin->Render();
 }   // end updateRender
 
