@@ -70,14 +70,14 @@ private:
     vtkInteractorStyle *_isel, *_iuse;
     bool _useCamOffAct;
 
-    void setStartState(int);
-    void setEndState();
-    void doChunkAction(int, std::function<void()>);
-    void doDolly(double);
-    void doDolly();
-    void doRotate();
-    void doSpin();
-    void doPan();
+    void _setStartState(int);
+    void _setEndState();
+    void _doChunkAction(int, std::function<void()>);
+    void _doDolly(double);
+    void _doDolly();
+    void _doRotate();
+    void _doSpin();
+    void _doPan();
 
     VtkViewerSwitchInteractor( const VtkViewerSwitchInteractor&) = delete;
     void operator=( const VtkViewerSwitchInteractor&) = delete;

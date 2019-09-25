@@ -228,7 +228,6 @@ bool VtkViewerInteractorManager::doOnMouseWheelBackward()
 
 bool VtkViewerInteractorManager::doOnMouseMove()
 {
-    //updateMouseCoords();
     bool swallowed = false;
     if ( _lbdown)
     {
@@ -256,7 +255,6 @@ bool VtkViewerInteractorManager::doOnMouseMove()
 
 void VtkViewerInteractorManager::doOnEnter()
 {
-    //updateMouseCoords();
     dofunction( _vvis, [this](VVI* v){ v->mouseEnter( _qviewer); return false;});
     dofunction( _vmhs, [this](VMH* v){ v->mouseEnter( _qviewer); return false;});
     _qviewer->updateRender();

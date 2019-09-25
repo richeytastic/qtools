@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2019 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,11 +62,11 @@ void VtkViewerSwitchInteractor::OnLeftButtonDown()
         if ( !_iman->isInteractionLocked())
         {
             if ( GetInteractor()->GetControlKey())
-                setStartState( VTKIS_DOLLY);
+                _setStartState( VTKIS_DOLLY);
             else if ( GetInteractor()->GetShiftKey())
-                setStartState( VTKIS_PAN);
+                _setStartState( VTKIS_PAN);
             else
-                setStartState( VTKIS_ROTATE);
+                _setStartState( VTKIS_ROTATE);
         }   // end if
     }   // end if
 }   // end OnLeftButtonDown
@@ -74,11 +74,9 @@ void VtkViewerSwitchInteractor::OnLeftButtonDown()
 
 void VtkViewerSwitchInteractor::OnLeftButtonUp()
 {
-    if ( !_iman->doOnLeftButtonUp())
-    {
-        if ( !_iman->isInteractionLocked())
-            setEndState();
-    }   // end if
+    if ( !_iman->isInteractionLocked())
+        _setEndState();
+    _iman->doOnLeftButtonUp();
 }   // end OnLeftButtonUp
 
 
@@ -90,9 +88,9 @@ void VtkViewerSwitchInteractor::OnRightButtonDown()
         if ( !_iman->isInteractionLocked())
         {
             if ( GetInteractor()->GetControlKey())
-                setStartState( VTKIS_DOLLY);
+                _setStartState( VTKIS_DOLLY);
             else
-                setStartState( VTKIS_PAN);
+                _setStartState( VTKIS_PAN);
         }   // end if
     }   // end if
 }   // end OnRightButtonDown
@@ -100,11 +98,9 @@ void VtkViewerSwitchInteractor::OnRightButtonDown()
 
 void VtkViewerSwitchInteractor::OnRightButtonUp()
 {
-    if ( !_iman->doOnRightButtonUp())
-    {
-        if ( !_iman->isInteractionLocked())
-            setEndState();
-    }   // end if
+    if ( !_iman->isInteractionLocked())
+        _setEndState();
+    _iman->doOnRightButtonUp();
 }   // end OnRightButtonUp
 
 
@@ -114,18 +110,16 @@ void VtkViewerSwitchInteractor::OnMiddleButtonDown()
     if ( !_iman->doOnMiddleButtonDown())
     {
         if ( !_iman->isInteractionLocked())
-            setStartState( VTKIS_DOLLY);
+            _setStartState( VTKIS_DOLLY);
     }   // end if
 }   // end OnMiddleButtonDown
 
 
 void VtkViewerSwitchInteractor::OnMiddleButtonUp()
 {
-    if ( !_iman->doOnMiddleButtonUp())
-    {
-        if ( !_iman->isInteractionLocked())
-            setEndState();
-    }   // end if
+    if ( !_iman->isInteractionLocked())
+        _setEndState();
+    _iman->doOnMiddleButtonUp();
 }   // end OnMiddleButtonUp
 
 
@@ -135,7 +129,7 @@ void VtkViewerSwitchInteractor::OnMouseWheelForward()
     if ( !_iman->doOnMouseWheelForward())
     {
         if ( !_iman->isInteractionLocked())
-            doChunkAction( VTKIS_DOLLY, [this](){ doDolly( pow(1.1, _iuse->GetMouseWheelMotionFactor()));});
+            _doChunkAction( VTKIS_DOLLY, [this](){ _doDolly( pow(1.1, _iuse->GetMouseWheelMotionFactor()));});
     }   // end if
 }   // end OnMouseWheelForward
 
@@ -146,13 +140,12 @@ void VtkViewerSwitchInteractor::OnMouseWheelBackward()
     if ( !_iman->doOnMouseWheelBackward())
     {
         if ( !_iman->isInteractionLocked())
-            doChunkAction( VTKIS_DOLLY, [this](){ doDolly( pow(1.1, -_iuse->GetMouseWheelMotionFactor()));});
+            _doChunkAction( VTKIS_DOLLY, [this](){ _doDolly( pow(1.1, -_iuse->GetMouseWheelMotionFactor()));});
     }   // end if
 }   // end OnMouseWheelBackward
 
 
-// private
-void VtkViewerSwitchInteractor::setStartState( int nstate)
+void VtkViewerSwitchInteractor::_setStartState( int nstate)
 {
     vtkRenderWindowInteractor *rwi = GetInteractor();
     const int x = rwi->GetEventPosition()[0];
@@ -178,11 +171,10 @@ void VtkViewerSwitchInteractor::setStartState( int nstate)
         _iman->doBeforeActorStart( _iact->prop());
     else
         _iman->doBeforeCameraStart();
-}   // end setStartState
+}   // end _setStartState
 
 
-// private 
-void VtkViewerSwitchInteractor::setEndState()
+void VtkViewerSwitchInteractor::_setEndState()
 {
     _iuse->SetInteractor(GetInteractor());
     _iuse->StopState();
@@ -194,20 +186,18 @@ void VtkViewerSwitchInteractor::setEndState()
         _iman->doAfterCameraStop();
 
     _iuse = _isel;
-}   // end setEndState
+}   // end _setEndState
 
 
-// private
-void VtkViewerSwitchInteractor::doChunkAction( int nstate, std::function<void()> chunkFn)
+void VtkViewerSwitchInteractor::_doChunkAction( int nstate, std::function<void()> chunkFn)
 {
-    setStartState(nstate);
+    _setStartState(nstate);
     chunkFn();
-    setEndState();
-}   // end doChunkAction
+    _setEndState();
+}   // end _doChunkAction
 
 
-// private
-void VtkViewerSwitchInteractor::doDolly( double factor)
+void VtkViewerSwitchInteractor::_doDolly( double factor)
 {
     if ( _iuse == _iact)
     {
@@ -219,51 +209,47 @@ void VtkViewerSwitchInteractor::doDolly( double factor)
         _icam->dolly( factor);
         _iman->doAfterCameraDolly();
     }   // end else
-}   // end doDolly
+}   // end _doDolly
 
 
-// private
-void VtkViewerSwitchInteractor::doDolly()
+void VtkViewerSwitchInteractor::_doDolly()
 {
     _iuse->Dolly();
     if ( _iuse == _iact)
         _iman->doAfterActorDolly( _iact->prop());
     else
         _iman->doAfterCameraDolly();
-}   // end doDolly
+}   // end _doDolly
 
 
-// private
-void VtkViewerSwitchInteractor::doRotate()
+void VtkViewerSwitchInteractor::_doRotate()
 {
     _iuse->Rotate();
     if ( _iuse == _iact)
         _iman->doAfterActorRotate( _iact->prop());
     else
         _iman->doAfterCameraRotate();
-}   // end doRotate
+}   // end _doRotate
 
 
-// private
-void VtkViewerSwitchInteractor::doPan()
+void VtkViewerSwitchInteractor::_doPan()
 {
     _iuse->Pan();
     if ( _iuse == _iact)
         _iman->doAfterActorPan( _iact->prop());
     else
         _iman->doAfterCameraPan();
-}   // end doPan
+}   // end _doPan
 
 
-// private
-void VtkViewerSwitchInteractor::doSpin()
+void VtkViewerSwitchInteractor::_doSpin()
 {
     _iuse->Spin();
     if ( _iuse == _iact)
         _iman->doAfterActorSpin( _iact->prop());
     else
         _iman->doAfterCameraSpin();
-}   // end doSpin
+}   // end _doSpin
 
 
 void VtkViewerSwitchInteractor::OnMouseMove()
@@ -282,19 +268,19 @@ void VtkViewerSwitchInteractor::OnMouseMove()
         switch ( _iuse->GetState())
         {
             case VTKIS_ROTATE:
-                doRotate();
+                _doRotate();
                 workedState = true;
                 break;
             case VTKIS_PAN:
-                doPan();
+                _doPan();
                 workedState = true;
                 break;
             case VTKIS_DOLLY:
-                doDolly();
+                _doDolly();
                 workedState = true;
                 break;
             case VTKIS_SPIN:
-                doSpin();
+                _doSpin();
                 workedState = true;
                 break;
         }   // end switch
