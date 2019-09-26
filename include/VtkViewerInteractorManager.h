@@ -116,6 +116,7 @@ private:
     bool _lbdown, _rbdown, _mbdown;
     InteractionMode _imode;
     qint64 _lbDownTime;
+    qint64 _rbDownTime;
     std::minstd_rand0 _rng; // Random number generator for _lockKeys
 
     vtkNew<VtkViewerSwitchInteractor> _iswitch;

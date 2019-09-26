@@ -53,6 +53,7 @@ public:
 
     virtual bool rightButtonDown(){ return false;}
     virtual bool rightButtonUp(){ return false;}
+    virtual bool rightDoubleClick(){ return false;}
 
     virtual bool leftDrag(){ return false;}   // Move mouse with left button depressed.
     virtual bool rightDrag(){ return false;}  // Move mouse with right button depressed.

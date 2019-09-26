@@ -33,7 +33,7 @@ using QTools::VMH;
 
 // public
 VtkViewerInteractorManager::VtkViewerInteractorManager( VtkActorViewer *qv)
-    : _qviewer(qv), _lbdown(false), _rbdown(false), _mbdown(false), _lbDownTime(0),
+    : _qviewer(qv), _lbdown(false), _rbdown(false), _mbdown(false), _lbDownTime(0), _rbDownTime(0),
       _rng( std::chrono::system_clock::now().time_since_epoch().count())
 {
     assert(qv);
@@ -177,9 +177,20 @@ bool VtkViewerInteractorManager::doOnLeftButtonUp()
 bool VtkViewerInteractorManager::doOnRightButtonDown()
 {
     _rbdown = true;
-    const bool rval = dofunction( _vmhs, [](VMH* v){ return v->rightButtonDown();});
+    bool swallowed = false;
+    const qint64 tnow = QDateTime::currentDateTime().currentMSecsSinceEpoch();
+    if ( (tnow - _lbDownTime) < QApplication::doubleClickInterval())    // Check for double click
+    {
+        _rbDownTime = 0;
+        swallowed = dofunction( _vmhs, [](VMH* v){ return v->rightDoubleClick();});
+    }   // end if
+    else
+    {
+        _rbDownTime = tnow;
+        swallowed = dofunction( _vmhs, [](VMH* v){ return v->rightButtonDown();});
+    }   // end else
     _qviewer->updateRender();
-    return rval;
+    return swallowed;
 }   // end doOnRightButtonDown
 
 
