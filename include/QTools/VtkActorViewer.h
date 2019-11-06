@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2019 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,8 @@
 #include "VtkViewerInteractorManager.h"
 #include "QImageTools.h"
 #include "KeyPressHandler.h"
-#include <CameraParams.h>   // RFeatures
-#include <VtkTools.h>       // RVTK
+#include <r3d/CameraParams.h>
+#include <r3dvis/VtkTools.h>
 #include <QApplication>     // All callers will have this anyway
 #include <QVTKOpenGLWidget.h>
 #include <vtkInteractorStyle.h>
@@ -35,7 +35,8 @@
 
 namespace QTools {
 
-//class QTools_EXPORT VtkActorViewer : public QVTKWidget
+using Vec3f = Eigen::Vector3f;
+
 class QTools_EXPORT VtkActorViewer : public QVTKOpenGLWidget
 { Q_OBJECT
 public:
@@ -75,10 +76,10 @@ public:
     void setStereoRendering( bool);	// Points are stereo if true else normal (automatic rendering update)
     void setOrthogonal( bool);      // Projection orthogonal if true else perspective (automatic rendering update)
 
-    RFeatures::CameraParams camera() const;
-    void setCamera( const RFeatures::CameraParams&);   // Move camera to given position
+    r3d::CameraParams camera() const;
+    void setCamera( const r3d::CameraParams&);   // Move camera to given position
 
-    void setLights( const std::vector<RVTK::Light>&);
+    void setLights( const std::vector<r3dvis::Light>&);
 
     // Given a 2D render window (with TOP LEFT origin), returns true if the prop given is pointed at.
     bool pointedAt( const cv::Point&, const vtkProp*) const;
@@ -105,21 +106,18 @@ public:
     int pickActorCells( const std::vector<cv::Point>& points, vtkActor* actor, std::vector<int>& cellIds) const;
     int pickActorCells( const std::vector<QPoint>& points, vtkActor* actor, std::vector<int>& cellIds) const;
 
-    // As above but selects cells where the corresponding 2D mask values > 0.
-    int pickActorCells( const cv::Mat& mask, vtkActor* actor, std::vector<int>& cellIds) const;
-
     // Find the position in 3D world space from a 2D point using TOP LEFT origin.
-    cv::Vec3f pickWorldPosition( const cv::Point&) const;
-    cv::Vec3f pickWorldPosition( const QPoint&) const;
+    Vec3f pickWorldPosition( const cv::Point&) const;
+    Vec3f pickWorldPosition( const QPoint&) const;
 
     // As above, but specify view coordinates from top left as a proportion of the window dimensions.
-    cv::Vec3f pickWorldPosition( const cv::Point2f&) const;
+    Vec3f pickWorldPosition( const cv::Point2f&) const;
 
     // Find the display position in 2D (using TOP LEFT origin) of a 3D world coordinate point.
-    cv::Point projectToDisplay( const cv::Vec3f&) const;
+    cv::Point projectToDisplay( const Vec3f&) const;
 
     // As above, but return the coordinates from the top left of the display as a proportion of the display pane.
-    cv::Point2f projectToDisplayProportion( const cv::Vec3f&) const;
+    cv::Point2f projectToDisplayProportion( const Vec3f&) const;
 
 
     /******************************************************************/

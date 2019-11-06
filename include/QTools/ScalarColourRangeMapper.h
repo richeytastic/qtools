@@ -24,7 +24,7 @@
 
 #include "QTools_Export.h"
 #include <QColor>
-#include <LookupTable.h>    // RVTK
+#include <r3dvis/LookupTable.h>
 
 namespace QTools {
 
@@ -51,8 +51,8 @@ public:
     // Rebuild the lookup table: call after updating with fns setRangeLimits, setColours, setNumColours.
     void rebuild();
 
-    RVTK::LookupTable& lookupTable() { return _ltable;}
-    const RVTK::LookupTable& lookupTable() const { return _ltable;}
+    r3dvis::LookupTable& lookupTable() { return _ltable;}
+    const r3dvis::LookupTable& lookupTable() const { return _ltable;}
 
     // Get the range limits.
     const std::pair<float,float>& rangeLimits() const { return _rngl;}
@@ -78,7 +78,7 @@ private:
     std::pair<float,float> _rngl;   // Allowed range
     std::pair<float,float> _visl;   // Visible range
     cv::Vec3b _cols[3];             // min, mid, and max colours
-    RVTK::LookupTable _ltable;      // The lookup table that does the actual mapping
+    r3dvis::LookupTable _ltable;      // The lookup table that does the actual mapping
 
     ScalarColourRangeMapper( const ScalarColourRangeMapper&) = delete;
     void operator=( const ScalarColourRangeMapper&) = delete;

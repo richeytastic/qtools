@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
 project( QTools)
 
-set( WITH_RVTK TRUE)
 set( WITH_QT TRUE)
+set( WITH_R3DVIS TRUE)
 include( "cmake/FindLibs.cmake")
 
 set( INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
+set( INCLUDE_F "${INCLUDE_DIR}/${PROJECT_NAME}")
 set( SRC_DIR "${PROJECT_SOURCE_DIR}/src")
 set( FORMS_DIR "${PROJECT_SOURCE_DIR}/forms")
+include_directories( ${INCLUDE_F})
 include_directories( ${INCLUDE_DIR})
 include_directories( ${PROJECT_BINARY_DIR}) # Req. for generated Qt form headers
 
@@ -16,7 +18,7 @@ set( SRC_FILES
     "${SRC_DIR}/ColourMappingWidget.cpp"
     "${SRC_DIR}/HelpAssistant.cpp"
     "${SRC_DIR}/HelpBrowser.cpp"
-    "${SRC_DIR}/ImagerWidget.cpp"
+    #"${SRC_DIR}/ImagerWidget.cpp"
     "${SRC_DIR}/KeyPressHandler.cpp"
     "${SRC_DIR}/PluginInterface.cpp"
     "${SRC_DIR}/PluginsDialog.cpp"
@@ -24,7 +26,7 @@ set( SRC_FILES
     "${SRC_DIR}/PluginUIPoints.cpp"
     "${SRC_DIR}/PolyDrawer.cpp"
     "${SRC_DIR}/QImageTools.cpp"
-    "${SRC_DIR}/QProgressUpdater.cpp"
+    #"${SRC_DIR}/QProgressUpdater.cpp"
     "${SRC_DIR}/QUtils.cpp"
     "${SRC_DIR}/RangeMinMax.cpp"
     "${SRC_DIR}/RangeSlider.cpp"
@@ -42,44 +44,45 @@ set( SRC_FILES
     )
 
 set( QOBJECTS
-    "${INCLUDE_DIR}/ColourMappingWidget.h"
-    "${INCLUDE_DIR}/HelpBrowser.h"
-    "${INCLUDE_DIR}/ImagerWidget.h"
-    "${INCLUDE_DIR}/VtkActorViewer.h"
-    "${INCLUDE_DIR}/PluginInterface.h"
-    "${INCLUDE_DIR}/PluginsDialog.h"
-    "${INCLUDE_DIR}/PluginsLoader.h"
-    "${INCLUDE_DIR}/PolyDrawer.h"
-    "${INCLUDE_DIR}/QProgressUpdater.h"
-    "${INCLUDE_DIR}/RangeMinMax.h"
-    "${INCLUDE_DIR}/RangeSlider.h"
-    "${INCLUDE_DIR}/TreeComboBox.h"
-    "${INCLUDE_DIR}/TreeModel.h"
-    "${INCLUDE_DIR}/TwoHandleSlider.h"
-    "${INCLUDE_DIR}/ViewNavigator.h"
+    "${INCLUDE_F}/ColourMappingWidget.h"
+    "${INCLUDE_F}/HelpBrowser.h"
+    #"${INCLUDE_F}/ImagerWidget.h"
+    "${INCLUDE_F}/VtkActorViewer.h"
+    "${INCLUDE_F}/PluginInterface.h"
+    "${INCLUDE_F}/PluginsDialog.h"
+    "${INCLUDE_F}/PluginsLoader.h"
+    "${INCLUDE_F}/PolyDrawer.h"
+    #"${INCLUDE_F}/QProgressUpdater.h"
+    "${INCLUDE_F}/RangeMinMax.h"
+    "${INCLUDE_F}/RangeSlider.h"
+    "${INCLUDE_F}/TreeComboBox.h"
+    "${INCLUDE_F}/TreeModel.h"
+    "${INCLUDE_F}/TwoHandleSlider.h"
+    "${INCLUDE_F}/ViewNavigator.h"
     )
 
 # Super set of header files
 set( INCLUDE_FILES
     "${QOBJECTS}"
-    "${INCLUDE_DIR}/HelpAssistant.h"
-    "${INCLUDE_DIR}/KeyPressHandler.h"
-    "${INCLUDE_DIR}/QImageTools.h"
-    "${INCLUDE_DIR}/QUtils.h"
-    "${INCLUDE_DIR}/PluginUIPoints.h"
-    "${INCLUDE_DIR}/ScalarColourRangeMapper.h"
-    "${INCLUDE_DIR}/TreeItem.h"
-    "${INCLUDE_DIR}/VtkViewerInteractorManager.h"
-    "${INCLUDE_DIR}/VtkViewerActorInteractor.h"
-    "${INCLUDE_DIR}/VtkViewerCameraInteractor.h"
-    "${INCLUDE_DIR}/VtkViewerSwitchInteractor.h"
-    "${INCLUDE_DIR}/VtkMouseHandler.h"
-    "${INCLUDE_DIR}/VtkViewerInteractor.h"
+    "${INCLUDE_F}.h"
+    "${INCLUDE_F}/HelpAssistant.h"
+    "${INCLUDE_F}/KeyPressHandler.h"
+    "${INCLUDE_F}/QImageTools.h"
+    "${INCLUDE_F}/QUtils.h"
+    "${INCLUDE_F}/PluginUIPoints.h"
+    "${INCLUDE_F}/ScalarColourRangeMapper.h"
+    "${INCLUDE_F}/TreeItem.h"
+    "${INCLUDE_F}/VtkViewerInteractorManager.h"
+    "${INCLUDE_F}/VtkViewerActorInteractor.h"
+    "${INCLUDE_F}/VtkViewerCameraInteractor.h"
+    "${INCLUDE_F}/VtkViewerSwitchInteractor.h"
+    "${INCLUDE_F}/VtkMouseHandler.h"
+    "${INCLUDE_F}/VtkViewerInteractor.h"
     )
 
 set( FORMS
     "${FORMS_DIR}/ColourMappingWidget.ui"
-    "${FORMS_DIR}/ImagerWidget.ui"
+    #"${FORMS_DIR}/ImagerWidget.ui"
     "${FORMS_DIR}/PluginsDialog.ui"
     "${FORMS_DIR}/ViewNavigator.ui"
     )

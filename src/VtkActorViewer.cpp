@@ -16,8 +16,7 @@
  ************************************************************************/
 
 #include <VtkActorViewer.h>
-#include <RendererPicker.h> // RVTK
-#include <FeatureUtils.h>   // RFeatures
+#include <r3dvis/RendererPicker.h>
 #include <cassert>
 #include <iostream>
 #include <vtkLight.h>
@@ -25,12 +24,12 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 #include <vtkFollower.h>
-#include <RendererPicker.h>
 using QTools::VtkActorViewer;
 using QTools::VVI;
 using QTools::VMH;
 using QTools::KeyPressHandler;
-using RFeatures::CameraParams;
+using r3d::CameraParams;
+using r3d::Vec3f;
 
 
 VtkActorViewer::VtkActorViewer( QWidget *parent)
@@ -90,14 +89,14 @@ void VtkActorViewer::setSize( size_t w, size_t h)
 // public
 cv::Mat_<float> VtkActorViewer::getRawZBuffer() const
 {
-    return RVTK::extractZBuffer( _rwin);
+    return r3dvis::extractZBuffer( _rwin);
 }   // end getRawZBuffer
 
 
 // public
 cv::Mat_<cv::Vec3b> VtkActorViewer::getColourImg() const
 {
-    return RVTK::extractImage( _rwin);
+    return r3dvis::extractImage( _rwin);
 }   // end getColourImg
 
 
@@ -136,13 +135,13 @@ CameraParams VtkActorViewer::camera() const
     CameraParams cp;
     vtkCamera* cam = _ren->GetActiveCamera();
     const double *arr = cam->GetPosition();
-    cp.pos = cv::Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
+    cp.pos = Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
 
     arr = cam->GetFocalPoint();
-    cp.focus = cv::Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
+    cp.focus = Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
 
     arr = cam->GetViewUp();
-    cp.up = cv::Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
+    cp.up = Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
 
     cp.fov = cam->GetViewAngle();
     return cp;
@@ -194,9 +193,9 @@ void VtkActorViewer::setOrthogonal( bool on)
 
 
 // public
-void VtkActorViewer::setLights( const std::vector<RVTK::Light>& lights)
+void VtkActorViewer::setLights( const std::vector<r3dvis::Light>& lights)
 {
-    RVTK::resetLights( _ren, lights);
+    r3dvis::resetLights( _ren, lights);
     if ( _autoUpdateRender)
         updateRender();
 }   // end setLights
@@ -207,7 +206,7 @@ bool VtkActorViewer::pointedAt( const cv::Point& p, const vtkProp* prop) const
 {
     if ( prop)
     {
-        RVTK::RendererPicker picker( _ren, RVTK::RendererPicker::TOP_LEFT);
+        r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
         return prop == picker.pickActor( p);
     }   // end if
     return false;
@@ -224,7 +223,7 @@ bool VtkActorViewer::pointedAt( const QPoint& p, const vtkProp* prop) const
 // public
 vtkActor* VtkActorViewer::pickActor( const cv::Point& p, const std::vector<vtkActor*>& pactors) const
 {
-    RVTK::RendererPicker picker( _ren, RVTK::RendererPicker::TOP_LEFT);
+    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.pickActor( p, pactors);
 }   // end pickActor
 
@@ -239,7 +238,7 @@ vtkActor* VtkActorViewer::pickActor( const QPoint& p, const std::vector<vtkActor
 // public
 vtkActor* VtkActorViewer::pickActor( const cv::Point& p) const
 {
-    RVTK::RendererPicker picker( _ren, RVTK::RendererPicker::TOP_LEFT);
+    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.pickActor( p);
 }   // end pickActor
 
@@ -254,7 +253,7 @@ vtkActor* VtkActorViewer::pickActor( const QPoint& p) const
 // public
 int VtkActorViewer::pickCell(const cv::Point &p) const
 {
-    RVTK::RendererPicker picker( _ren, RVTK::RendererPicker::TOP_LEFT);
+    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.pickCell( p);
 }   // end pickCell
 
@@ -269,7 +268,7 @@ int VtkActorViewer::pickCell(const QPoint &p) const
 // public
 int VtkActorViewer::pickActorCells( const std::vector<cv::Point>& points, vtkActor* actor, std::vector<int>& cellIds) const
 {
-    RVTK::RendererPicker picker( _ren, RVTK::RendererPicker::TOP_LEFT);
+    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.pickActorCells( points, actor, cellIds);
 }   // end pickActorCells
 
@@ -284,39 +283,22 @@ int VtkActorViewer::pickActorCells( const std::vector<QPoint>& points, vtkActor*
 
 
 // public
-int VtkActorViewer::pickActorCells( const cv::Mat& inmask, vtkActor* actor, std::vector<int>& cellIds) const
+Vec3f VtkActorViewer::pickWorldPosition( const cv::Point& p) const
 {
-    if ( actor == nullptr)
-        return 0;
-
-    assert( inmask.rows == (int)getHeight() && inmask.cols == (int)getWidth());
-    assert( inmask.channels() == 1);
-
-    cv::Mat_<byte> mask;
-    inmask.convertTo( mask, CV_8U);
-    std::vector<cv::Point> pts;
-    RFeatures::nonZeroToPoints( mask, pts);
-    return pickActorCells( pts, actor, cellIds);
-}   // end pickActorCells
-
-
-// public
-cv::Vec3f VtkActorViewer::pickWorldPosition( const cv::Point& p) const
-{
-    RVTK::RendererPicker picker( _ren, RVTK::RendererPicker::TOP_LEFT);
+    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.pickWorldPosition( p);
 }   // end pickWorldPosition
 
 
 // public
-cv::Vec3f VtkActorViewer::pickWorldPosition( const QPoint& p) const
+Vec3f VtkActorViewer::pickWorldPosition( const QPoint& p) const
 {
     return pickWorldPosition( cv::Point(p.x(), p.y()));
 }   // end pickWorldPosition
 
 
 // public
-cv::Vec3f VtkActorViewer::pickWorldPosition( const cv::Point2f& p) const
+Vec3f VtkActorViewer::pickWorldPosition( const cv::Point2f& p) const
 {
     const cv::Point np( (int)cvRound(p.x * (getWidth()-1)), (int)cvRound(p.y * (getHeight()-1)));
     return pickWorldPosition( np);
@@ -324,15 +306,15 @@ cv::Vec3f VtkActorViewer::pickWorldPosition( const cv::Point2f& p) const
 
 
 // public
-cv::Point VtkActorViewer::projectToDisplay( const cv::Vec3f& v) const
+cv::Point VtkActorViewer::projectToDisplay( const Vec3f& v) const
 {
-    RVTK::RendererPicker picker( _ren, RVTK::RendererPicker::TOP_LEFT);
+    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.projectToImagePlane( v);
 }   // end projectToDisplay
 
 
 // public
-cv::Point2f VtkActorViewer::projectToDisplayProportion( const cv::Vec3f& v) const
+cv::Point2f VtkActorViewer::projectToDisplayProportion( const Vec3f& v) const
 {
     const cv::Point p = projectToDisplay(v);
     return cv::Point2f( float(p.x) / (getWidth()-1), float(p.y) / (getHeight()-1));
