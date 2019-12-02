@@ -55,11 +55,7 @@ VtkActorViewer::VtkActorViewer( QWidget *parent)
 }	// end ctor
 
 
-// public
-VtkActorViewer::~VtkActorViewer()
-{
-    delete _iman;
-}   // end dtor
+VtkActorViewer::~VtkActorViewer() { delete _iman;}
 
 
 void VtkActorViewer::setInteractor( vtkInteractorStyle* iStyle)
@@ -69,7 +65,6 @@ void VtkActorViewer::setInteractor( vtkInteractorStyle* iStyle)
 }   // end setInteractor
 
 
-// public
 void VtkActorViewer::updateRender()
 {
     _ren->ResetCameraClippingRange();
@@ -77,7 +72,6 @@ void VtkActorViewer::updateRender()
 }   // end updateRender
 
 
-// public
 void VtkActorViewer::setSize( size_t w, size_t h)
 {
     this->resize( (int)w, (int)h);
@@ -86,21 +80,12 @@ void VtkActorViewer::setSize( size_t w, size_t h)
 }   // end setSize
 
 
-// public
-cv::Mat_<float> VtkActorViewer::getRawZBuffer() const
-{
-    return r3dvis::extractZBuffer( _rwin);
-}   // end getRawZBuffer
+cv::Mat_<float> VtkActorViewer::getRawZBuffer() const { return r3dvis::extractZBuffer( _rwin);}
 
 
-// public
-cv::Mat_<cv::Vec3b> VtkActorViewer::getColourImg() const
-{
-    return r3dvis::extractImage( _rwin);
-}   // end getColourImg
+cv::Mat_<cv::Vec3b> VtkActorViewer::getColourImg() const { return r3dvis::extractImage( _rwin);}
 
 
-// public
 void VtkActorViewer::add( vtkProp* prop)
 {
     _ren->AddViewProp( prop);
@@ -111,7 +96,6 @@ void VtkActorViewer::add( vtkProp* prop)
 }   // end add
 
 
-// public
 void VtkActorViewer::remove( vtkProp* prop)
 {
     _ren->RemoveViewProp( prop);
@@ -120,7 +104,6 @@ void VtkActorViewer::remove( vtkProp* prop)
 }   // end remove
 
 
-// public
 void VtkActorViewer::clear()
 {
     _ren->RemoveAllViewProps();
@@ -132,37 +115,57 @@ void VtkActorViewer::clear()
 // public
 CameraParams VtkActorViewer::camera() const
 {
-    CameraParams cp;
     vtkCamera* cam = _ren->GetActiveCamera();
     const double *arr = cam->GetPosition();
-    cp.pos = Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
+    const Vec3f pos = Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
 
     arr = cam->GetFocalPoint();
-    cp.focus = Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
+    const Vec3f foc = Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
 
     arr = cam->GetViewUp();
-    cp.up = Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
+    const Vec3f upv = Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
 
-    cp.fov = cam->GetViewAngle();
-    return cp;
+    float fov = cam->GetViewAngle();
+    return CameraParams( pos, foc, upv, fov);
 }   // end camera
 
 
-// public
 void VtkActorViewer::setCamera( const CameraParams& cp)
 {
     vtkCamera* cam = _ren->GetActiveCamera();
-    cam->SetFocalPoint( cp.focus[0], cp.focus[1], cp.focus[2]);
-    cam->SetPosition( cp.pos[0], cp.pos[1], cp.pos[2]);
-    cam->SetViewUp( cp.up[0], cp.up[1], cp.up[2]);
-    cam->SetViewAngle( cp.fov);
+    cam->SetFocalPoint( cp.focus()[0], cp.focus()[1], cp.focus()[2]);
+    cam->SetPosition( cp.pos()[0], cp.pos()[1], cp.pos()[2]);
+    cam->SetViewUp( cp.up()[0], cp.up()[1], cp.up()[2]);
+    cam->SetViewAngle( cp.fov());
     //_ren->ResetCameraClippingRange();
     if ( _autoUpdateRender)
         updateRender();
 }   // end setCamera
 
 
-// public
+void VtkActorViewer::refreshClippingPlanes()
+{
+    vtkCamera* vcamera = getRenderer()->GetActiveCamera();
+    double cmin, cmax;  // Get the min and max clipping ranges
+    vcamera->GetClippingRange( cmin, cmax);
+    const CameraParams cp = camera();
+    /*
+    std::cerr << "Clipping plane range min --> max: " << cmin << " --> " << cmax << std::endl;
+    std::cerr << "  Camera position:  " << cp.pos << std::endl;
+    std::cerr << "  Camera focus:     " << cp.focus << std::endl;
+    */
+    const double pfdelta = cp.distance();
+    //std::cerr << "  Position - Focus: " << pfdelta << std::endl;
+    // If the distance between the camera position and the focus is less than 2% the
+    // distance to the near clipping plane, then make the near clipping plane closer.
+    cmin = 0.01 * cmax;
+    const double ctol =  2*cmin > pfdelta ? 0.00001 : 0.01;
+    getRenderer()->SetNearClippingPlaneTolerance(ctol);
+    getRenderer()->ResetCameraClippingRange();
+    updateRender();
+}   // end refreshClippingPlanes
+
+
 void VtkActorViewer::setStereoRendering( bool on)
 {
     _rwin->SetStereoRender( on);

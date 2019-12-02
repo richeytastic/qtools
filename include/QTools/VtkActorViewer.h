@@ -79,6 +79,9 @@ public:
     r3d::CameraParams camera() const;
     void setCamera( const r3d::CameraParams&);   // Move camera to given position
 
+    // NOT called automatically!
+    void refreshClippingPlanes();
+
     void setLights( const std::vector<r3dvis::Light>&);
 
     // Given a 2D render window (with TOP LEFT origin), returns true if the prop given is pointed at.
