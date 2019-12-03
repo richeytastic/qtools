@@ -91,28 +91,11 @@ QColor ScalarColourRangeMapper::maxColour() const { return QColor( _cols[2][0], 
 
 void ScalarColourRangeMapper::rebuild()
 {
-    const float minv = _visl.first;
-    const float maxv = _visl.second;
-
-    size_t nc0 = _ncols;
-    size_t nc1 = _ncols;
-    if ( maxv <= 0.0f)
-        nc1 = 0;    // Will use upper (positive) colour range only
-    else if ( minv >= 0.0f)
-        nc0 = 0;    // Will use lower (negative) colour range only
+    if ( _visl.second <= 0)
+        _ltable.setColours( _cols[0], _cols[1], _ncols);
+    else if ( _visl.first >= 0)
+        _ltable.setColours( _cols[1], _cols[2], _ncols);
     else
-    {   // Calculate the proportional number of colours below zero (nc0) and above zero (nc1)
-        const double vrng = maxv - minv;
-        if ( vrng > 0.0)
-            nc0 = (size_t)(double(_ncols) * fabs(minv)/vrng + 0.5);
-        nc1 = _ncols - nc0;
-    }   // end else
-
-    if ( nc1 == 0)
-        _ltable.setColours( _cols[0], _cols[1], nc0);
-    else if ( nc0 == 0)
-        _ltable.setColours( _cols[1], _cols[2], nc1);
-    else
-        _ltable.setColours( _cols[0], _cols[1], _cols[2], nc0, nc1);
+        _ltable.setColours( _cols[0], _cols[1], _cols[2], _ncols);
 }   // end rebuild
 
