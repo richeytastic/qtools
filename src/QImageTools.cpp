@@ -89,10 +89,10 @@ cv::Mat QTools::copyQImage2OpenCV( const QImage &qimg)
 }   // end copyQImage2OpenCV
 
 
-QString getSaveImageFilename( const QString savefname)
+namespace {
+QString getSaveImageFilename( const QString savefname, const QWidget *prnt)
 {
-    QString fname = QFileDialog::getSaveFileName( NULL, "Save Image", savefname, "Image Files (*.jpg *.jpeg *.png *.gif *.bmp)", NULL, QFileDialog::DontUseNativeDialog);
-    //QString fname = QFileDialog::getSaveFileName( NULL, "Save Image", savefname, "Image Files (*.jpg *.jpeg *.png *.gif *.bmp)", NULL);
+    QString fname = QFileDialog::getSaveFileName( const_cast<QWidget*>(prnt), "Save Image", savefname, "Image Files (*.jpg *.jpeg *.png *.gif *.bmp)", NULL, QFileDialog::DontUseNativeDialog);
     if ( !fname.isEmpty())
     {
         // Ensure fname has a valid image extension, otherwise set
@@ -106,22 +106,23 @@ QString getSaveImageFilename( const QString savefname)
     }   // end if
     return fname;
 }   // end getSaveImageFilename
+}   // end namespace
 
 
-bool QTools::saveImage( const cv::Mat &img, const QString savefname)
+bool QTools::saveImage( const cv::Mat &img, const QString savefname, const QWidget *prnt)
 {
     bool saved = false;
-    const QString fname = getSaveImageFilename( savefname);
+    const QString fname = getSaveImageFilename( savefname, prnt);
     if ( !fname.isEmpty())
         saved = cv::imwrite( fname.toStdString(), img);
     return saved;
 }   // end saveImage
 
 
-bool QTools::saveImage( const QImage& img, const QString savefname)
+bool QTools::saveImage( const QImage& img, const QString savefname, const QWidget *prnt)
 {
     bool saved = false;
-    const QString fname = getSaveImageFilename( savefname);
+    const QString fname = getSaveImageFilename( savefname, prnt);
     if ( !fname.isEmpty())
         saved = img.save( fname);
     return saved;

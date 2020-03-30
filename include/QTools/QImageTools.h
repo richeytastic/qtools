@@ -21,6 +21,7 @@
 #include <opencv2/opencv.hpp>
 #include <QImage>
 #include <QString>
+#include <QWidget>
 #include "QTools_Export.h"
 
 namespace QTools {
@@ -33,9 +34,9 @@ QTools_EXPORT cv::Mat copyQImage2OpenCV( const QImage &img);
 
 // Save the given image to a filename provided using file dialog.
 // Returns false only if tried and failed to save the image.
-QTools_EXPORT bool saveImage( const cv::Mat &img, const QString savefname=QString());
+QTools_EXPORT bool saveImage( const cv::Mat &img, const QString savefname=QString(), const QWidget *prnt=nullptr);
 
-QTools_EXPORT bool saveImage( const QImage& qimg, const QString savefname=QString());
+QTools_EXPORT bool saveImage( const QImage& qimg, const QString savefname=QString(), const QWidget *prnt=nullptr);
 
 }   // end namespace
 
