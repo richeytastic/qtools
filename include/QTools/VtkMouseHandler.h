@@ -36,8 +36,8 @@ public:
     virtual ~VtkMouseHandler() {}
 
     // Temporarily disable calls to the virtual functions.
-    void setEnabled( bool v) { _enabled = v;}
-    bool isEnabled() const { return _enabled;}
+    virtual void setEnabled( bool v) { _enabled = v;}
+    virtual bool isEnabled() const { return _enabled;}
 
     virtual void mouseEnter( const VtkActorViewer*){}
     virtual void mouseLeave( const VtkActorViewer*){}
