@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2019 Richard Palmer
+ * Copyright (C) 2020 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -112,7 +112,6 @@ void VtkActorViewer::clear()
 }   // end clear
 
 
-// public
 CameraParams VtkActorViewer::camera() const
 {
     vtkCamera* cam = _ren->GetActiveCamera();
@@ -174,7 +173,6 @@ void VtkActorViewer::setStereoRendering( bool on)
 }	// end setStereoRendering
 
 
-// public
 void VtkActorViewer::setOrthogonal( bool on)
 {
     vtkCamera* cam = _ren->GetActiveCamera();
@@ -195,7 +193,6 @@ void VtkActorViewer::setOrthogonal( bool on)
 }	// end setOrthogonal
 
 
-// public
 void VtkActorViewer::setLights( const std::vector<r3dvis::Light>& lights)
 {
     r3dvis::resetLights( _ren, lights);
@@ -204,71 +201,66 @@ void VtkActorViewer::setLights( const std::vector<r3dvis::Light>& lights)
 }   // end setLights
 
 
-// public
 bool VtkActorViewer::pointedAt( const cv::Point& p, const vtkProp* prop) const
 {
-    if ( prop)
-    {
-        r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
-        return prop == picker.pickActor( p);
-    }   // end if
-    return false;
+    if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1] || !prop)
+        return false;
+    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
+    return prop == picker.pickActor( p);
 }   // end pointedAt
 
 
-// public
 bool VtkActorViewer::pointedAt( const QPoint& p, const vtkProp* prop) const
 {
     return pointedAt( cv::Point(p.x(), p.y()), prop);
 }   // end pointedAt
 
 
-// public
 vtkActor* VtkActorViewer::pickActor( const cv::Point& p, const std::vector<vtkActor*>& pactors) const
 {
+    if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1])
+        return nullptr;
     r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.pickActor( p, pactors);
 }   // end pickActor
 
 
-// public
 vtkActor* VtkActorViewer::pickActor( const QPoint& p, const std::vector<vtkActor*>& pactors) const
 {
     return pickActor( cv::Point(p.x(), p.y()), pactors);
 }   // end pickActor
 
 
-// public
 vtkActor* VtkActorViewer::pickActor( const cv::Point& p) const
 {
+    if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1])
+        return nullptr;
     r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.pickActor( p);
 }   // end pickActor
 
 
-// public
 vtkActor* VtkActorViewer::pickActor( const QPoint& p) const
 {
     return pickActor( cv::Point(p.x(), p.y()));
 }   // end pickActor
 
 
-// public
-int VtkActorViewer::pickCell(const cv::Point &p) const
+int VtkActorViewer::pickCell( const cv::Point &p) const
 {
+    if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1])
+        return -1;
     r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.pickCell( p);
 }   // end pickCell
 
 
-// public
 int VtkActorViewer::pickCell(const QPoint &p) const
 {
     return pickCell( cv::Point(p.x(), p.y()));
 }   // end pickCell
 
 
-// public
 int VtkActorViewer::pickActorCells( const std::vector<cv::Point>& points, vtkActor* actor, std::vector<int>& cellIds) const
 {
     r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
@@ -276,7 +268,6 @@ int VtkActorViewer::pickActorCells( const std::vector<cv::Point>& points, vtkAct
 }   // end pickActorCells
 
 
-// public
 int VtkActorViewer::pickActorCells( const std::vector<QPoint>& points, vtkActor* actor, std::vector<int>& cellIds) const
 {
     std::vector<cv::Point> pts;
@@ -285,30 +276,31 @@ int VtkActorViewer::pickActorCells( const std::vector<QPoint>& points, vtkActor*
 }   // end pickActorCells
 
 
-// public
 Vec3f VtkActorViewer::pickWorldPosition( const cv::Point& p) const
 {
+    if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1])
+        return Vec3f::Zero();
     r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.pickWorldPosition( p);
 }   // end pickWorldPosition
 
 
-// public
 Vec3f VtkActorViewer::pickWorldPosition( const QPoint& p) const
 {
     return pickWorldPosition( cv::Point(p.x(), p.y()));
 }   // end pickWorldPosition
 
 
-// public
 Vec3f VtkActorViewer::pickWorldPosition( const cv::Point2f& p) const
 {
-    const cv::Point np( (int)cvRound(p.x * (getWidth()-1)), (int)cvRound(p.y * (getHeight()-1)));
+    const int w = _ren->GetSize()[0];
+    const int h = _ren->GetSize()[1];
+    const cv::Point np( std::min( int(p.x * w), w-1),
+                        std::min( int(p.y * h), h-1));
     return pickWorldPosition( np);
 }   // end pickWorldPosition
 
 
-// public
 cv::Point VtkActorViewer::projectToDisplay( const Vec3f& v) const
 {
     r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
@@ -316,25 +308,21 @@ cv::Point VtkActorViewer::projectToDisplay( const Vec3f& v) const
 }   // end projectToDisplay
 
 
-// public
 cv::Point2f VtkActorViewer::projectToDisplayProportion( const Vec3f& v) const
 {
     const cv::Point p = projectToDisplay(v);
-    return cv::Point2f( float(p.x) / (getWidth()-1), float(p.y) / (getHeight()-1));
+    return cv::Point2f( (float(p.x) + 0.5f) / getWidth(), (float(p.y) + 0.5f) / getHeight());
 }   // end projectToDisplayProportion
 
 
-// public
 void VtkActorViewer::attachKeyPressHandler( KeyPressHandler* kph) { _keyPressHandlers.insert( kph);}
 void VtkActorViewer::detachKeyPressHandler( KeyPressHandler* kph) { _keyPressHandlers.erase( kph);}
 
 
-// public
 bool VtkActorViewer::isAttached( VMH* v) const { return _iman->isAttached(v);}
 bool VtkActorViewer::isAttached( VVI* v) const { return _iman->isAttached(v);}
 
 
-// public
 bool VtkActorViewer::attach( VVI* vvi)
 {
     if (isAttached(vvi))
@@ -343,7 +331,6 @@ bool VtkActorViewer::attach( VVI* vvi)
     return true;
 }   // end attach
 
-// public
 bool VtkActorViewer::attach( VMH* vmh)
 {
     if (isAttached(vmh))
@@ -352,7 +339,6 @@ bool VtkActorViewer::attach( VMH* vmh)
     return true;
 }   // end attach
 
-// public
 bool VtkActorViewer::detach( VVI* vvi)
 {
     if (!isAttached(vvi))
@@ -361,7 +347,6 @@ bool VtkActorViewer::detach( VVI* vvi)
     return true;
 }   // end detach
 
-// public
 bool VtkActorViewer::detach( VMH* vmh)
 {
     if (!isAttached(vmh))
