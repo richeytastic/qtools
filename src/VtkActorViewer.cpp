@@ -308,6 +308,14 @@ cv::Point VtkActorViewer::projectToDisplay( const Vec3f& v) const
 }   // end projectToDisplay
 
 
+QPoint VtkActorViewer::projectToDisplayPoint( const Vec3f& v) const
+{
+    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
+    cv::Point p = picker.projectToImagePlane( v);
+    return QPoint( p.x, p.y);
+}   // end projectToDisplayPoint
+
+
 cv::Point2f VtkActorViewer::projectToDisplayProportion( const Vec3f& v) const
 {
     const cv::Point p = projectToDisplay(v);

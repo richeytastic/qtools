@@ -118,6 +118,7 @@ public:
 
     // Find the display position in 2D (using TOP LEFT origin) of a 3D world coordinate point.
     cv::Point projectToDisplay( const Vec3f&) const;
+    QPoint projectToDisplayPoint( const Vec3f&) const;
 
     // As above, but return the coordinates from the top left of the display as a proportion of the display pane.
     cv::Point2f projectToDisplayProportion( const Vec3f&) const;
