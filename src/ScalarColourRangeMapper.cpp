@@ -20,7 +20,7 @@ using QTools::ScalarColourRangeMapper;
 
 
 ScalarColourRangeMapper::ScalarColourRangeMapper()
-    : _ncols(100), _rngl(0.0f,1.0f), _visl(0.0f,1.0f)
+    : _ncols(100), _visl(0.0f,1.0f)
 {
     _cols[0] = cv::Vec3b(0,  0,  255);  // Red (BGR)
     _cols[1] = cv::Vec3b(255,255,255);  // White (BGR)
@@ -29,33 +29,20 @@ ScalarColourRangeMapper::ScalarColourRangeMapper()
 }   // end ctor
 
 
-void ScalarColourRangeMapper::setRangeLimits( float rmin, float rmax)
-{
-    assert(rmin <= rmax);
-    _rngl.first = rmin;
-    _rngl.second = rmax;
-    setVisibleRange( _visl.first, _visl.second);
-}   // end setRangeLimits
-
-
 void ScalarColourRangeMapper::setVisibleRange( float vmin, float vmax)
 {
-    // If the visible range sits outside of the range limits, set to the range limits.
-    const float rmin = _rngl.first;
-    const float rmax = _rngl.second;
-
-    if ( vmin < rmin || vmin > rmax)
-        vmin = rmin;
-    if ( vmax < rmin || vmax > rmax)
-        vmax = rmax;
-
-    //assert(vmin <= vmax);
+    if ( vmin > vmax)
+        std::swap( vmin, vmax);
     _visl.first = vmin;
     _visl.second = vmax;
 }   // end setVisibleRange
 
 
-void ScalarColourRangeMapper::setNumColours( size_t nc) { _ncols = std::max<size_t>(2, nc);}
+void ScalarColourRangeMapper::setNumColours( size_t nc)
+{
+    _ncols = std::max<size_t>(2, nc);
+}   // end setNumColours
+
 
 void ScalarColourRangeMapper::setColours( const cv::Vec3b& c0, const cv::Vec3b& c1, const cv::Vec3b& c2)
 {
@@ -72,6 +59,7 @@ void ScalarColourRangeMapper::setColours( const QColor& c0, const QColor& c1, co
     const cv::Vec3b maxCol( c2.red(), c2.green(), c2.blue());
     setColours( minCol, midCol, maxCol);
 }   // end setColours
+
 
 void ScalarColourRangeMapper::setMinColour( const QColor& c) { _cols[0] = cv::Vec3b( c.red(), c.green(), c.blue());}
 void ScalarColourRangeMapper::setMidColour( const QColor& c) { _cols[1] = cv::Vec3b( c.red(), c.green(), c.blue());}

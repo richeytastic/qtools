@@ -32,8 +32,7 @@ namespace QTools {
 class QTools_EXPORT RangeMinMax : public QWidget
 { Q_OBJECT
 public:
-    RangeMinMax( QWidget* parent=nullptr);
-    ~RangeMinMax() override;
+    explicit RangeMinMax( QWidget* parent=nullptr);
 
     void setHorizontalOrientation();    // Default
     void setVerticalOrientation();
@@ -49,19 +48,23 @@ public:
     void setMax( float);
 
     // Get the displayed min/max values.
-    float min() const { return (float)_minSpin->value();}
-    float max() const { return (float)_maxSpin->value();}
+    float min() const { return (float)_minSpin.value();}
+    float max() const { return (float)_maxSpin.value();}
+
+    // If set true, the min spin box is hidden and changes to the
+    // min range value are negative the max range value unless
+    void setMinHidden( bool);
 
 signals:
-    void rangeChanged( float, float);   // Min or Max value changed
+    void valueChanged( float, float);   // Min or Max value changed
 
 private slots:
-    void doOnMinChanged(double);
-    void doOnMaxChanged(double);
+    void _doOnMinChanged(double);
+    void _doOnMaxChanged(double);
 
 private:
-    QDoubleSpinBox *_minSpin;
-    QDoubleSpinBox *_maxSpin;
+    QDoubleSpinBox _minSpin;
+    QDoubleSpinBox _maxSpin;
 };  // end class
 
 }   // end namespace

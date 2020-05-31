@@ -124,8 +124,8 @@ CameraParams VtkActorViewer::camera() const
     arr = cam->GetViewUp();
     const Vec3f upv = Vec3f( (float)arr[0], (float)arr[1], (float)arr[2]);
 
-    float fov = cam->GetViewAngle();
-    return CameraParams( pos, foc, upv, fov);
+    const double fov = cam->GetViewAngle();
+    return CameraParams( pos, foc, upv, float(fov));
 }   // end camera
 
 

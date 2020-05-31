@@ -33,9 +33,6 @@ class QTools_EXPORT ScalarColourRangeMapper
 public:
     ScalarColourRangeMapper();
 
-    // Set the min/max bounds of the mapping range.
-    void setRangeLimits( float minv, float maxv);
-
     // Set the visible range (won't set outside of bounded range).
     void setVisibleRange( float smin, float smax);
 
@@ -53,11 +50,6 @@ public:
 
     vtkLookupTable* lookupTable( const vtkRenderer* ren) { return _ltable.vtk(ren);}
 
-    // Get the range limits.
-    const std::pair<float,float>& rangeLimits() const { return _rngl;}
-    float minRange() const { return _rngl.first;}
-    float maxRange() const { return _rngl.second;}
-
     // Get the visible limits.
     const std::pair<float,float>& visibleLimits() const { return _visl;}
     float minVisible() const { return _visl.first;}
@@ -74,7 +66,6 @@ public:
 
 private:
     size_t _ncols;                  // Number of colours
-    std::pair<float,float> _rngl;   // Allowed range
     std::pair<float,float> _visl;   // Visible range
     cv::Vec3b _cols[3];             // min, mid, and max colours
     r3dvis::LookupTable _ltable;    // The lookup table that does the actual mapping
