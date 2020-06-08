@@ -134,7 +134,7 @@ HelpBrowser::~HelpBrowser()
 }   // end dtor
 
 
-QSize HelpBrowser::sizeHint() const { return QSize( 1024, 680);}
+QSize HelpBrowser::sizeHint() const { return QSize( 1024, 740);}
 
 
 void HelpBrowser::setSearchPath( const QString& spath)
