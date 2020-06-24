@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2019 Richard Palmer
+ * Copyright (C) 2020 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include <r3d/CameraParams.h>
 #include <r3dvis/VtkTools.h>
 #include <QApplication>     // All callers will have this anyway
-#include <QVTKOpenGLWidget.h>
+#include <QVTKOpenGLNativeWidget.h>
 #include <vtkInteractorStyle.h>
 #include <vtkActor.h>
 #include <vtkRenderer.h>
@@ -37,7 +37,7 @@ namespace QTools {
 
 using Vec3f = Eigen::Vector3f;
 
-class QTools_EXPORT VtkActorViewer : public QVTKOpenGLWidget
+class QTools_EXPORT VtkActorViewer : public QVTKOpenGLNativeWidget
 { Q_OBJECT
 public:
     explicit VtkActorViewer( QWidget *parent = nullptr);

@@ -33,25 +33,20 @@ using r3d::Vec3f;
 
 
 VtkActorViewer::VtkActorViewer( QWidget *parent)
-    : QVTKOpenGLWidget( parent), _autoUpdateRender(false)
+    : QVTKOpenGLNativeWidget( parent), _autoUpdateRender(false)
 {
-    //setUpdateBehavior( QOpenGLWidget::NoPartialUpdate);
-    //requireRenderWindowInitialization();
-
-    SetRenderWindow( _rwin);
-
-    _ren->SetBackground( 0., 0., 0.);
-    _ren->SetTwoSidedLighting( true);   // Don't light occluded sides
-    _ren->SetAutomaticLightCreation( false);
-
+    _rwin->SetPointSmoothing( false);
     _rwin->SetStereoCapableWindow(1);
     _rwin->SetStereoTypeToRedBlue();
-
-    _rwin->SetPointSmoothing( true);
     _rwin->AddRenderer( _ren);
 
+    _ren->SetBackground( 0.0, 0.0, 0.0);
+    _ren->SetTwoSidedLighting( true);
+    _ren->SetAutomaticLightCreation( false);
+
+    setRenderWindow( _rwin);
+
     _iman = new VtkViewerInteractorManager(this);
-    setEnableHiDPI(true);
 }	// end ctor
 
 
@@ -75,8 +70,8 @@ void VtkActorViewer::updateRender()
 void VtkActorViewer::setSize( size_t w, size_t h)
 {
     this->resize( (int)w, (int)h);
-    this->setMinimumSize( (int)w, (int)h);
-    this->setMaximumSize( (int)w, (int)h);
+    this->setMinimumSize( QSize((int)w, (int)h));
+    this->setMaximumSize( QSize((int)w, (int)h));
 }   // end setSize
 
 
@@ -372,7 +367,7 @@ void VtkActorViewer::keyPressEvent( QKeyEvent* event)
     for ( KeyPressHandler* kph : _keyPressHandlers)
         accepted = accepted || kph->handleKeyPress(event);
     if ( !accepted)
-        QVTKOpenGLWidget::keyPressEvent( event);
+        QVTKOpenGLNativeWidget::keyPressEvent( event);
 }   // end keyPressEvent
 
 
@@ -383,5 +378,5 @@ void VtkActorViewer::keyReleaseEvent( QKeyEvent* event)
     for ( KeyPressHandler* kph : _keyPressHandlers)
         accepted = accepted || kph->handleKeyRelease(event);
     if ( !accepted)
-        QVTKOpenGLWidget::keyReleaseEvent( event);
+        QVTKOpenGLNativeWidget::keyReleaseEvent( event);
 }   // end keyReleaseEvent

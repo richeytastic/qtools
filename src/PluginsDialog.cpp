@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2019 Richard Palmer
+ * Copyright (C) 2020 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,8 @@ void PluginsDialog::addPlugins( const PluginsLoader& ploader)
 
         if ( !pmeta.plugin)   // Show plugin in red italics if it couldn't be loaded
         {
-            pluginItem->setTextColor(0, QColor::fromRgbF(1,0,0));
+            //pluginItem->setTextColor(0, QColor::fromRgbF(1,0,0));
+            pluginItem->setForeground(0, QColor::fromRgbF(1,0,0));
             QFont font = pluginItem->font(0);
             font.setItalic(true);
             pluginItem->setFont(0, font);
