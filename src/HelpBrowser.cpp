@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2019 Richard Palmer
+ * Copyright (C) 2020 Richard Palmer
  *
  * Cliniface is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -124,17 +124,7 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QMainWindow(parent)
 
     _tview->setSelectionMode(QAbstractItemView::SingleSelection);
     _tbrowser->setOpenExternalLinks(true);
-
-    connect( _tbrowser, &QTextBrowser::sourceChanged, this, &HelpBrowser::_doOnSourceChanged);
 }   // end ctor
-
-
-HelpBrowser::~HelpBrowser()
-{
-}   // end dtor
-
-
-QSize HelpBrowser::sizeHint() const { return QSize( 1024, 740);}
 
 
 void HelpBrowser::setSearchPath( const QString& spath)
@@ -165,47 +155,31 @@ void HelpBrowser::setTableOfContents( TreeModel *tm, bool delExisting)
 bool HelpBrowser::setContent( const QString& htmlfile)
 {
     bool ok = false;
-    if ( _updateTOCIndex(htmlfile))
-        ok = _setContent(htmlfile);
+    // Only HTML files defined in the model (table of contents) are allowed.
+    const QModelIndex idx = static_cast<const TreeModel*>(_tview->model())->find( htmlfile, 1);
+    if ( idx.isValid())
+    {
+        _tview->setCurrentIndex( idx); // Ensure corresponding entry in TOC is highlighted.
+        _setContent(htmlfile);
+        ok = true;
+    }   // end if
     return ok;
 }   // end setContent
 
 
-bool HelpBrowser::_setContent( const QString& htmlfile)
+void HelpBrowser::_setContent( const QString& htmlfile)
 {
-    _tbrowser->setSource( htmlfile);
-    _updateTitleFromContent();
+    QString src;
+    if ( _tbrowser->searchPaths().isEmpty())
+        src = htmlfile;
+    else
+        src = _tbrowser->searchPaths().first() + QDir::separator() + htmlfile;
+
+    _tbrowser->setSource( src);
+    setWindowTitle( _wprfx + " | " + _tbrowser->documentTitle());
+
     _backButton->setEnabled( _tbrowser->isBackwardAvailable());
     _fwrdButton->setEnabled( _tbrowser->isForwardAvailable());
-    return true;
 }   // end _setContent
-
-
-void HelpBrowser::_doOnSourceChanged( const QUrl &src)
-{
-    if ( !_updateTOCIndex( src.path()))
-        _updateTOCIndex( src.path());
-    _updateTitleFromContent();
-}   // end _doOnSourceChanged
-
-
-void HelpBrowser::_updateTitleFromContent()
-{
-    // Get the title from the HTML's head section.
-    QTextDocument doc;
-    doc.setHtml( _tbrowser->toHtml());
-    setWindowTitle( _wprfx + " | " + doc.metaInformation( QTextDocument::MetaInformation::DocumentTitle));
-}   // end _updateTitleFromContent
-
-
-bool HelpBrowser::_updateTOCIndex( const QString& htmlfile)
-{
-    // Only HTML files defined in the model (table of contents) are allowed.
-    QModelIndex idx = static_cast<const TreeModel*>(_tview->model())->find( htmlfile, 1);
-    if ( idx.isValid())
-        _tview->setCurrentIndex( idx); // Ensure corresponding entry in TOC is highlighted.
-    return idx.isValid();
-}   // end _updateTOCIndex
-
 
 

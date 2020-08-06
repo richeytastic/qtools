@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2019 Richard Palmer
+ * Copyright (C) 2020 Richard Palmer
  *
  * Cliniface is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,6 @@ class QTools_EXPORT HelpBrowser : public QMainWindow
 { Q_OBJECT
 public:
     explicit HelpBrowser( QWidget *parent = nullptr);
-    ~HelpBrowser() override;
 
     /**
      * The search path is the root of all content. Relative paths specified in HTML
@@ -57,10 +56,7 @@ public:
     bool setContent( const QString& htmlfile);
 
 protected:
-    QSize sizeHint() const override;
-
-private slots:
-    void _doOnSourceChanged( const QUrl&);
+    QSize sizeHint() const override { return QSize( 960, 720);}
 
 private:
     QString _wprfx;
@@ -72,9 +68,7 @@ private:
     //QWebEngineView *_webview;
 
     class TreeView;
-    bool _updateTOCIndex( const QString&);
-    void _updateTitleFromContent();
-    bool _setContent( const QString&);
+    void _setContent( const QString&);
     HelpBrowser( const HelpBrowser&) = delete;
     void operator=( const HelpBrowser&) = delete;
 };  // end class
