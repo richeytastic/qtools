@@ -176,7 +176,7 @@ TreeModel* readTableOfContents( const QString& tdir, const QString& tocXMLFile)
 HelpAssistant::HelpAssistant( const QString& hdir, QWidget *prnt) : _dialog(new HelpBrowser(prnt))
 {
     _initTempHtmlDir(hdir);
-    _dialog->setSearchPath( _workdir.path());
+    _dialog->setRootDir( _workdir.path());
 }   // end ctor
 
 

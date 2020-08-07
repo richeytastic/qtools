@@ -104,19 +104,19 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QMainWindow(parent)
     connect( closeButton, &QPushButton::clicked, this, &HelpBrowser::close);
     closeButton->setSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum);
 
+    /*
     QToolButton *homeButton = makeToolButton( this, ":/icons/HOME");
     connect( homeButton, &QToolButton::clicked, [this](){ _tbrowser->home();});
-
     _backButton = makeToolButton( this, ":/icons/GO_BACK");
     connect( _backButton, &QToolButton::clicked, [this](){ _tbrowser->backward();});
-
     _fwrdButton = makeToolButton( this, ":/icons/GO_FWRD");
     connect( _fwrdButton, &QToolButton::clicked, [this](){ _tbrowser->forward();});
+    */
 
     QHBoxLayout *hlayout = new QHBoxLayout;
-    hlayout->addWidget( _backButton);
-    hlayout->addWidget( _fwrdButton);
-    hlayout->addWidget( homeButton);
+    //hlayout->addWidget( _backButton);
+    //hlayout->addWidget( _fwrdButton);
+    //hlayout->addWidget( homeButton);
     hlayout->insertStretch(3);
     hlayout->addWidget( closeButton);
 
@@ -127,12 +127,7 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QMainWindow(parent)
 }   // end ctor
 
 
-void HelpBrowser::setSearchPath( const QString& spath)
-{
-    QStringList spaths;
-    spaths << spath;
-    _tbrowser->setSearchPaths(spaths);
-}   // end setSearchPath
+void HelpBrowser::setRootDir( const QString& rdir) { _rootDir = rdir;}
 
 
 void HelpBrowser::setTableOfContents( TreeModel *tm, bool delExisting)
@@ -169,17 +164,12 @@ bool HelpBrowser::setContent( const QString& htmlfile)
 
 void HelpBrowser::_setContent( const QString& htmlfile)
 {
-    QString src;
-    if ( _tbrowser->searchPaths().isEmpty())
-        src = htmlfile;
-    else
-        src = _tbrowser->searchPaths().first() + QDir::separator() + htmlfile;
-
-    _tbrowser->setSource( src);
+    const QString src = _rootDir + "/" + htmlfile;
+    _tbrowser->setSource( QUrl::fromLocalFile( src), QTextDocument::HtmlResource);
     setWindowTitle( _wprfx + " | " + _tbrowser->documentTitle());
 
-    _backButton->setEnabled( _tbrowser->isBackwardAvailable());
-    _fwrdButton->setEnabled( _tbrowser->isForwardAvailable());
+    //_backButton->setEnabled( _tbrowser->isBackwardAvailable());
+    //_fwrdButton->setEnabled( _tbrowser->isForwardAvailable());
 }   // end _setContent
 
 

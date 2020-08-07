@@ -38,10 +38,9 @@ public:
     explicit HelpBrowser( QWidget *parent = nullptr);
 
     /**
-     * The search path is the root of all content. Relative paths specified in HTML
-     * files are with reference to this root.
+     * The root of all content. Relative paths specified in HTML files are with reference to this root.
      */
-    void setSearchPath( const QString&);
+    void setRootDir( const QString&);
 
     /**
      * Set the table of contents according to the given model which will be
@@ -60,12 +59,12 @@ protected:
 
 private:
     QString _wprfx;
+    QString _rootDir;
     QSplitter *_splitter;
     QTreeView *_tview;
     QTextBrowser *_tbrowser;
-    QToolButton *_backButton;
-    QToolButton *_fwrdButton;
-    //QWebEngineView *_webview;
+    //QToolButton *_backButton;
+    //QToolButton *_fwrdButton;
 
     class TreeView;
     void _setContent( const QString&);
