@@ -16,6 +16,7 @@
  ************************************************************************/
 
 #include <HelpBrowser.h>
+#include <QSignalBlocker>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -124,6 +125,9 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QMainWindow(parent)
 
     _tview->setSelectionMode(QAbstractItemView::SingleSelection);
     _tbrowser->setOpenExternalLinks(true);
+    _tbrowser->setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOn);
+
+    connect( _tbrowser, &QTextBrowser::sourceChanged, this, &HelpBrowser::_doOnSourceChanged);
 }   // end ctor
 
 
@@ -155,7 +159,6 @@ bool HelpBrowser::setContent( const QString& htmlfile)
     if ( idx.isValid())
     {
         _tview->setCurrentIndex( idx); // Ensure corresponding entry in TOC is highlighted.
-        _setContent(htmlfile);
         ok = true;
     }   // end if
     return ok;
@@ -165,11 +168,17 @@ bool HelpBrowser::setContent( const QString& htmlfile)
 void HelpBrowser::_setContent( const QString& htmlfile)
 {
     const QString src = _rootDir + "/" + htmlfile;
+    QSignalBlocker blocker(_tbrowser);
     _tbrowser->setSource( QUrl::fromLocalFile( src), QTextDocument::HtmlResource);
     setWindowTitle( _wprfx + " | " + _tbrowser->documentTitle());
-
     //_backButton->setEnabled( _tbrowser->isBackwardAvailable());
     //_fwrdButton->setEnabled( _tbrowser->isForwardAvailable());
 }   // end _setContent
 
 
+void HelpBrowser::_doOnSourceChanged( const QUrl &src)
+{
+    const QModelIndex idx = static_cast<const TreeModel*>(_tview->model())->find( src.fileName(), 1);
+    if ( idx.isValid())
+        _tview->setCurrentIndex( idx);
+}   // end _doOnSourceChanged
