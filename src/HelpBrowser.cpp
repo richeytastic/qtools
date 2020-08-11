@@ -36,8 +36,7 @@ public:
 protected:
     void currentChanged( const QModelIndex& current, const QModelIndex& previous) override
     {
-        QTreeView::currentChanged( current, previous);
-        if ( current.isValid())
+        if ( current.isValid() && current.internalPointer() != previous.internalPointer())
         {
             const QString htmlfile = static_cast<QTools::TreeItem*>(current.internalPointer())->data(1).toString();
             if ( !htmlfile.isEmpty())

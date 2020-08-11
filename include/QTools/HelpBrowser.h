@@ -55,7 +55,7 @@ public:
     bool setContent( const QString& htmlfile);
 
 protected:
-    QSize sizeHint() const override { return QSize( 1150, 640);}
+    QSize sizeHint() const override { return QSize( 1150, 700);}
 
 private slots:
     void _doOnSourceChanged( const QUrl&);
