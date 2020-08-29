@@ -136,9 +136,9 @@ public:
     bool isAttached( VMH*) const;   // Returns whether the given mouse handler is attached.
 
     // Set/get the interaction mode (Camera or Actor)
-    void setInteractionMode( InteractionMode m, bool v) { _iman->setInteractionMode(m,v);}
+    void setCameraInteraction() { _iman->setCameraInteraction();}
+    void setActorInteraction( const vtkProp3D *p=nullptr) { _iman->setActorInteraction(p);}
     InteractionMode interactionMode() const { return _iman->interactionMode();}
-    bool useCameraOffActor() const { return _iman->useCameraOffActor();}
 
     // Set/get locking of call pass-through for mouse events bound to camera/actor movement.
     // Interaction locking is key matched; interaction will not necessarily be unlocked if

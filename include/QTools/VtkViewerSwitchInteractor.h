@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2020 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,11 +52,12 @@ public:
     void OnLeave() override;
 
     void setDelegate( VtkViewerInteractorManager* d) { _iman = d;}
-    void setTrackballActor();
-    void setTrackballCamera();
 
-    void setUseCameraOffActor( bool v) { _useCamOffAct = v;}
-    bool useCameraOffActor() const { return _useCamOffAct;}
+    // Set mode to be actor interaction. If the allowedProp is null then any actor
+    // will be interacted with. If not null, only the specified prop will be interacted with.
+    void setTrackballActor( const vtkProp3D *allowedProp=nullptr);
+
+    void setTrackballCamera();
 
     void SetCurrentRenderer(vtkRenderer*) override;
 
@@ -68,8 +69,9 @@ private:
     vtkNew<VtkViewerCameraInteractor> _icam;
     VtkViewerInteractorManager *_iman;
     vtkInteractorStyle *_isel, *_iuse;
-    bool _useCamOffAct;
+    const vtkProp *_allowedProp;
 
+    void _setUseInteractor();
     void _setStartState(int);
     void _setEndState();
     void _doChunkAction(int, std::function<void()>);

@@ -41,7 +41,7 @@ bool VtkViewerActorInteractor::findPickedActor( int x, int y)
 bool VtkViewerActorInteractor::isOnActor() const { return prop() != nullptr;}
 
 
-const vtkProp3D* VtkViewerActorInteractor::prop() const { return InteractionProp;}
+const vtkProp3D* VtkViewerActorInteractor::prop() const { return this->InteractionProp;}
 
 
 // Source code copied and edited from vtkInteractorStyleTrackballActor.cxx

@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2020 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,15 +72,14 @@ public:
     // Returns true iff interaction currently locked.
     bool isInteractionLocked() const;
 
-    // Camera mode can be camera transform (default), or actor tansform. Interaction moves the
-    // underlying actors on the GPU and adjusts their internal transformations. Poly data for actors
-    // must be updated externally.
-    // If in actor interaction mode, no movement will occur if no actor is picked under the mouse cursor.
-    // Use useCamOffActor=true to revert to camera interaction if in actor interaction mode and no
-    // actor is under the cursor. Otherwise, no movement will occur until set back in camera mode.
-    void setInteractionMode( InteractionMode, bool useCameraOffActor=false);
+    void setCameraInteraction(); // The default interaction mode.
+
+    // Actor interaction moves the underlying prop on the GPU, adjusting its internal view transformation.
+    // If no prop is under the cursor, movement reverts to camera interaction. If a prop is specified here,
+    // only interaction on that specified prop is performed otherwise camera interaction is used.
+    void setActorInteraction( const vtkProp3D *p=nullptr);
+
     InteractionMode interactionMode() const { return _imode;}
-    bool useCameraOffActor() const { return _iswitch->useCameraOffActor();}
 
 private:
     bool doOnLeftButtonDown();

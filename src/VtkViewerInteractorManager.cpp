@@ -31,7 +31,6 @@ using QTools::VVI;
 using QTools::VMH;
 
 
-// public
 VtkViewerInteractorManager::VtkViewerInteractorManager( VtkActorViewer *qv)
     : _qviewer(qv), _lbdown(false), _rbdown(false), _mbdown(false), _lbDownTime(0), _rbDownTime(0),
       _rng( std::chrono::system_clock::now().time_since_epoch().count())
@@ -39,19 +38,22 @@ VtkViewerInteractorManager::VtkViewerInteractorManager( VtkActorViewer *qv)
     assert(qv);
     _iswitch->setDelegate(this);
     _qviewer->setInteractor( _iswitch);
-    setInteractionMode( CAMERA_INTERACTION, false);
+    setCameraInteraction();
 }   // end ctor
 
 
-void VtkViewerInteractorManager::setInteractionMode( InteractionMode m, bool v)
+void VtkViewerInteractorManager::setCameraInteraction()
 {
-    _imode = m;
-    if (_imode == CAMERA_INTERACTION)
-        _iswitch->setTrackballCamera();
-    else
-        _iswitch->setTrackballActor();
-    _iswitch->setUseCameraOffActor(v);
-}   // end setInteractionMode
+    _imode = CAMERA_INTERACTION;
+    _iswitch->setTrackballCamera();
+}   // end setCameraInteraction
+
+
+void VtkViewerInteractorManager::setActorInteraction( const vtkProp3D *p)
+{
+    _imode = ACTOR_INTERACTION;
+    _iswitch->setTrackballActor( p);
+}   // end setActorInteraction
 
 
 void VtkViewerInteractorManager::addInteractor( VVI* iface)
