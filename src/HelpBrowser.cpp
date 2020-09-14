@@ -16,12 +16,14 @@
  ************************************************************************/
 
 #include <HelpBrowser.h>
+#include <QGuiApplication>
 #include <QSignalBlocker>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTextDocument>
 #include <QTextStream>
+#include <QScreen>
 #include <QFile>
 #include <QDir>
 #include <iostream>
@@ -127,6 +129,8 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QMainWindow(parent)
     _tbrowser->setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOn);
 
     connect( _tbrowser, &QTextBrowser::sourceChanged, this, &HelpBrowser::_doOnSourceChanged);
+
+    setGeometry( QStyle::alignedRect( Qt::LeftToRight, Qt::AlignCenter, sizeHint(), QGuiApplication::primaryScreen()->geometry()));
 }   // end ctor
 
 
