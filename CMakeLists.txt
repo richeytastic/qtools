@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 project( QTools)
 
 set( WITH_QT TRUE)
+set( WITH_RLIB TRUE)
 set( WITH_R3DVIS TRUE)
 include( "cmake/FindLibs.cmake")
 
@@ -36,7 +37,7 @@ set( SRC_FILES
     "${SRC_DIR}/TreeItem.cpp"
     "${SRC_DIR}/TreeModel.cpp"
     "${SRC_DIR}/TwoHandleSlider.cpp"
-    "${SRC_DIR}/VersionInfo.cpp"
+    "${SRC_DIR}/UpdateMeta.cpp"
     "${SRC_DIR}/ViewNavigator.cpp"
     "${SRC_DIR}/VtkActorViewer.cpp"
     "${SRC_DIR}/VtkViewerInteractorManager.cpp"
@@ -75,7 +76,7 @@ set( INCLUDE_FILES
     "${INCLUDE_F}/PluginUIPoints.h"
     "${INCLUDE_F}/ScalarColourRangeMapper.h"
     "${INCLUDE_F}/TreeItem.h"
-    "${INCLUDE_F}/VersionInfo.h"
+    "${INCLUDE_F}/UpdateMeta.h"
     "${INCLUDE_F}/VtkViewerInteractorManager.h"
     "${INCLUDE_F}/VtkViewerActorInteractor.h"
     "${INCLUDE_F}/VtkViewerCameraInteractor.h"

@@ -16,41 +16,121 @@
  ************************************************************************/
 
 #include <QTools/NetworkUpdater.h>
+#include <rlib/StringUtil.h>
 #include <boost/property_tree/xml_parser.hpp>
+#include <QNetworkReply>
+#include <QDataStream>
+#include <QEventLoop>
+#include <QFile>
 using QTools::NetworkUpdater;
 using PTree = boost::property_tree::ptree;
 
 
-NetworkUpdater::NetworkUpdater( QObject *parent)
-    : _nman( new QNetworkAccessManager(this))
+NetworkUpdater::NetworkUpdater( const QUrl &url, int tmsecs, int mr)
+    : _manifestUrl(url), _toutMsecs(tmsecs), _maxRedirects(mr), _nman( nullptr), _netr(nullptr)
 {
-    connect( _nman, &QNetworkAccessManager::finished, this, &NetworkUpdater::_doOnNetworkReplied);
+    _nman = new QNetworkAccessManager(this);
 }   // end ctor
 
 
 NetworkUpdater::~NetworkUpdater() { delete _nman;}
 
 
-void NetworkUpdater::downloadManifest( const QUrl &url)
-{
-    _err = QString();
-    _vers = VersionInfo();
-    QNetworkRequest req;
-    req.setUrl( url);
-    _nman->get( req);
-}   // end downloadManifest
+bool NetworkUpdater::isBusy() const { return _netr != nullptr;}
 
 
-void NetworkUpdater::_doOnNetworkReplied( QNetworkReply *nr)
+bool NetworkUpdater::isAvailable() const
 {
-    bool ok = nr->error() == QNetworkReply::NoError;
-    if ( !ok)
-        _setError( nr->error());
-    else
-        ok = _parseReply( nr->readAll().toStdString());
-    nr->deleteLater();
-    emit onFinishedManifestDownload( ok);
-}   // end _doOnNetworkReplied
+    if ( isBusy())
+        return true;
+
+    QNetworkRequest req( _manifestUrl);
+    req.setAttribute( QNetworkRequest::FollowRedirectsAttribute, _maxRedirects > 0);
+    req.setMaximumRedirectsAllowed( _maxRedirects);
+    req.setTransferTimeout( _toutMsecs);
+    QNetworkReply *netr = _nman->get( req);
+    QEventLoop loop;
+    connect( netr, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    loop.exec();    // Block and wait for response
+    const bool canAccess = netr->bytesAvailable();
+    delete netr;
+    return canAccess;
+}   // end isAvailable
+
+
+void NetworkUpdater::_startConnection( const QUrl &url, bool emitProgress)
+{
+    QNetworkRequest req(url);
+    req.setAttribute( QNetworkRequest::CacheSaveControlAttribute, false);   // Don't cache
+    req.setAttribute( QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork); // Refresh
+    req.setAttribute( QNetworkRequest::FollowRedirectsAttribute, _maxRedirects > 0);
+    req.setMaximumRedirectsAllowed( _maxRedirects);
+    req.setTransferTimeout( _toutMsecs);
+    _netr = _nman->get( req);
+    connect( _netr, &QNetworkReply::errorOccurred, [this](){ _err = _netr->errorString();});
+    connect( _netr, &QNetworkReply::finished, this, &NetworkUpdater::_doOnReplyFinished);
+    if ( emitProgress)
+        connect( _netr, &QNetworkReply::downloadProgress, this, &NetworkUpdater::onDownloadProgress);
+}   // end _startConnection
+
+
+void NetworkUpdater::_doOnReplyFinished()
+{
+    bool ok = _err.isEmpty() && _netr->bytesAvailable();
+    if ( ok)
+    {
+        if ( _uname.isEmpty())  // Manifest?
+        {
+            _vers = UpdateMeta();  // Reset
+            ok = _parseManifestReply( _netr->readAll().toStdString());
+        }   // end else if
+        else
+        {
+            QFile ufile( _uname);
+            if ( ufile.open( QIODevice::WriteOnly))
+            {
+                QDataStream out( &ufile);
+                const QByteArray bytes = _netr->readAll();
+                out.writeRawData( bytes.constData(), bytes.size());
+            }   // end if
+            else
+            {
+                _err = "Unable to write downloaded update to file!";
+                ok = false;
+            }   // end else
+        }   // end else
+    }   // end if
+
+    _uname = QString();
+    _netr->deleteLater();
+    _netr = nullptr;
+    emit onReplyFinished( ok);
+}   // end _doOnReplyFinished
+
+
+bool NetworkUpdater::refreshManifest()
+{
+    if ( isBusy())
+        return false;
+    _uname = QString();
+    _startConnection( _manifestUrl, false/*don't emit progress updates*/);
+    return true;
+}   // end refreshManifest
+
+
+bool NetworkUpdater::downloadUpdate( const QString &uname)
+{
+    if ( isBusy())
+        return false;
+    _uname = uname;
+    if ( _uname.isEmpty())
+    {
+        _err = "Invalid update save filepath!";
+        return false;
+    }   // end if
+    _startConnection( _vers.updateUrl(), true/*emit progress updates*/);
+    return true;
+}   // end downloadUpdate
 
 
 namespace {
@@ -58,6 +138,10 @@ namespace {
 QString missingContentTags( const PTree &vdata)
 {
     QStringList mtags;
+
+    if ( vdata.count("Name") == 0)
+        mtags << "Name";
+
     if ( vdata.count("Major") == 0)
         mtags << "Major";
 
@@ -80,6 +164,9 @@ QString missingContentTags( const PTree &vdata)
     mtags << "OS";
 #endif
 
+    if ( vdata.count("Source") == 0)
+        mtags << "Source";
+
     QString err;
     if ( !mtags.isEmpty())
         err = "Missing " + mtags.join("; ") + " tag(s)!";
@@ -90,7 +177,7 @@ QString missingContentTags( const PTree &vdata)
 }   // end namespace
 
 
-bool NetworkUpdater::_parseReply( const std::string &xmldata)
+bool NetworkUpdater::_parseManifestReply( const std::string &xmldata)
 {
     std::istringstream iss( xmldata);
     PTree tree;
@@ -122,12 +209,9 @@ bool NetworkUpdater::_parseReply( const std::string &xmldata)
     }   // end if
 
     const PTree &vdata = tree.get_child("VersionManifest");
-    const QString missingTags =  missingContentTags( vdata);
-    if ( !missingTags.isEmpty())
-    {   
-        _err = missingTags;
+    _err =  missingContentTags( vdata);
+    if ( !_err.isEmpty())
         return false;
-    }   // end if
 
     const PTree *ftree = nullptr;
 #ifdef _WIN32
@@ -139,47 +223,25 @@ bool NetworkUpdater::_parseReply( const std::string &xmldata)
 
     if ( ftree->count("Install") == 0)
         _err = "Missing Install tag!";
-    else if ( ftree->count("Archive") == 0)
-        _err = "Missing Archive tag!";
+    else if ( ftree->count("Update") == 0)
+        _err = "Missing Update tag!";
     else
     {
-        _vers.setInstallUrl( QUrl( QString::fromStdString( ftree->get<std::string>("Install"))));
-        _vers.setArchiveUrl( QUrl( QString::fromStdString( ftree->get<std::string>("Archive"))));
+        _vers.setInstallUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Install")))));
+        _vers.setUpdateUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Update")))));
+        boost::optional<std::string> dstr = ftree->get_child("Update").get_optional<std::string>( "<xmlattr>.delete");
+        _vers.setDeleteExisting( dstr && *dstr == "true");
     }   // end else
 
     if ( _err.isEmpty())
     {
+        _vers.setName( QString::fromStdString( rlib::trim( vdata.get<std::string>("Name"))));
         _vers.setMajor( vdata.get<int>("Major"));
         _vers.setMinor( vdata.get<int>("Minor"));
         _vers.setPatch( vdata.get<int>("Patch"));
-        _vers.setDetails( QString::fromStdString( vdata.get<std::string>("Details")));
+        _vers.setDetails( QString::fromStdString( rlib::trim( vdata.get<std::string>("Details"))));
+        _vers.setSourceUrl( QUrl( QString::fromStdString( rlib::trim( vdata.get<std::string>("Source")))));
     }   // end if
      
     return _err.isEmpty();
-}   // end _parseReply
-
-
-void NetworkUpdater::_setError( QNetworkReply::NetworkError err)
-{
-    switch ( err)
-    {
-        case QNetworkReply::ConnectionRefusedError:
-            _err = "Connection refused!";
-            break;
-        case QNetworkReply::HostNotFoundError:
-            _err = "Host not found!";
-            break;
-        case QNetworkReply::TimeoutError:
-            _err = "Connection timed out!";
-            break;
-        case QNetworkReply::ContentNotFoundError:
-            _err = "Content not found (404)!";
-            break;
-        case QNetworkReply::ContentAccessDenied:
-            _err = "Content access denied (403)!";
-            break;
-        default:
-            _err = "Unspecified network error!";
-    }   // end switch
-}   // end _setError
-
+}   // end _parseManifestReply

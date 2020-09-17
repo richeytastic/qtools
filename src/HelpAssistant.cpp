@@ -273,7 +273,7 @@ QString HelpAssistant::addContent( const QString& subdir, const QString& content
     }   // end if
 
     QTextStream out(&ofile);
-    out << content << endl;
+    out << content << Qt::endl;
     ofile.close();
 
     // The token returned is just the name of the temporary file (excluding path) appended to the given subdirectory

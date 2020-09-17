@@ -15,28 +15,35 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#ifndef QTOOLS_VERSION_INFO_H
-#define QTOOLS_VERSION_INFO_H
+#ifndef QTOOLS_UPDATE_META_H
+#define QTOOLS_UPDATE_META_H
 
 #include "QTools_Export.h"
 #include <QUrl>
 
 namespace QTools {
 
-class QTools_EXPORT VersionInfo
+class QTools_EXPORT UpdateMeta
 {
 public:
-    VersionInfo();
-    VersionInfo( const VersionInfo&) = default;
-    VersionInfo& operator=( const VersionInfo&) = default;
+    UpdateMeta();
+    UpdateMeta( const UpdateMeta&) = default;
+    UpdateMeta& operator=( const UpdateMeta&) = default;
 
-    // Operations that compare version numbers
-    bool operator<( const VersionInfo&) const;
-    bool operator==( const VersionInfo&) const;
-    bool operator!=( const VersionInfo&) const;
-    bool operator>( const VersionInfo&) const;
-    bool operator<=( const VersionInfo&) const;
-    bool operator>=( const VersionInfo&) const;
+    // Returns true iff at least one version number is greater than zero.
+    bool isValid() const;
+
+    // Operations that compare version numbers.
+    bool operator<( const UpdateMeta&) const;
+    bool operator==( const UpdateMeta&) const;
+    bool operator!=( const UpdateMeta&) const;
+    bool operator>( const UpdateMeta&) const;
+    bool operator<=( const UpdateMeta&) const;
+    bool operator>=( const UpdateMeta&) const;
+
+    // Get/set the name of the application.
+    const QString &name() const { return _name;}
+    void setName( const QString &n) { _name = n;}
 
     // Get/set version numbers.
     int major() const { return _major;}
@@ -50,17 +57,23 @@ public:
     const QString &details() const { return _deets;}
     void setDetails( const QString &v) { _deets = v;}
 
-    // Get/set URLs to the installer and archive versions.
+    // Get/set URLs to the installer, update, and source.
     const QUrl &installUrl() const { return _installUrl;}
-    const QUrl &archiveUrl() const { return _archiveUrl;}
+    const QUrl &updateUrl() const { return _updateUrl;}
+    const QUrl &sourceUrl() const { return _sourceUrl;}
     void setInstallUrl( const QUrl &v) { _installUrl = v;}
-    void setArchiveUrl( const QUrl &v) { _archiveUrl = v;}
+    void setUpdateUrl( const QUrl &v) { _updateUrl = v;}
+    void setSourceUrl( const QUrl &v) { _installUrl = v;}
+
+    // Get/set whether to delete existing files before updating.
+    bool deleteExisting() const { return _delete;}
+    void setDeleteExisting( bool v) { _delete = v;}
 
 private:
     int _major, _minor, _patch;
-    QString _deets;
-    QUrl _installUrl;
-    QUrl _archiveUrl;
+    bool _delete;
+    QString _name, _deets;
+    QUrl _installUrl, _updateUrl, _sourceUrl;
 };  // end class
 
 }   // end namespace

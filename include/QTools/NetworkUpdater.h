@@ -18,9 +18,8 @@
 #ifndef QTOOLS_NETWORK_UPDATER_H
 #define QTOOLS_NETWORK_UPDATER_H
 
-#include "VersionInfo.h"
+#include "UpdateMeta.h"
 #include <QNetworkAccessManager>
-#include <QNetworkReply>
 
 
 namespace QTools {
@@ -28,33 +27,60 @@ namespace QTools {
 class QTools_EXPORT NetworkUpdater : public QObject
 { Q_OBJECT
 public:
-    explicit NetworkUpdater( QObject *parent = nullptr);
+    // Default timeout is 10 seconds with max of five redirects.
+    NetworkUpdater( const QUrl& manifestUrl, int timeoutMsecs=10000, int maxRedirects=5);
     ~NetworkUpdater() override;
 
-    // Download the version manifest from the give url. Will signal onFinishedManifestDownload.
-    void downloadManifest( const QUrl&);
+    // Return the manifest URL this object was constructed with.
+    const QUrl &manifestUrl() const { return _manifestUrl;}
 
-    // Returns the nature of any manifest download error.
+    // Returns the nature of any download error.
     inline const QString &error() const { return _err;}
 
-    inline const VersionInfo& version() const { return _vers;}
+    // Return the last update metadata downloaded from a manifest.
+    inline const UpdateMeta& updateMeta() const { return _vers;}
+
+    // Just checks to see if the manifest resource can be accessed without downloading any content.
+    // Returns true iff the resource could be accessed. This function blocks!
+    bool isAvailable() const;
+
+    // Refresh the manifest from the url given in the constructor and fire onReplyFinished when done.
+    // Returns true iff the manifest was accessed and downloading was started.
+    bool refreshManifest();
+
+    // Download the update file and save to the given file location.
+    // Emits onDownloadProgress until done then onReplyFinished.
+    // Returns true iff the download was started (may return false
+    // if still downloading something else).
+    bool downloadUpdate( const QString&);
+
+    // Returns true iff a connection is not yet finished.
+    bool isBusy() const;
 
 signals:
-    // Signal that the network request for downloading the version manifest has finished.
-    // Passes true iff a valid manifest file was downloaded and parsed properly.
-    void onFinishedManifestDownload( bool);
+    // Signal that the network has finished replying.
+    // Passes true iff response was received okay.
+    void onReplyFinished( bool);
+
+    // Signal the number of bytes received so far of the total number of bytes.
+    // Total number of bytes is -1 if not known.
+    void onDownloadProgress( qint64, qint64);
 
 private slots:
-    void _doOnNetworkReplied( QNetworkReply*);
+    void _doOnReplyFinished();
 
 private:
+    const QUrl _manifestUrl;
+    const int _toutMsecs;
+    const int _maxRedirects;
     QNetworkAccessManager *_nman;
-    VersionInfo _vers;
-    QString _err;
+    QNetworkReply *_netr;
+    UpdateMeta _vers;
+    QString _err, _uname;
 
     void _reset();
-    bool _parseReply( const std::string&);
-    void _setError( QNetworkReply::NetworkError);
+    bool _parseManifestReply( const std::string&);
+    void _startConnection( const QUrl&, bool);
     NetworkUpdater( const NetworkUpdater&) = delete;
     void operator=( const NetworkUpdater&) = delete;
 };  // end class

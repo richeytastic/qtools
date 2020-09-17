@@ -15,15 +15,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include <QTools/VersionInfo.h>
-using QTools::VersionInfo;
+#include <QTools/UpdateMeta.h>
+using QTools::UpdateMeta;
 
 
-VersionInfo::VersionInfo() : _major(0), _minor(0), _patch(0) {}
+UpdateMeta::UpdateMeta() : _major(0), _minor(0), _patch(0), _delete(false) {}
 
 
+bool UpdateMeta::isValid() const
+{
+    return _major > 0 || _minor > 0 || _patch > 0;
+}   // end isValid
 
-bool VersionInfo::operator<( const VersionInfo &v) const
+
+bool UpdateMeta::operator<( const UpdateMeta &v) const
 {
     const int mj = v.major();
     const int mn = v.minor();
@@ -34,15 +39,15 @@ bool VersionInfo::operator<( const VersionInfo &v) const
 }   // end operator<
 
 
-bool VersionInfo::operator==( const VersionInfo &v) const
+bool UpdateMeta::operator==( const UpdateMeta &v) const
 {
     return v.major() == _major && v.minor() == _minor && v.patch() == _patch;
 }   // end operator==
 
-bool VersionInfo::operator>=( const VersionInfo &v) const { return !(*this < v);}
+bool UpdateMeta::operator>=( const UpdateMeta &v) const { return !(*this < v);}
 
-bool VersionInfo::operator!=( const VersionInfo &v) const { return !(*this == v);}
+bool UpdateMeta::operator!=( const UpdateMeta &v) const { return !(*this == v);}
 
-bool VersionInfo::operator>( const VersionInfo &v) const { return (*this >= v) && (*this != v);}
+bool UpdateMeta::operator>( const UpdateMeta &v) const { return (*this >= v) && (*this != v);}
 
-bool VersionInfo::operator<=( const VersionInfo &v) const { return !(*this > v);}
+bool UpdateMeta::operator<=( const UpdateMeta &v) const { return !(*this > v);}
