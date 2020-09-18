@@ -65,13 +65,8 @@ public:
     void setUpdateUrl( const QUrl &v) { _updateUrl = v;}
     void setSourceUrl( const QUrl &v) { _installUrl = v;}
 
-    // Get/set whether to delete existing files before updating.
-    bool deleteExisting() const { return _delete;}
-    void setDeleteExisting( bool v) { _delete = v;}
-
 private:
     int _major, _minor, _patch;
-    bool _delete;
     QString _name, _deets;
     QUrl _installUrl, _updateUrl, _sourceUrl;
 };  // end class

@@ -19,7 +19,7 @@
 using QTools::UpdateMeta;
 
 
-UpdateMeta::UpdateMeta() : _major(0), _minor(0), _patch(0), _delete(false) {}
+UpdateMeta::UpdateMeta() : _major(0), _minor(0), _patch(0) {}
 
 
 bool UpdateMeta::isValid() const

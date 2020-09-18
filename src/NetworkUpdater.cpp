@@ -229,8 +229,6 @@ bool NetworkUpdater::_parseManifestReply( const std::string &xmldata)
     {
         _vers.setInstallUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Install")))));
         _vers.setUpdateUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Update")))));
-        boost::optional<std::string> dstr = ftree->get_child("Update").get_optional<std::string>( "<xmlattr>.delete");
-        _vers.setDeleteExisting( dstr && *dstr == "true");
     }   // end else
 
     if ( _err.isEmpty())
