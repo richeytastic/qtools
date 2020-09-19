@@ -38,11 +38,7 @@ public:
     inline const QString &error() const { return _err;}
 
     // Return the last update metadata downloaded from a manifest.
-    inline const UpdateMeta& updateMeta() const { return _vers;}
-
-    // Just checks to see if the manifest resource can be accessed without downloading any content.
-    // Returns true iff the resource could be accessed. This function blocks!
-    bool isAvailable() const;
+    inline const UpdateMeta& meta() const { return _meta;}
 
     // Refresh the manifest from the url given in the constructor and fire onReplyFinished when done.
     // Returns true iff the manifest was accessed and downloading was started.
@@ -75,10 +71,9 @@ private:
     const int _maxRedirects;
     QNetworkAccessManager *_nman;
     QNetworkReply *_netr;
-    UpdateMeta _vers;
+    UpdateMeta _meta;
     QString _err, _uname;
 
-    void _reset();
     bool _parseManifestReply( const std::string&);
     void _startConnection( const QUrl&, bool);
     NetworkUpdater( const NetworkUpdater&) = delete;

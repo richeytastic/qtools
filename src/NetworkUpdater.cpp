@@ -20,7 +20,6 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <QNetworkReply>
 #include <QDataStream>
-#include <QEventLoop>
 #include <QFile>
 using QTools::NetworkUpdater;
 using PTree = boost::property_tree::ptree;
@@ -33,29 +32,14 @@ NetworkUpdater::NetworkUpdater( const QUrl &url, int tmsecs, int mr)
 }   // end ctor
 
 
-NetworkUpdater::~NetworkUpdater() { delete _nman;}
+NetworkUpdater::~NetworkUpdater()
+{
+    if ( _nman)
+        delete _nman;
+}   // end dtor
 
 
 bool NetworkUpdater::isBusy() const { return _netr != nullptr;}
-
-
-bool NetworkUpdater::isAvailable() const
-{
-    if ( isBusy())
-        return true;
-
-    QNetworkRequest req( _manifestUrl);
-    req.setAttribute( QNetworkRequest::FollowRedirectsAttribute, _maxRedirects > 0);
-    req.setMaximumRedirectsAllowed( _maxRedirects);
-    req.setTransferTimeout( _toutMsecs);
-    QNetworkReply *netr = _nman->get( req);
-    QEventLoop loop;
-    connect( netr, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();    // Block and wait for response
-    const bool canAccess = netr->bytesAvailable();
-    delete netr;
-    return canAccess;
-}   // end isAvailable
 
 
 void NetworkUpdater::_startConnection( const QUrl &url, bool emitProgress)
@@ -81,7 +65,7 @@ void NetworkUpdater::_doOnReplyFinished()
     {
         if ( _uname.isEmpty())  // Manifest?
         {
-            _vers = UpdateMeta();  // Reset
+            _meta = UpdateMeta();  // Reset
             ok = _parseManifestReply( _netr->readAll().toStdString());
         }   // end else if
         else
@@ -128,7 +112,7 @@ bool NetworkUpdater::downloadUpdate( const QString &uname)
         _err = "Invalid update save filepath!";
         return false;
     }   // end if
-    _startConnection( _vers.updateUrl(), true/*emit progress updates*/);
+    _startConnection( _meta.updateUrl(), true/*emit progress updates*/);
     return true;
 }   // end downloadUpdate
 
@@ -227,18 +211,18 @@ bool NetworkUpdater::_parseManifestReply( const std::string &xmldata)
         _err = "Missing Update tag!";
     else
     {
-        _vers.setInstallUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Install")))));
-        _vers.setUpdateUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Update")))));
+        _meta.setInstallUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Install")))));
+        _meta.setUpdateUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Update")))));
     }   // end else
 
     if ( _err.isEmpty())
     {
-        _vers.setName( QString::fromStdString( rlib::trim( vdata.get<std::string>("Name"))));
-        _vers.setMajor( vdata.get<int>("Major"));
-        _vers.setMinor( vdata.get<int>("Minor"));
-        _vers.setPatch( vdata.get<int>("Patch"));
-        _vers.setDetails( QString::fromStdString( rlib::trim( vdata.get<std::string>("Details"))));
-        _vers.setSourceUrl( QUrl( QString::fromStdString( rlib::trim( vdata.get<std::string>("Source")))));
+        _meta.setName( QString::fromStdString( rlib::trim( vdata.get<std::string>("Name"))));
+        _meta.setMajor( vdata.get<int>("Major"));
+        _meta.setMinor( vdata.get<int>("Minor"));
+        _meta.setPatch( vdata.get<int>("Patch"));
+        _meta.setDetails( QString::fromStdString( rlib::trim( vdata.get<std::string>("Details"))));
+        _meta.setSourceUrl( QUrl( QString::fromStdString( rlib::trim( vdata.get<std::string>("Source")))));
     }   // end if
      
     return _err.isEmpty();
