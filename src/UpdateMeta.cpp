@@ -1,12 +1,12 @@
 /************************************************************************
  * Copyright (C) 2020 Richard Palmer
  *
- * Cliniface is free software: you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Cliniface is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -24,7 +24,7 @@ UpdateMeta::UpdateMeta() : _major(0), _minor(0), _patch(0) {}
 
 bool UpdateMeta::isValid() const
 {
-    return _major > 0 || _minor > 0 || _patch > 0;
+    return (_major > 0 || _minor > 0 || _patch > 0) && !_updateUrl.isEmpty();
 }   // end isValid
 
 

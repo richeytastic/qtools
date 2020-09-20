@@ -1,12 +1,12 @@
 /************************************************************************
  * Copyright (C) 2020 Richard Palmer
  *
- * Cliniface is free software: you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Cliniface is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,19 +16,26 @@
  ************************************************************************/
 
 #include <QTools/NetworkUpdater.h>
+#include <QTools/AppUpdater.h>
 #include <rlib/StringUtil.h>
 #include <boost/property_tree/xml_parser.hpp>
 #include <QNetworkReply>
 #include <QDataStream>
-#include <QFile>
+#include <QFileInfo>
 using QTools::NetworkUpdater;
 using PTree = boost::property_tree::ptree;
 
 
-NetworkUpdater::NetworkUpdater( const QUrl &url, int tmsecs, int mr)
-    : _manifestUrl(url), _toutMsecs(tmsecs), _maxRedirects(mr), _nman( nullptr), _netr(nullptr)
+NetworkUpdater::NetworkUpdater( const QUrl &url, const QString &olddir, int tmsecs, int mr)
+    : _manifestUrl(url), _olddir(olddir), _nman( nullptr), _netr(nullptr), _isUpdating(false)
 {
     _nman = new QNetworkAccessManager(this);
+    _nreq.setAttribute( QNetworkRequest::CacheSaveControlAttribute, false);   // Don't cache
+    _nreq.setAttribute( QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork); // Refresh
+    _nreq.setAttribute( QNetworkRequest::FollowRedirectsAttribute, mr > 0);
+    _nreq.setMaximumRedirectsAllowed( mr);
+    _nreq.setTransferTimeout( tmsecs);
+    AppUpdater::recordAppExe();
 }   // end ctor
 
 
@@ -39,82 +46,149 @@ NetworkUpdater::~NetworkUpdater()
 }   // end dtor
 
 
-bool NetworkUpdater::isBusy() const { return _netr != nullptr;}
+bool NetworkUpdater::isUpdatingAllowed() const
+{
+    bool isok = true;
+#ifdef __linux__
+    isok = AppUpdater::isAppImage();
+#endif
+    return isok;
+}   // end isUpdatingAllowed
+
+
+bool NetworkUpdater::isBusy() const
+{
+    return _netr != nullptr || _isUpdating;
+}   // end isBusy
 
 
 void NetworkUpdater::_startConnection( const QUrl &url, bool emitProgress)
 {
-    QNetworkRequest req(url);
-    req.setAttribute( QNetworkRequest::CacheSaveControlAttribute, false);   // Don't cache
-    req.setAttribute( QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork); // Refresh
-    req.setAttribute( QNetworkRequest::FollowRedirectsAttribute, _maxRedirects > 0);
-    req.setMaximumRedirectsAllowed( _maxRedirects);
-    req.setTransferTimeout( _toutMsecs);
-    _netr = _nman->get( req);
+    _nreq.setUrl(url);
+    _netr = _nman->get( _nreq);
     connect( _netr, &QNetworkReply::errorOccurred, [this](){ _err = _netr->errorString();});
     connect( _netr, &QNetworkReply::finished, this, &NetworkUpdater::_doOnReplyFinished);
-    if ( emitProgress)
+    if ( emitProgress)  // Simply forward through the signal
         connect( _netr, &QNetworkReply::downloadProgress, this, &NetworkUpdater::onDownloadProgress);
 }   // end _startConnection
 
 
 void NetworkUpdater::_doOnReplyFinished()
 {
+    const bool isManifest = !_meta.isValid();
     bool ok = _err.isEmpty() && _netr->bytesAvailable();
     if ( ok)
     {
-        if ( _uname.isEmpty())  // Manifest?
-        {
-            _meta = UpdateMeta();  // Reset
+        if ( isManifest)
             ok = _parseManifestReply( _netr->readAll().toStdString());
-        }   // end else if
         else
         {
-            QFile ufile( _uname);
+            QFile ufile( _ufile.fileName());
             if ( ufile.open( QIODevice::WriteOnly))
             {
                 QDataStream out( &ufile);
                 const QByteArray bytes = _netr->readAll();
-                out.writeRawData( bytes.constData(), bytes.size());
+                if ( out.writeRawData( bytes.constData(), bytes.size()) < 0)
+                {
+                    _err = tr("Unable to write downloaded update to file!");
+                    ok = false;
+                }   // end if
             }   // end if
             else
             {
-                _err = "Unable to write downloaded update to file!";
+                _err = tr("Unable to open temporary file for writing!");
                 ok = false;
             }   // end else
         }   // end else
     }   // end if
 
-    _uname = QString();
     _netr->deleteLater();
     _netr = nullptr;
-    emit onReplyFinished( ok);
+
+    if ( !ok)
+    {
+        _ufile.remove();    // Remove any existing update file
+        if ( _err.isEmpty())
+            _err = tr("Unable to connect to resource!");
+        emit onError(_err);
+    }   // end if
+    else if ( isManifest)
+        emit onRefreshedManifest();
+    else
+        emit onFinishedDownloadingUpdate();
 }   // end _doOnReplyFinished
 
 
 bool NetworkUpdater::refreshManifest()
 {
     if ( isBusy())
+    {
+        _err = tr("Updater is busy!");
         return false;
-    _uname = QString();
+    }   // end if
+    _meta = UpdateMeta();  // Reset
+    _ufile.remove();    // Remove any existing update file
     _startConnection( _manifestUrl, false/*don't emit progress updates*/);
     return true;
 }   // end refreshManifest
 
 
-bool NetworkUpdater::downloadUpdate( const QString &uname)
+bool NetworkUpdater::downloadUpdate()
 {
     if ( isBusy())
-        return false;
-    _uname = uname;
-    if ( _uname.isEmpty())
     {
-        _err = "Invalid update save filepath!";
+        _err = tr("Updater is busy!");
+        return false;
+    }   // end if
+    if ( _meta.isValid())
+    {
+        _err = tr("No valid update available!");
+        return false;
+    }   // end if
+    _ufile.remove();    // Remove any existing update file
+    if ( !_ufile.open())
+    {
+        _err = tr("Unable to open temporary file!");
         return false;
     }   // end if
     _startConnection( _meta.updateUrl(), true/*emit progress updates*/);
     return true;
 }   // end downloadUpdate
+
+
+bool NetworkUpdater::updateApp()
+{
+    if ( isBusy())
+    {
+        _err = tr("Updater is busy!");
+        return false;
+    }   // end if
+    if ( _ufile.fileName().isEmpty())
+    {
+        _err = tr("Downloading of update file not yet started!");
+        return false;
+    }   // end if
+    if ( QFileInfo( _ufile.fileName()).size() == 0)
+    {
+        _err = tr("Update file not finished downloading!");
+        return false;
+    }   // end if
+
+    AppUpdater *updater = new AppUpdater( _ufile.fileName(), _olddir, _meta.updateTarget());
+    connect( updater, &AppUpdater::onFinished, this, &NetworkUpdater::_doOnFinishedUpdate);
+    connect( updater, &AppUpdater::finished, updater, &QObject::deleteLater);
+    updater->start();
+    return true;
+}   // end updateApp
+
+
+void NetworkUpdater::_doOnFinishedUpdate( const QString &err)
+{
+    if ( !err.isEmpty())
+        emit onError( err);
+    else
+        emit onFinishedUpdate();
+}   // end _doOnFinishedUpdate
 
 
 namespace {
@@ -172,15 +246,15 @@ bool NetworkUpdater::_parseManifestReply( const std::string &xmldata)
     }   // end try
     catch ( const boost::property_tree::ptree_bad_path&)
     {
-        _err = "XML bad path!";
+        _err = tr("XML bad path!");
     }   // end 
     catch ( const boost::property_tree::xml_parser_error&)
     {
-        _err = "XML parse error!";
+        _err = tr("XML parse error!");
     }   // end catch
     catch ( const std::exception&)
     {
-        _err = "Unspecified XML parse error!";
+        _err = tr("Unspecified XML parse error!");
     }   // end catch
 
     if ( !_err.isEmpty())
@@ -213,6 +287,9 @@ bool NetworkUpdater::_parseManifestReply( const std::string &xmldata)
     {
         _meta.setInstallUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Install")))));
         _meta.setUpdateUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Update")))));
+        // The target directory is given relative to the application directory path
+        boost::optional<std::string> tgtDir = ftree->get_child("Update").get_optional<std::string>("<xmlattr>.targetdir");
+        _meta.setUpdateTarget( tgtDir ? QString::fromStdString( *tgtDir) : "");
     }   // end else
 
     if ( _err.isEmpty())

@@ -1,12 +1,12 @@
 /************************************************************************
  * Copyright (C) 2020 Richard Palmer
  *
- * Cliniface is free software: you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Cliniface is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -30,7 +30,8 @@ public:
     UpdateMeta( const UpdateMeta&) = default;
     UpdateMeta& operator=( const UpdateMeta&) = default;
 
-    // Returns true iff at least one version number is greater than zero.
+    // Returns true iff at least one version number is greater than zero
+    // and an update URL is present.
     bool isValid() const;
 
     // Operations that compare version numbers.
@@ -65,10 +66,15 @@ public:
     void setUpdateUrl( const QUrl &v) { _updateUrl = v;}
     void setSourceUrl( const QUrl &v) { _installUrl = v;}
 
+    // The update target given relative to the application directory path.
+    void setUpdateTarget( const QString &v) { _updateTarget = v;}
+    const QString &updateTarget() const { return _updateTarget;}
+
 private:
     int _major, _minor, _patch;
     QString _name, _deets;
     QUrl _installUrl, _updateUrl, _sourceUrl;
+    QString _updateTarget;
 };  // end class
 
 }   // end namespace

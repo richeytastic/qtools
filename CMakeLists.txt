@@ -5,6 +5,7 @@ project( QTools)
 set( WITH_QT TRUE)
 set( WITH_RLIB TRUE)
 set( WITH_R3DVIS TRUE)
+set( WITH_QUAZIP TRUE)
 include( "cmake/FindLibs.cmake")
 
 set( INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
@@ -16,6 +17,7 @@ include_directories( ${INCLUDE_DIR})
 include_directories( ${PROJECT_BINARY_DIR}) # Req. for generated Qt form headers
 
 set( SRC_FILES
+    "${SRC_DIR}/AppUpdater.cpp"
     "${SRC_DIR}/ColourMappingWidget.cpp"
     "${SRC_DIR}/HelpAssistant.cpp"
     "${SRC_DIR}/HelpBrowser.cpp"
@@ -47,6 +49,7 @@ set( SRC_FILES
     )
 
 set( QOBJECTS
+    "${INCLUDE_F}/AppUpdater.h"
     "${INCLUDE_F}/ColourMappingWidget.h"
     "${INCLUDE_F}/HelpBrowser.h"
     #"${INCLUDE_F}/ImagerWidget.h"
