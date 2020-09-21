@@ -107,7 +107,7 @@ void NetworkUpdater::_doOnReplyFinished()
 
     if ( !ok)
     {
-        _ufile.remove();    // Remove any existing update file
+        _removeUpdateFile();
         if ( _err.isEmpty())
             _err = tr("Unable to connect to resource!");
         emit onError(_err);
@@ -119,6 +119,13 @@ void NetworkUpdater::_doOnReplyFinished()
 }   // end _doOnReplyFinished
 
 
+void NetworkUpdater::_removeUpdateFile()
+{
+    if ( !_ufile.fileName().isEmpty())
+        _ufile.remove();    // Remove any existing update file
+}   // end _removeUpdateFile
+
+
 bool NetworkUpdater::refreshManifest()
 {
     if ( isBusy())
@@ -127,7 +134,7 @@ bool NetworkUpdater::refreshManifest()
         return false;
     }   // end if
     _meta = UpdateMeta();  // Reset
-    _ufile.remove();    // Remove any existing update file
+    _removeUpdateFile();
     _startConnection( _manifestUrl, false/*don't emit progress updates*/);
     return true;
 }   // end refreshManifest
@@ -145,7 +152,7 @@ bool NetworkUpdater::downloadUpdate()
         _err = tr("No valid update available!");
         return false;
     }   // end if
-    _ufile.remove();    // Remove any existing update file
+    _removeUpdateFile();
     if ( !_ufile.open())
     {
         _err = tr("Unable to open temporary file!");

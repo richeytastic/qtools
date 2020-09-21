@@ -93,6 +93,7 @@ private:
     QString _err;
     QTemporaryFile _ufile;
 
+    void _removeUpdateFile();
     bool _parseManifestReply( const std::string&);
     void _startConnection( const QUrl&, bool);
     NetworkUpdater( const NetworkUpdater&) = delete;
