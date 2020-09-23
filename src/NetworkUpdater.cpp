@@ -229,9 +229,6 @@ QString missingContentTags( const PTree &vdata)
     mtags << "OS";
 #endif
 
-    if ( vdata.count("Source") == 0)
-        mtags << "Source";
-
     QString err;
     if ( !mtags.isEmpty())
         err = "Missing " + mtags.join("; ") + " tag(s)!";
@@ -286,17 +283,15 @@ bool NetworkUpdater::_parseManifestReply( const std::string &xmldata)
 #endif
     assert( ftree);
 
-    if ( ftree->count("Install") == 0)
-        _err = "Missing Install tag!";
-    else if ( ftree->count("Update") == 0)
+    if ( ftree->count("Update") == 0)
         _err = "Missing Update tag!";
     else
     {
-        _meta.setInstallUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Install")))));
         _meta.setUpdateUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Update")))));
         // The target directory is given relative to the application directory path
-        boost::optional<std::string> tgtDir = ftree->get_child("Update").get_optional<std::string>("<xmlattr>.targetdir");
-        _meta.setUpdateTarget( tgtDir ? QString::fromStdString( *tgtDir) : "");
+        const PTree &utree = ftree->get_child("Update");
+        boost::optional<std::string> tgt = utree.get_optional<std::string>("<xmlattr>.targetdir");
+        _meta.setUpdateTarget( tgt ? QString::fromStdString( *tgt) : "");
     }   // end else
 
     if ( _err.isEmpty())
@@ -306,7 +301,6 @@ bool NetworkUpdater::_parseManifestReply( const std::string &xmldata)
         _meta.setMinor( vdata.get<int>("Minor"));
         _meta.setPatch( vdata.get<int>("Patch"));
         _meta.setDetails( QString::fromStdString( rlib::trim( vdata.get<std::string>("Details"))));
-        _meta.setSourceUrl( QUrl( QString::fromStdString( rlib::trim( vdata.get<std::string>("Source")))));
     }   // end if
      
     return _err.isEmpty();

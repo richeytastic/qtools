@@ -58,13 +58,9 @@ public:
     const QString &details() const { return _deets;}
     void setDetails( const QString &v) { _deets = v;}
 
-    // Get/set URLs to the installer, update, and source.
-    const QUrl &installUrl() const { return _installUrl;}
+    // Get/set URL to the update.
     const QUrl &updateUrl() const { return _updateUrl;}
-    const QUrl &sourceUrl() const { return _sourceUrl;}
-    void setInstallUrl( const QUrl &v) { _installUrl = v;}
     void setUpdateUrl( const QUrl &v) { _updateUrl = v;}
-    void setSourceUrl( const QUrl &v) { _installUrl = v;}
 
     // The update target given relative to the application directory path.
     void setUpdateTarget( const QString &v) { _updateTarget = v;}
@@ -73,7 +69,7 @@ public:
 private:
     int _major, _minor, _patch;
     QString _name, _deets;
-    QUrl _installUrl, _updateUrl, _sourceUrl;
+    QUrl _updateUrl;
     QString _updateTarget;
 };  // end class
 

@@ -121,18 +121,32 @@ QString now2OldThenNew2Now( const QString &oldRoot, const QString &nowRoot, cons
             QFile newfile(newpath);
             QFile nowfile(nowpath);
 
-            // If file currently exists, move to within %HOME%/.cliniface/_previous since can't delete
+            std::cerr << "Updating \"" << nowpath.toLocal8Bit().toStdString() << "\" ... ";
+
+            // If file currently exists, move to within the old directory since can't delete right away
             if ( nowfile.exists())
             {
                 const QDir olddir(QFileInfo(oldpath).path());
                 if ( !olddir.exists() && !olddir.mkpath(olddir.path()))
+                {
+                    std::cerr << "FAILED (A)!" << std::endl;
                     return QString("Couldn't create \"%1\"").arg(olddir.path());
+                }   // end if
+
                 if ( !nowfile.rename(oldpath))
-                    return QString("Couldn't rename \"%1\" to \"%2\"").arg(nowpath).arg(oldpath);
+                {
+                    std::cerr << "FAILED (B)!" << std::endl;
+                    return QString("Couldn't move \"%1\" to \"%2\"").arg(nowpath).arg(oldpath);
+                }   // end if
             }   // end if
 
             if ( !newfile.rename(nowpath))
-                return QString("Couldn't rename \"%1\" to \"%2\"").arg(newpath).arg(nowpath);
+            {
+                std::cerr << "FAILED (C)!" << std::endl;
+                return QString("Couldn't move \"%1\" to \"%2\"").arg(newpath).arg(nowpath);
+            }   // end if
+
+            std::cerr << "done" << std::endl;
         }   // end else
     }   // end for
     return err;
@@ -143,7 +157,7 @@ QString now2OldThenNew2Now( const QString &oldRoot, const QString &nowRoot, cons
 
 void AppUpdater::_doWindowsUpdate()
 {
-    std::cerr << "Extracting update to temporary directory..." << std::endl;
+    std::cerr << "Extracting update file to temporary directory..." << std::endl;
     QTemporaryDir newRoot;
     QStringList flst = JlCompress::extractDir( _updatePath, newRoot.path());
     const bool extractedOkay = flst.size() > 0;
