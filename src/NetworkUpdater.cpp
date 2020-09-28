@@ -20,6 +20,7 @@
 #include <QNetworkReply>
 #include <QDataStream>
 #include <QFileInfo>
+#include <iostream>
 using QTools::NetworkUpdater;
 using PTree = boost::property_tree::ptree;
 
@@ -131,6 +132,7 @@ void NetworkUpdater::_doOnDownloadProgress( QNetworkReply *nconn)
     {
         bytesRecv += nr->bytesAvailable();
         const qlonglong tbs = nr->header( QNetworkRequest::ContentLengthHeader).toLongLong();
+
         if ( tbs <= 0)
             totalBytes = -1;
         if ( totalBytes >= 0)
@@ -191,11 +193,22 @@ void NetworkUpdater::_doOnReplyFinished( QNetworkReply *nconn)
         if ( _isManifest)
         {
             ok = _plist.parse( nconn->readAll());
-            if ( !ok)
-                _err = _plist.error();
+            _err = _plist.error();  // Will be empty if ok
+            _deleteConnections();
+            if (ok)
+            {
+                _updater.setAppTargetDir( _plist.appTargetDir());
+                emit onRefreshedManifest();
+            }   // end else
         }   // end if
-        else
-            ok = _writeDataToFile( nconn);
+        else if ( _allRepliesFinished())
+        {
+            for ( QNetworkReply *nc : _nconns)
+                ok |= _writeDataToFile( nc);
+            _deleteConnections();
+            if ( ok)
+                emit onFinishedDownloadingUpdates();
+        }   // end else if
     }   // end if
 
     if ( !ok)
@@ -205,17 +218,6 @@ void NetworkUpdater::_doOnReplyFinished( QNetworkReply *nconn)
         _deleteConnections();
         emit onError(_err);
     }   // end if
-    else if ( _isManifest)
-    {
-        _updater.setAppTargetDir( _plist.appTargetDir());
-        _deleteConnections();
-        emit onRefreshedManifest();
-    }   // end else if
-    else if ( _allRepliesFinished())
-    {
-        _deleteConnections();
-        emit onFinishedDownloadingUpdates();
-    }   // end else if
 }   // end _doOnReplyFinished
 
 
