@@ -24,6 +24,7 @@ set( SRC_FILES
     #"${SRC_DIR}/ImagerWidget.cpp"
     "${SRC_DIR}/KeyPressHandler.cpp"
     "${SRC_DIR}/NetworkUpdater.cpp"
+    "${SRC_DIR}/PatchList.cpp"
     "${SRC_DIR}/PluginInterface.cpp"
     "${SRC_DIR}/PluginsDialog.cpp"
     "${SRC_DIR}/PluginsLoader.cpp"
@@ -39,7 +40,6 @@ set( SRC_FILES
     "${SRC_DIR}/TreeItem.cpp"
     "${SRC_DIR}/TreeModel.cpp"
     "${SRC_DIR}/TwoHandleSlider.cpp"
-    "${SRC_DIR}/UpdateMeta.cpp"
     "${SRC_DIR}/ViewNavigator.cpp"
     "${SRC_DIR}/VtkActorViewer.cpp"
     "${SRC_DIR}/VtkViewerInteractorManager.cpp"
@@ -74,12 +74,12 @@ set( INCLUDE_FILES
     "${INCLUDE_F}.h"
     "${INCLUDE_F}/HelpAssistant.h"
     "${INCLUDE_F}/KeyPressHandler.h"
+    "${INCLUDE_F}/PatchList.h"
+    "${INCLUDE_F}/PluginUIPoints.h"
     "${INCLUDE_F}/QImageTools.h"
     "${INCLUDE_F}/QUtils.h"
-    "${INCLUDE_F}/PluginUIPoints.h"
     "${INCLUDE_F}/ScalarColourRangeMapper.h"
     "${INCLUDE_F}/TreeItem.h"
-    "${INCLUDE_F}/UpdateMeta.h"
     "${INCLUDE_F}/VtkViewerInteractorManager.h"
     "${INCLUDE_F}/VtkViewerActorInteractor.h"
     "${INCLUDE_F}/VtkViewerCameraInteractor.h"
@@ -103,3 +103,4 @@ qt5_add_resources( RESOURCE_FILE "${RCC_FILE}")
 
 add_library( ${PROJECT_NAME} ${SRC_FILES} ${QOBJECT_MOCS} ${INCLUDE_FILES} ${FORM_HEADERS} ${FORMS} ${RESOURCE_FILE} ${RCC_FILE})
 include( "cmake/LinkLibs.cmake")
+install( FILES "${PROJECT_SOURCE_DIR}/appimagetool-x86_64.AppImage" DESTINATION "bin")

@@ -18,10 +18,13 @@
 #ifndef QTOOLS_H
 #define QTOOLS_H
 
+#include "QTools/AppUpdater.h"
 #include "QTools/ColourMappingWidget.h"
 #include "QTools/HelpAssistant.h"
 #include "QTools/HelpBrowser.h"
 #include "QTools/KeyPressHandler.h"
+#include "QTools/NetworkUpdater.h"
+#include "QTools/PatchList.h"
 #include "QTools/PluginUIPoints.h"
 #include "QTools/PluginInterface.h"
 #include "QTools/PluginsDialog.h"

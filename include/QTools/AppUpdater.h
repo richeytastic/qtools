@@ -35,25 +35,35 @@ public:
     // so that we can determine later if this is being run from an AppImage.
     static bool recordAppExe();
 
-    // Check if this is AppImage format (can only be true for Linux).
+    // Set the path to the appimagetool used for repackaging updated AppImage.
+    // Returns true iff the given path is to an existing executable file.
+    static bool setAppImageToolPath( const QString &filepath);
+
+    // Returns true iff the running app is an AppImage.
     static bool isAppImage();
 
-    AppUpdater( const QString &updateFile, const QString &backStore, const QString &relpath="");
+    // Provide a list of update/patch archive files. Files in archives
+    // later in the list that are in earlier archives are ignored.
+    AppUpdater( const QStringList &files, const QString &relpath, const QString &backStore);
 
 signals:
+    void onStartedExtraction();
+    void onStartedMovingFiles();
+    void onStartedRepackaging();    // Only emitted for AppImage versions.
     void onFinished( const QString&);
 
 private:
     void run() override;
 
-    void _doWindowsUpdate();
-    void _doLinuxUpdate();
+    bool _extractFiles();
+    void _repackageApp();
 
-    const QString _updatePath;
+    const QStringList _fpaths;
+    const QString _relPath;
     const QString _oldRoot;
-    const QString _relpath;
     QString _err;
 
+    static QString s_appImageTool;
     static QString s_appExe;
     static QFileDevice::Permissions s_appExePermissions;
 };  // end class

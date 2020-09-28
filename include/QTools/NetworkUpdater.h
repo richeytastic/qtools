@@ -18,7 +18,7 @@
 #ifndef QTOOLS_NETWORK_UPDATER_H
 #define QTOOLS_NETWORK_UPDATER_H
 
-#include "UpdateMeta.h"
+#include "PatchList.h"
 #include <QNetworkAccessManager>
 #include <QTemporaryFile>
 
@@ -28,41 +28,45 @@ class QTools_EXPORT NetworkUpdater : public QObject
 { Q_OBJECT
 public:
     /**
-     * Provide the location of the manifest to be checking, and
-     * where old files are moved to when performing an update.
-     * Default network timeout is 10 seconds and a maximum of
-     * 5 redirects are allowed.
+     * Provide the URL of the patch list manifest to use, and where old files
+     * are moved to when performing an update. Default network timeout is
+     * 10 seconds and a maximum of 5 redirects are allowed.
      */
     NetworkUpdater( const QUrl& manifestUrl, const QString &oldDirPath,
                     int timeoutMsecs=10000, int maxRedirects=5);
     ~NetworkUpdater() override;
 
-    // Return the manifest URL this object was constructed with.
-    const QUrl &manifestUrl() const { return _manifestUrl;}
+    // Returns true iff a network connection is active or an update is ongoing.
+    bool isBusy() const;
 
     // Returns the nature of any error.
     inline const QString &error() const { return _err;}
 
-    // Return the last update metadata downloaded from a manifest.
-    inline const UpdateMeta& meta() const { return _meta;}
-
-    // Refresh manifest with constructor url and fire onRefreshedManifest when done.
+    // Refresh manifest from constructor URL and emit onRefreshedManifest when done.
     // Returns true iff the manifest URL was accessed and downloading was started.
     bool refreshManifest();
 
-    // Begin downloading the update file. Emits onDownloadProgress until done
-    // then onFinishedDownloadingUpdate. Returns true iff the download was started.
-    bool downloadUpdate();
+    // Call after refreshing the patch manifest. Returns true iff an
+    // update exists that will bring the app to a higher version.
+    bool isUpdateAvailable( int major, int minor, int patch) const;
 
-    // Start updating the app given the downloaded update file. Emits signal
-    // onFinishedUpdate when complete. Returns true iff the update was started
-    // and will return false if there's no update file yet.
-    bool updateApp();
+    // Returns a description of the updates available from the given version.
+    QString updateDescription( int major, int minor, int patch) const;
 
-    // Returns true iff a network connection is active or an update is ongoing.
-    bool isBusy() const;
+    // Begin downloading the updates. Emits onDownloadProgress until done then
+    // onFinishedDownloadingUpdates. Returns true iff downloading was started.
+    // Only the updates that bring the app to a higher version are downloaded.
+    bool downloadUpdates( int major, int minor, int patch);
 
-    bool isUpdatingAllowed() const;
+    // Start updating the app given the downloaded data. Emits onFinishedUpdate
+    // when complete. Returns true iff the update was started and returns false
+    // if no data to update with have been downloaded yet.
+    // Pass in the path to the appimagetool for repackaging if necessary.
+    // If the running application is an AppImage and the passed in path is
+    // invalid, this function returns false and sets an error to say that
+    // updates cannot be made since any updates would not be able to be
+    // repackaged back into the app's AppImage.
+    bool updateApp( const QString &appImageToolPath="");
 
 signals:
     void onRefreshedManifest();
@@ -71,31 +75,43 @@ signals:
     // Total number of bytes is -1 if not known.
     void onDownloadProgress( qint64, qint64);
 
-    void onFinishedDownloadingUpdate();
+    // Emitted once all updates have finished downloading.
+    void onFinishedDownloadingUpdates();
 
-    void onFinishedUpdate();
+    // Emitted in sequence after calling updateApp.
+    // Signal onStartedRepackagingApp may not be emitted if not needed on this platform.
+    void onStartedExtractingUpdates();
+    void onStartedUpdatingFiles();
+    void onStartedRepackagingApp();
+    void onFinishedUpdating();
 
     // Emitted for any errors from asynchronous operations.
     void onError( const QString&);
 
 private slots:
-    void _doOnReplyFinished();
-    void _doOnFinishedUpdate( const QString&);
+    void _doOnReplyFinished( QNetworkReply*);
+    void _doOnDownloadProgress( QNetworkReply*);
+    void _doOnFinishedUpdating( const QString&);
 
 private:
     const QUrl _manifestUrl;
     const QString _olddir;
-    QNetworkRequest _nreq;
+    QNetworkRequest _templateReq;
     QNetworkAccessManager *_nman;
-    QNetworkReply *_netr;
+    bool _isManifest;
+    bool _isDownloading;
     bool _isUpdating;
-    UpdateMeta _meta;
+    PatchList _plist;
+    QList<QNetworkReply*> _nconns;
+    QList<QTemporaryFile*> _files;
     QString _err;
-    QTemporaryFile _ufile;
 
-    void _removeUpdateFile();
-    bool _parseManifestReply( const std::string&);
-    void _startConnection( const QUrl&, bool);
+    void _deleteFiles();
+    bool _writeDataToFile( QNetworkReply*);
+    bool _allRepliesFinished() const;
+    bool _allUpdatesDownloaded() const;
+    void _deleteConnections();
+    QNetworkReply *_startConnection( const QUrl&, bool);
     NetworkUpdater( const NetworkUpdater&) = delete;
     void operator=( const NetworkUpdater&) = delete;
 };  // end class

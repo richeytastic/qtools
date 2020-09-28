@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PatchList version="1.0">
+    <Application>MyApp</Application>    <!-- Name of the application being patched -->
+    <TargetDir>..</TargetDir>           <!-- Target directory for updates relative to application dir -->
+
+    <Patch major="1" minor="0" patch="0">   <!-- Metadata for a single patch --> 
+
+        <!-- Archive files specified for each platform use this as the base URL -->
+        <BaseURL>https://github.com/richeytastic/MyApp/releases/download/v1.0.0</BaseURL>
+    
+        <!-- Description of changes in this patch only -->
+        <Description>
+            ## Version 1.0.0
+            ### New Features
+            - Blah
+            ### Bug Fixes
+            - Blah
+        </Description>
+
+        <Platform name="Linux">                         <!-- Platform to patch -->
+            <Archive>MyApp-x86_64.AppImage</Archive>    <!-- The archive containing patch files -->
+            <Manifest>                                  <!-- Files contained in the patch -->
+                <File>bin/myapp</File>
+            </Manifest>
+        </Platform>
+
+        <Platform name="Windows">
+            <Archive>patch-win32-x64.zip</Archive>
+            <Manifest>
+                <File>bin/myapp.exe</File>
+            </Manifest>
+        </Platform>
+
+    </Patch>
+
+    <!-- Patch versions can be in any order, but better if earlier patches are further down the file -->
+
+</PatchList>
+

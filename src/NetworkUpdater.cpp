@@ -17,8 +17,6 @@
 
 #include <QTools/NetworkUpdater.h>
 #include <QTools/AppUpdater.h>
-#include <rlib/StringUtil.h>
-#include <boost/property_tree/xml_parser.hpp>
 #include <QNetworkReply>
 #include <QDataStream>
 #include <QFileInfo>
@@ -27,103 +25,23 @@ using PTree = boost::property_tree::ptree;
 
 
 NetworkUpdater::NetworkUpdater( const QUrl &url, const QString &olddir, int tmsecs, int mr)
-    : _manifestUrl(url), _olddir(olddir), _nman( nullptr), _netr(nullptr), _isUpdating(false)
+    : _manifestUrl(url), _olddir(olddir),
+      _nman( nullptr), _isManifest(false), _isDownloading(false), _isUpdating(false)
 {
     _nman = new QNetworkAccessManager(this);
-    _nreq.setAttribute( QNetworkRequest::CacheSaveControlAttribute, false);   // Don't cache
-    _nreq.setAttribute( QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork); // Refresh
-    _nreq.setAttribute( QNetworkRequest::FollowRedirectsAttribute, mr > 0);
-    _nreq.setMaximumRedirectsAllowed( mr);
-    _nreq.setTransferTimeout( tmsecs);
+    _templateReq.setAttribute( QNetworkRequest::CacheSaveControlAttribute, false);   // Don't cache
+    _templateReq.setAttribute( QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork); // Refresh
+    _templateReq.setAttribute( QNetworkRequest::FollowRedirectsAttribute, mr > 0);
+    _templateReq.setMaximumRedirectsAllowed( mr);
+    _templateReq.setTransferTimeout( tmsecs);
     AppUpdater::recordAppExe();
 }   // end ctor
 
 
-NetworkUpdater::~NetworkUpdater()
-{
-    if ( _nman)
-        delete _nman;
-}   // end dtor
+NetworkUpdater::~NetworkUpdater() { delete _nman;}
 
 
-bool NetworkUpdater::isUpdatingAllowed() const
-{
-    bool isok = true;
-#ifdef __linux__
-    isok = AppUpdater::isAppImage();
-#endif
-    return isok;
-}   // end isUpdatingAllowed
-
-
-bool NetworkUpdater::isBusy() const
-{
-    return _netr != nullptr || _isUpdating;
-}   // end isBusy
-
-
-void NetworkUpdater::_startConnection( const QUrl &url, bool emitProgress)
-{
-    _nreq.setUrl(url);
-    _netr = _nman->get( _nreq);
-    connect( _netr, &QNetworkReply::errorOccurred, [this](){ _err = _netr->errorString();});
-    connect( _netr, &QNetworkReply::finished, this, &NetworkUpdater::_doOnReplyFinished);
-    if ( emitProgress)  // Simply forward through the signal
-        connect( _netr, &QNetworkReply::downloadProgress, this, &NetworkUpdater::onDownloadProgress);
-}   // end _startConnection
-
-
-void NetworkUpdater::_doOnReplyFinished()
-{
-    const bool isManifest = !_meta.isValid();
-    bool ok = _err.isEmpty() && _netr->bytesAvailable();
-    if ( ok)
-    {
-        if ( isManifest)
-            ok = _parseManifestReply( _netr->readAll().toStdString());
-        else
-        {
-            QFile ufile( _ufile.fileName());
-            if ( ufile.open( QIODevice::WriteOnly))
-            {
-                QDataStream out( &ufile);
-                const QByteArray bytes = _netr->readAll();
-                if ( out.writeRawData( bytes.constData(), bytes.size()) < 0)
-                {
-                    _err = tr("Unable to write downloaded update to file!");
-                    ok = false;
-                }   // end if
-            }   // end if
-            else
-            {
-                _err = tr("Unable to open temporary file for writing!");
-                ok = false;
-            }   // end else
-        }   // end else
-    }   // end if
-
-    _netr->deleteLater();
-    _netr = nullptr;
-
-    if ( !ok)
-    {
-        _removeUpdateFile();
-        if ( _err.isEmpty())
-            _err = tr("Unable to connect to resource!");
-        emit onError(_err);
-    }   // end if
-    else if ( isManifest)
-        emit onRefreshedManifest();
-    else
-        emit onFinishedDownloadingUpdate();
-}   // end _doOnReplyFinished
-
-
-void NetworkUpdater::_removeUpdateFile()
-{
-    if ( !_ufile.fileName().isEmpty())
-        _ufile.remove();    // Remove any existing update file
-}   // end _removeUpdateFile
+bool NetworkUpdater::isBusy() const { return _isManifest || _isDownloading || _isUpdating;}
 
 
 bool NetworkUpdater::refreshManifest()
@@ -133,175 +51,219 @@ bool NetworkUpdater::refreshManifest()
         _err = tr("Updater is busy!");
         return false;
     }   // end if
-    _meta = UpdateMeta();  // Reset
-    _removeUpdateFile();
-    _startConnection( _manifestUrl, false/*don't emit progress updates*/);
+    _plist = PatchList();  // Reset
+    _isManifest = true;
+    _deleteFiles();
+    _nconns.push_back( _startConnection( _manifestUrl, false/*don't emit progress updates*/));
     return true;
 }   // end refreshManifest
 
 
-bool NetworkUpdater::downloadUpdate()
+bool NetworkUpdater::isUpdateAvailable( int mj, int mn, int pt) const { return _plist.isPatchAvailable( mj, mn, pt);}
+
+QString NetworkUpdater::updateDescription( int mj, int mn, int pt) const { return _plist.patchDescription( mj, mn, pt);}
+
+
+bool NetworkUpdater::downloadUpdates( int mj, int mn, int pt)
 {
     if ( isBusy())
     {
         _err = tr("Updater is busy!");
         return false;
     }   // end if
-    if ( _meta.isValid())
+
+    if ( !isUpdateAvailable( mj, mn, pt))
     {
-        _err = tr("No valid update available!");
+        _err = tr("No update is available!");
         return false;
     }   // end if
-    _removeUpdateFile();
-    if ( !_ufile.open())
+
+    _deleteFiles();
+    _isDownloading = true;
+    const QList<QUrl> urls = _plist.patchURLs( mj, mn, pt);
+    for ( const QUrl &url : urls)
     {
-        _err = tr("Unable to open temporary file!");
-        return false;
-    }   // end if
-    _startConnection( _meta.updateUrl(), true/*emit progress updates*/);
+        _nconns.push_back( _startConnection( url, true/*emit progress updates*/));
+        _files.push_back( nullptr);  // Corresponding position of the file
+    }   // end for
+
     return true;
-}   // end downloadUpdate
+}   // end downloadUpdates
 
 
-bool NetworkUpdater::updateApp()
+void NetworkUpdater::_deleteFiles()
+{
+    _isUpdating = false;
+    for ( QTemporaryFile *tfile : _files)
+    {
+        if ( tfile)
+        {
+            tfile->remove();
+            delete tfile;
+        }   // end if
+    }   // end for
+    _files.clear();
+}   // end _deleteFiles
+
+
+QNetworkReply *NetworkUpdater::_startConnection( const QUrl &url, bool emitProgress)
+{
+    QNetworkRequest nreq = _templateReq;
+    nreq.setUrl(url);
+    QNetworkReply *nr = _nman->get( nreq);
+    connect( nr, &QNetworkReply::errorOccurred, [=](){ _err = nr->errorString();});
+    connect( nr, &QNetworkReply::finished, [=](){ _doOnReplyFinished( nr);});
+    if ( emitProgress)
+        connect( nr, &QNetworkReply::downloadProgress, [=](){ _doOnDownloadProgress( nr);});
+    return nr;
+}   // end _startConnection
+
+
+void NetworkUpdater::_doOnDownloadProgress( QNetworkReply *nconn)
+{
+    qint64 totalBytes = 0;
+    qint64 bytesRecv = 0;
+    for ( const QNetworkReply *nr : _nconns)
+    {
+        bytesRecv += nr->bytesAvailable();
+        const qlonglong tbs = nr->header( QNetworkRequest::ContentLengthHeader).toLongLong();
+        if ( tbs <= 0)
+            totalBytes = -1;
+        if ( totalBytes >= 0)
+            totalBytes += tbs;
+    }   // end for
+    emit onDownloadProgress( bytesRecv, totalBytes);
+}   // end _doOnDownloadProgress
+
+
+bool NetworkUpdater::_writeDataToFile( QNetworkReply *nconn)
+{
+    QTemporaryFile *tfile = new QTemporaryFile;
+    if ( !tfile->open())
+    {
+        delete tfile;
+        _err = tr("Unable to open temporary file to write downloaded data!");
+    }   // end if
+    else
+    {
+        _files[_nconns.indexOf(nconn)] = tfile; // Set the file at the ordered position
+        QFile file( tfile->fileName());
+        if ( file.open( QIODevice::WriteOnly))
+        {
+            QDataStream out( &file);
+            const QByteArray bytes = nconn->readAll();
+            if ( out.writeRawData( bytes.constData(), bytes.size()) < 0)
+                _err = tr("Unable to write downloaded data to file!");
+        }   // end if
+    }   // end else
+
+    return _err.isEmpty();
+}   // end _writeDataToFile
+
+
+bool NetworkUpdater::_allRepliesFinished() const
+{
+    for ( const QNetworkReply *nr : _nconns)
+        if ( !nr->isFinished())
+            return false;
+    return true;
+}   // end _allRepliesFinished
+
+
+void NetworkUpdater::_deleteConnections()
+{
+    _isManifest = false;
+    _isDownloading = false;
+    for ( QNetworkReply *nr : _nconns)
+        nr->deleteLater();
+    _nconns.clear();
+}   // end _deleteConnections
+
+
+void NetworkUpdater::_doOnReplyFinished( QNetworkReply *nconn)
+{
+    bool ok = _err.isEmpty() && nconn->bytesAvailable() > 0;
+    if ( ok)
+    {
+        if ( _isManifest)
+        {
+            ok = _plist.parse( nconn->readAll());
+            if ( !ok)
+                _err = _plist.error();
+        }   // end if
+        else
+            ok = _writeDataToFile( nconn);
+    }   // end if
+
+    if ( !ok)
+    {
+        if ( _err.isEmpty())
+            _err = tr("Unable to connect to resource!");
+        _deleteConnections();
+        emit onError(_err);
+    }   // end if
+    else if ( _isManifest)
+    {
+        _deleteConnections();
+        emit onRefreshedManifest();
+    }   // end else if
+    else if ( _allRepliesFinished())
+    {
+        _deleteConnections();
+        emit onFinishedDownloadingUpdates();
+    }   // end else if
+}   // end _doOnReplyFinished
+
+
+bool NetworkUpdater::_allUpdatesDownloaded() const
+{
+    for ( QTemporaryFile *tfile : _files)
+        if ( !tfile)
+            return false;
+    return !_files.isEmpty();
+}   // end _allUpdatesDownloaded
+
+
+bool NetworkUpdater::updateApp( const QString &appImageToolPath)
 {
     if ( isBusy())
     {
         _err = tr("Updater is busy!");
         return false;
     }   // end if
-    if ( _ufile.fileName().isEmpty())
+
+    if ( !_allUpdatesDownloaded())
     {
-        _err = tr("Downloading of update file not yet started!");
-        return false;
-    }   // end if
-    if ( QFileInfo( _ufile.fileName()).size() == 0)
-    {
-        _err = tr("Update file not finished downloading!");
+        _err = tr("Updates not yet downloaded!");
         return false;
     }   // end if
 
-    AppUpdater *updater = new AppUpdater( _ufile.fileName(), _olddir, _meta.updateTarget());
-    connect( updater, &AppUpdater::onFinished, this, &NetworkUpdater::_doOnFinishedUpdate);
+    if ( AppUpdater::isAppImage() && !AppUpdater::setAppImageToolPath( appImageToolPath))
+    {
+        _err = tr("Invalid appimagetool path given!");
+        return false;
+    }   // end if
+
+    _isUpdating = true;
+    QStringList fnames;
+    for ( const QTemporaryFile *file : _files)
+        fnames.append( file->fileName());
+    AppUpdater *updater = new AppUpdater( fnames, _plist.appTargetDir(), _olddir);
+    connect( updater, &AppUpdater::onStartedExtraction, this, &NetworkUpdater::onStartedExtractingUpdates);
+    connect( updater, &AppUpdater::onStartedMovingFiles, this, &NetworkUpdater::onStartedUpdatingFiles);
+    connect( updater, &AppUpdater::onStartedRepackaging, this, &NetworkUpdater::onStartedRepackagingApp);
+    connect( updater, &AppUpdater::onFinished, this, &NetworkUpdater::_doOnFinishedUpdating);
     connect( updater, &AppUpdater::finished, updater, &QObject::deleteLater);
     updater->start();
     return true;
 }   // end updateApp
 
 
-void NetworkUpdater::_doOnFinishedUpdate( const QString &err)
+void NetworkUpdater::_doOnFinishedUpdating( const QString &err)
 {
+    _deleteFiles();
     if ( !err.isEmpty())
         emit onError( err);
     else
-        emit onFinishedUpdate();
-}   // end _doOnFinishedUpdate
-
-
-namespace {
-
-QString missingContentTags( const PTree &vdata)
-{
-    QStringList mtags;
-
-    if ( vdata.count("Name") == 0)
-        mtags << "Name";
-
-    if ( vdata.count("Major") == 0)
-        mtags << "Major";
-
-    if ( vdata.count("Minor") == 0)
-        mtags << "Minor";
-
-    if ( vdata.count("Patch") == 0)
-        mtags << "Patch";
-
-    if ( vdata.count("Details") == 0)
-        mtags << "Details";
-
-#ifdef _WIN32
-    if ( vdata.count("Windows") == 0)
-        mtags << "Windows";
-#elif __linux__
-    if ( vdata.count("Linux") == 0)
-        mtags << "Linux";
-#else
-    mtags << "OS";
-#endif
-
-    QString err;
-    if ( !mtags.isEmpty())
-        err = "Missing " + mtags.join("; ") + " tag(s)!";
-
-    return err;
-}   // end missingContentTags
-
-}   // end namespace
-
-
-bool NetworkUpdater::_parseManifestReply( const std::string &xmldata)
-{
-    std::istringstream iss( xmldata);
-    PTree tree;
-
-    try
-    {
-        boost::property_tree::read_xml( iss, tree);
-    }   // end try
-    catch ( const boost::property_tree::ptree_bad_path&)
-    {
-        _err = tr("XML bad path!");
-    }   // end 
-    catch ( const boost::property_tree::xml_parser_error&)
-    {
-        _err = tr("XML parse error!");
-    }   // end catch
-    catch ( const std::exception&)
-    {
-        _err = tr("Unspecified XML parse error!");
-    }   // end catch
-
-    if ( !_err.isEmpty())
-        return false;
-
-    if ( tree.count("VersionManifest") == 0)
-    {
-        _err = "VersionManifest tag not found!";
-        return false;
-    }   // end if
-
-    const PTree &vdata = tree.get_child("VersionManifest");
-    _err =  missingContentTags( vdata);
-    if ( !_err.isEmpty())
-        return false;
-
-    const PTree *ftree = nullptr;
-#ifdef _WIN32
-    ftree = &vdata.get_child("Windows");
-#elif __linux__
-    ftree = &vdata.get_child("Linux");
-#endif
-    assert( ftree);
-
-    if ( ftree->count("Update") == 0)
-        _err = "Missing Update tag!";
-    else
-    {
-        _meta.setUpdateUrl( QUrl( QString::fromStdString( rlib::trim( ftree->get<std::string>("Update")))));
-        // The target directory is given relative to the application directory path
-        const PTree &utree = ftree->get_child("Update");
-        boost::optional<std::string> tgt = utree.get_optional<std::string>("<xmlattr>.targetdir");
-        _meta.setUpdateTarget( tgt ? QString::fromStdString( *tgt) : "");
-    }   // end else
-
-    if ( _err.isEmpty())
-    {
-        _meta.setName( QString::fromStdString( rlib::trim( vdata.get<std::string>("Name"))));
-        _meta.setMajor( vdata.get<int>("Major"));
-        _meta.setMinor( vdata.get<int>("Minor"));
-        _meta.setPatch( vdata.get<int>("Patch"));
-        _meta.setDetails( QString::fromStdString( rlib::trim( vdata.get<std::string>("Details"))));
-    }   // end if
-     
-    return _err.isEmpty();
-}   // end _parseManifestReply
+        emit onFinishedUpdating();
+}   // end _doOnFinishedUpdating
