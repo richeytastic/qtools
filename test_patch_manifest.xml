@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PatchList version="1.0">
+    <Application>Cliniface</Application>
+    <TargetDir>..</TargetDir>
+
+    <Patch major="5" minor="2" patch="2">
+        <BaseURL>https://github.com/frontiersi/Cliniface/releases/download/v5.2.2</BaseURL>
+        <Description>
+            ## Version 5.2.2
+            - Updating now downloads only the required patches for the user's version.
+            - Linux patching of the AppImage now possible.
+        </Description>
+        <Platform name="Linux">
+            <Archive>patch-linux-x64.zip</Archive>
+            <Manifest>
+                <File>bin/cliniface</File>
+            </Manifest>
+        </Platform>
+        <Platform name="Windows">
+            <Archive>patch-win32-x64.zip</Archive>
+            <Manifest>
+                <File>bin/cliniface.exe</File>
+            </Manifest>
+        </Platform>
+    </Patch>
+
+</PatchList>
