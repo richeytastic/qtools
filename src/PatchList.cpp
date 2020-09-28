@@ -18,6 +18,8 @@
 #include <QTools/PatchList.h>
 #include <rlib/StringUtil.h>
 #include <boost/property_tree/xml_parser.hpp>
+#include <QSet>
+#include <iostream>
 using PTree = boost::property_tree::ptree;
 using QTools::PatchList;
 using QTools::PatchMeta;
@@ -31,56 +33,47 @@ using QTools::PatchFiles;
 PatchList::PatchList() {}
 
 
-bool PatchList::isPatchAvailable( int mj, int mn, int pt) const
+bool PatchList::setCurrentVersion( int mj, int mn, int pt)
 {
-    // Patches are stored in descending order so only need to check the first.
-    bool gotPatch = false;
-    if ( hasPatches())
+    PatchMeta nver( mj, mn, pt);
+    if ( nver >= _currv)
     {
-        PatchMeta app;
-        app.setMajor( mj);
-        app.setMinor( mn);
-        app.setPatch( pt);
-        gotPatch = *_patches.begin() > app;
+        _appName = _appTgtDir = _err = "";
+        _patches.clear();
+        _currv = nver;
     }   // end if
-    return gotPatch;
-}   // end isPatchAvailable
+    return _currv == nver;
+}   // end setCurrentVersion
 
 
-QString PatchList::patchDescription( int mj, int mn, int pt) const
+bool PatchList::setCurrentVersion( const PatchMeta &pm)
 {
-    PatchMeta app;
-    app.setMajor( mj);
-    app.setMinor( mn);
-    app.setPatch( pt);
+    return setCurrentVersion( pm.major(), pm.minor(), pm.patch());
+}   // end setCurrentVersion
 
+
+const PatchMeta& PatchList::highestVersion() const
+{
+    if ( _patches.isEmpty())
+        return _currv;
+    return _patches.first();
+}   // end highestVersion
+
+
+QString PatchList::patchDescription() const
+{
     QStringList desc;
     for ( const PatchMeta &pm : _patches)
-    {
-        if ( pm > app)
-            desc.append( pm.description());
-        else
-            break;
-    }   // end for
+        desc.append( pm.description());
     return desc.join("\n");
 }   // end patchDescription
 
 
-QList<QUrl> PatchList::patchURLs( int mj, int mn, int pt) const
+QList<QUrl> PatchList::patchURLs() const
 {
-    PatchMeta app;
-    app.setMajor( mj);
-    app.setMinor( mn);
-    app.setPatch( pt);
-
     QList<QUrl> purls;
     for ( const PatchMeta &pm : _patches)
-    {
-        if ( pm > app)
-            purls.push_back( pm.patchUrl());
-        else
-            break;
-    }   // end for
+        purls.push_back( pm.patchUrl());
     return purls;
 }   // end patchURLs
 
@@ -130,6 +123,12 @@ bool PatchList::parse( const QByteArray &xmldata)
         return false;
     }   // end if
 
+    if ( plist.count("Patches") == 0)
+    {
+        _err = "Patches tag not found!";
+        return false;
+    }   // end if
+
     _appName = QString::fromStdString( rlib::trim( plist.get<std::string>( "Application")));
     if ( _appName.isEmpty())
     {
@@ -144,16 +143,42 @@ bool PatchList::parse( const QByteArray &xmldata)
         return false;
     }   // end if
 
-    for ( const PTree::value_type &pval : plist)
-        if ( pval.second.count("Patch") > 0)
-            if ( !_parsePatchMeta( pval.second.get_child("Patch")))
-                break;
+    const PTree &ptree = plist.get_child("Patches");
+    for ( const PTree::value_type &pval : ptree)
+        if ( !_parsePatchMeta( pval.second))
+            break;
 
     // Sort in descending order so the most recent (highest) version is first.
-    std::sort( _patches.end(), _patches.begin());
+    std::sort( _patches.rbegin(), _patches.rend());
+
+    // Now cull the list of patches based on the files they include (only care about
+    // the latest version of a given file).
+    _cullForDuplicateFiles();
 
     return _err.isEmpty();
 }   // end parse
+
+
+void PatchList::_cullForDuplicateFiles()
+{
+    QSet<QString> fileset;
+    QList<PatchMeta> npatches;
+    for ( const PatchMeta &pm : _patches)
+    {
+        const int fsize = fileset.size();
+        const PatchFiles &pfiles = pm.files();
+        for ( const QString &file : pfiles.files())
+            fileset.insert(file);
+        // This patch is used if there's at least one file not
+        // in the existing fileset from more recent patches.
+        if ( fileset.size() > fsize)
+        {
+            std::cerr << "Using patch " << pm.major() << "." << pm.minor() << "." << pm.patch() << std::endl;
+            npatches.push_back(pm);
+        }   // end if
+    }   // end for
+    _patches = npatches;   // Replace
+}   // end _cullForDuplicateFiles
 
 
 namespace {
@@ -187,6 +212,12 @@ bool PatchList::_parsePatchMeta( const PTree &pnode)
         return false;
     }   // end if
 
+    if ( pnode.count("Platforms") == 0)
+    {
+        _err = "Missing Platforms in Patch!";
+        return false;
+    }   // end if
+
     PatchMeta meta;
 
     if ( !meta.setMajor( getVersionAttr( pnode,"<xmlattr>.major"))
@@ -195,6 +226,14 @@ bool PatchList::_parsePatchMeta( const PTree &pnode)
     {
         _err = "Missing version in Patch!";
         return false;
+    }   // end if
+
+    // If the parsed patch version is <= than current, just return true.
+    if ( meta <= _currv)
+    {
+        std::cerr << QString("Ignoring patch %1.%2.%3")
+                .arg(meta.major()).arg(meta.minor()).arg(meta.patch()).toStdString() << std::endl;
+        return true;
     }   // end if
 
     if ( !meta.setDescription( QString::fromStdString( rlib::trim( pnode.get<std::string>("Description")))))
@@ -215,18 +254,16 @@ bool PatchList::_parsePatchMeta( const PTree &pnode)
         return false;
     }   // end if
 
-    // Get the information for each platform being supported
-    for ( const PTree::value_type &pval : pnode)
+    // Get the patch manifest for each supported platform
+    const PTree &platforms = pnode.get_child("Platforms");
+    for ( const PTree::value_type &pval : platforms)
     {
-        if ( pval.second.count("Platform") > 0)
-        {
-            // If added the platform, break since we don't need other platforms.
-            if ( _parsePatchFiles( meta, pval.second.get_child("Platform")))
-                break;
-            // Also break if an error set
-            if ( !_err.isEmpty())
-                break;
-        }   // end if
+        // If added the platform, break since we don't need other platforms.
+        if ( _parsePatchFiles( meta, pval.second))
+            break;
+        // Also break if an error set
+        if ( !_err.isEmpty())
+            break;
     }   // end for
 
     if ( _err.isEmpty())
@@ -241,7 +278,7 @@ bool PatchList::_parsePatchFiles( PatchMeta &meta, const PTree &pnode)
     boost::optional<std::string> pname = pnode.get_optional<std::string>("<xmlattr>.name");
     if ( !pname)
     {
-        _err = "Missing name in Platform!";
+        _err = "Missing name attribute in Platform!";
         return false;
     }   // end if
 
@@ -258,40 +295,41 @@ bool PatchList::_parsePatchFiles( PatchMeta &meta, const PTree &pnode)
 
     if ( pnode.count("Archive") == 0)
     {
-        _err = "Missing Archive in Platform!";
+        _err = "Missing Archive tag in Platform!";
         return false;
     }   // end if
 
-    if ( pnode.count("Manifest") == 0)
+    if ( pnode.count("Modify") == 0)
     {
-        _err = "Missing Manifest in Platform!";
+        _err = "Missing Modify tag in Platform!";
         return false;
     }   // end if
 
-    PatchFiles manifest;
+    PatchFiles pfiles;
 
     // Set the name of the archive file on the server.
-    if ( !manifest.setArchive( QString::fromStdString( rlib::trim( pnode.get<std::string>("Archive")))))
+    if ( !pfiles.setArchive( QString::fromStdString( rlib::trim( pnode.get<std::string>("Archive")))))
     {
         _err = "Invalid Archive in Platform!";
         return false;
     }   // end if
 
-    const PTree &mnode = pnode.get_child("Manifest");
+    const PTree &mnode = pnode.get_child("Modify");
     for ( const PTree::value_type &fval : mnode)
     {
-        if ( fval.second.count("File") > 0)
+        const std::string fname = rlib::trim( fval.second.get_value<std::string>());
+        if ( !pfiles.addFile( QString::fromStdString( fname)))
         {
-            if ( !manifest.addFile( QString::fromStdString( rlib::trim( fval.second.get<std::string>("File")))))
-            {
-                _err = "Invalid File in Manifest!";
-                break;
-            }   // end if
+            _err = "Invalid File in Platform!";
+            break;
         }   // end if
     }   // end for
 
+    if ( pfiles.files().isEmpty() && _err.isEmpty())
+        _err = "No files given in patch manifest!";
+
     if ( _err.isEmpty())
-        meta.setManifest( manifest);
+        meta.setFiles( pfiles);
 
     return _err.isEmpty();
 }   // end _parsePatchFiles
@@ -324,7 +362,13 @@ bool PatchFiles::addFile( const QString &f)
 /************ PatchMeta *************/
 /************************************/
 
-PatchMeta::PatchMeta() : _major(0), _minor(0), _patch(0) {}
+PatchMeta::PatchMeta( int mj, int mn, int pt)
+    : _major(0), _minor(0), _patch(0)
+{
+    setMajor( mj);
+    setMinor( mn);
+    setPatch( pt);
+}   // end ctor
 
 
 bool PatchMeta::isValid() const
@@ -360,22 +404,22 @@ bool PatchMeta::operator<=( const PatchMeta &v) const { return !(*this > v);}
 
 bool PatchMeta::setMajor( int v)
 {
-    _major = std::max( 0, v);
-    return v >= 0;
+    _major = std::max( _major, v);
+    return _major == v;
 }   // end setMajor
 
 
 bool PatchMeta::setMinor( int v)
 {
-    _minor = std::max( 0, v);
-    return v >= 0;
+    _minor = std::max( _minor, v);
+    return _minor == v;
 }   // end setMinor
 
 
 bool PatchMeta::setPatch( int v)
 {
-    _patch = std::max( 0, v);
-    return v >= 0;
+    _patch = std::max( _patch, v);
+    return _patch == v;
 }   // end setPatch
 
 

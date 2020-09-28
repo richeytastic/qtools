@@ -25,33 +25,39 @@ using PTree = boost::property_tree::ptree;
 
 
 NetworkUpdater::NetworkUpdater( const QUrl &url, const QString &olddir, int tmsecs, int mr)
-    : _manifestUrl(url), _olddir(olddir),
-      _nman( nullptr), _isManifest(false), _isDownloading(false), _isUpdating(false)
+    : _manifestUrl(url), _nman( nullptr), _isManifest(false)
 {
     _nman = new QNetworkAccessManager(this);
-    _templateReq.setAttribute( QNetworkRequest::CacheSaveControlAttribute, false);   // Don't cache
-    _templateReq.setAttribute( QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork); // Refresh
+    //_templateReq.setAttribute( QNetworkRequest::CacheSaveControlAttribute, false);   // Don't cache
+    //_templateReq.setAttribute( QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork); // Refresh
     _templateReq.setAttribute( QNetworkRequest::FollowRedirectsAttribute, mr > 0);
     _templateReq.setMaximumRedirectsAllowed( mr);
     _templateReq.setTransferTimeout( tmsecs);
-    AppUpdater::recordAppExe();
+
+    _updater.recordAppExe();
+    _updater.setDeleteDir( olddir);
+    connect( &_updater, &AppUpdater::onStartedExtraction, this, &NetworkUpdater::onStartedExtractingUpdates);
+    connect( &_updater, &AppUpdater::onStartedMovingFiles, this, &NetworkUpdater::onStartedUpdatingFiles);
+    connect( &_updater, &AppUpdater::onStartedRepackaging, this, &NetworkUpdater::onStartedRepackagingApp);
+    connect( &_updater, &AppUpdater::onFinished, this, &NetworkUpdater::_doOnFinishedUpdating);
 }   // end ctor
 
 
 NetworkUpdater::~NetworkUpdater() { delete _nman;}
 
 
-bool NetworkUpdater::isBusy() const { return _isManifest || _isDownloading || _isUpdating;}
+bool NetworkUpdater::isBusy() const { return !_nconns.isEmpty() || _updater.isRunning();}
 
 
-bool NetworkUpdater::refreshManifest()
+bool NetworkUpdater::refreshManifest( int mj, int mn, int pt)
 {
     if ( isBusy())
     {
         _err = tr("Updater is busy!");
         return false;
     }   // end if
-    _plist = PatchList();  // Reset
+
+    _plist.setCurrentVersion( mj, mn, pt);  // Can't be set lower
     _isManifest = true;
     _deleteFiles();
     _nconns.push_back( _startConnection( _manifestUrl, false/*don't emit progress updates*/));
@@ -59,12 +65,12 @@ bool NetworkUpdater::refreshManifest()
 }   // end refreshManifest
 
 
-bool NetworkUpdater::isUpdateAvailable( int mj, int mn, int pt) const { return _plist.isPatchAvailable( mj, mn, pt);}
+bool NetworkUpdater::isUpdateAvailable() const { return _plist.hasPatches();}
 
-QString NetworkUpdater::updateDescription( int mj, int mn, int pt) const { return _plist.patchDescription( mj, mn, pt);}
+QString NetworkUpdater::updateDescription() const { return _plist.patchDescription();}
 
 
-bool NetworkUpdater::downloadUpdates( int mj, int mn, int pt)
+bool NetworkUpdater::downloadUpdates()
 {
     if ( isBusy())
     {
@@ -72,15 +78,14 @@ bool NetworkUpdater::downloadUpdates( int mj, int mn, int pt)
         return false;
     }   // end if
 
-    if ( !isUpdateAvailable( mj, mn, pt))
+    if ( !isUpdateAvailable())
     {
         _err = tr("No update is available!");
         return false;
     }   // end if
 
     _deleteFiles();
-    _isDownloading = true;
-    const QList<QUrl> urls = _plist.patchURLs( mj, mn, pt);
+    const QList<QUrl> urls = _plist.patchURLs();
     for ( const QUrl &url : urls)
     {
         _nconns.push_back( _startConnection( url, true/*emit progress updates*/));
@@ -93,7 +98,6 @@ bool NetworkUpdater::downloadUpdates( int mj, int mn, int pt)
 
 void NetworkUpdater::_deleteFiles()
 {
-    _isUpdating = false;
     for ( QTemporaryFile *tfile : _files)
     {
         if ( tfile)
@@ -173,7 +177,6 @@ bool NetworkUpdater::_allRepliesFinished() const
 void NetworkUpdater::_deleteConnections()
 {
     _isManifest = false;
-    _isDownloading = false;
     for ( QNetworkReply *nr : _nconns)
         nr->deleteLater();
     _nconns.clear();
@@ -204,6 +207,7 @@ void NetworkUpdater::_doOnReplyFinished( QNetworkReply *nconn)
     }   // end if
     else if ( _isManifest)
     {
+        _updater.setAppTargetDir( _plist.appTargetDir());
         _deleteConnections();
         emit onRefreshedManifest();
     }   // end else if
@@ -238,23 +242,18 @@ bool NetworkUpdater::updateApp( const QString &appImageToolPath)
         return false;
     }   // end if
 
-    if ( AppUpdater::isAppImage() && !AppUpdater::setAppImageToolPath( appImageToolPath))
+    // Note that this will prevent updating if running through a debugger...
+    if ( _updater.isAppImage() && !_updater.setAppImageToolPath( appImageToolPath))
     {
         _err = tr("Invalid appimagetool path given!");
         return false;
     }   // end if
 
-    _isUpdating = true;
     QStringList fnames;
     for ( const QTemporaryFile *file : _files)
         fnames.append( file->fileName());
-    AppUpdater *updater = new AppUpdater( fnames, _plist.appTargetDir(), _olddir);
-    connect( updater, &AppUpdater::onStartedExtraction, this, &NetworkUpdater::onStartedExtractingUpdates);
-    connect( updater, &AppUpdater::onStartedMovingFiles, this, &NetworkUpdater::onStartedUpdatingFiles);
-    connect( updater, &AppUpdater::onStartedRepackaging, this, &NetworkUpdater::onStartedRepackagingApp);
-    connect( updater, &AppUpdater::onFinished, this, &NetworkUpdater::_doOnFinishedUpdating);
-    connect( updater, &AppUpdater::finished, updater, &QObject::deleteLater);
-    updater->start();
+    _updater.setFiles( fnames);
+    _updater.start();
     return true;
 }   // end updateApp
 
@@ -265,5 +264,8 @@ void NetworkUpdater::_doOnFinishedUpdating( const QString &err)
     if ( !err.isEmpty())
         emit onError( err);
     else
+    {
+        _plist.setCurrentVersion( _plist.highestVersion());
         emit onFinishedUpdating();
+    }   // end else
 }   // end _doOnFinishedUpdating

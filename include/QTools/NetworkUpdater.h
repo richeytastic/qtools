@@ -18,6 +18,7 @@
 #ifndef QTOOLS_NETWORK_UPDATER_H
 #define QTOOLS_NETWORK_UPDATER_H
 
+#include "AppUpdater.h"
 #include "PatchList.h"
 #include <QNetworkAccessManager>
 #include <QTemporaryFile>
@@ -43,20 +44,21 @@ public:
     inline const QString &error() const { return _err;}
 
     // Refresh manifest from constructor URL and emit onRefreshedManifest when done.
-    // Returns true iff the manifest URL was accessed and downloading was started.
-    bool refreshManifest();
+    // Pass in the current version which will be checked against the manifest when
+    // downloaded to see if there are any updates available. Returns true iff the
+    // manifest URL was accessed and downloading was started.
+    bool refreshManifest( int major, int minor, int patch);
 
     // Call after refreshing the patch manifest. Returns true iff an
     // update exists that will bring the app to a higher version.
-    bool isUpdateAvailable( int major, int minor, int patch) const;
+    bool isUpdateAvailable() const;
 
-    // Returns a description of the updates available from the given version.
-    QString updateDescription( int major, int minor, int patch) const;
+    // Returns a description of any available updates.
+    QString updateDescription() const;
 
     // Begin downloading the updates. Emits onDownloadProgress until done then
     // onFinishedDownloadingUpdates. Returns true iff downloading was started.
-    // Only the updates that bring the app to a higher version are downloaded.
-    bool downloadUpdates( int major, int minor, int patch);
+    bool downloadUpdates();
 
     // Start updating the app given the downloaded data. Emits onFinishedUpdate
     // when complete. Returns true iff the update was started and returns false
@@ -95,16 +97,14 @@ private slots:
 
 private:
     const QUrl _manifestUrl;
-    const QString _olddir;
     QNetworkRequest _templateReq;
     QNetworkAccessManager *_nman;
     bool _isManifest;
-    bool _isDownloading;
-    bool _isUpdating;
     PatchList _plist;
     QList<QNetworkReply*> _nconns;
     QList<QTemporaryFile*> _files;
     QString _err;
+    AppUpdater _updater;
 
     void _deleteFiles();
     bool _writeDataToFile( QNetworkReply*);

@@ -25,12 +25,6 @@
 using QTools::AppUpdater;
 
 
-// static definitions
-QString AppUpdater::s_appImageTool;
-QString AppUpdater::s_appExe;
-QFileDevice::Permissions AppUpdater::s_appExePermissions;
-
-// public static
 bool AppUpdater::recordAppExe()
 {
     QString appExe;
@@ -41,40 +35,39 @@ bool AppUpdater::recordAppExe()
     if ( appExe[0] == ".")
         appExe = qEnvironmentVariable("PWD") + "/" + appExe;    // Path to the AppImage
 #endif
-    s_appExe = QFileInfo(appExe).canonicalFilePath();
-    s_appExePermissions = QFile( s_appExe).permissions();
+    _appExe = QFileInfo(appExe).canonicalFilePath();
+    _appExePermissions = QFile( _appExe).permissions();
     return isAppImage();
 }   // end recordAppExe
 
 
-// public static
 bool AppUpdater::setAppImageToolPath( const QString &fpath)
 {
-    s_appImageTool = "";
+    _appImageTool = "";
     const QFileInfo finfo( fpath);
     if ( finfo.exists() && finfo.isExecutable())
-        s_appImageTool = fpath;
-    return !s_appImageTool.isEmpty();
+        _appImageTool = fpath;
+    return !_appImageTool.isEmpty();
 }   // end setAppImageToolPath
 
 
-// public static
 bool AppUpdater::isAppImage()
 {
 #ifdef __linux__
-    if ( s_appExe.isEmpty())    // Record the application exe if not already done
+    if ( _appExe.isEmpty())    // Record the application exe if not already done
         recordAppExe();
-    // We assume this is an AppImage if the applicationFilePath does NOT match s_appExe.
-    // This is because s_appExe will be the filepath to the AppImage before it mounts the
+    // We assume this is an AppImage if the applicationFilePath does NOT match _appExe.
+    // This is because _appExe will be the filepath to the AppImage before it mounts the
     // temporary file system from which this application is actually run.
-    return QCoreApplication::applicationFilePath() != s_appExe;
+    return QCoreApplication::applicationFilePath() != _appExe;
 #endif
     return false;
 }   // end isAppImage
 
 
-AppUpdater::AppUpdater( const QStringList &fns, const QString &rp, const QString &oldRoot)
-    : _fpaths(fns), _relPath(rp), _oldRoot( oldRoot) {}
+void AppUpdater::setFiles( const QStringList &fns) { _fpaths = fns;}
+void AppUpdater::setAppTargetDir( const QString &rp) { _relPath = rp;}
+void AppUpdater::setDeleteDir( const QString &oldRoot) { _oldRoot = oldRoot;}
 
 
 void AppUpdater::run()
@@ -93,7 +86,7 @@ void AppUpdater::_repackageApp()
 {
     emit onStartedRepackaging();
 
-    if ( s_appImageTool.isEmpty())
+    if ( _appImageTool.isEmpty())
     {
         _err = tr("Unable to repackage AppImage; tool not set!");
         return;
@@ -110,7 +103,7 @@ void AppUpdater::_repackageApp()
     // The application directory is just the location of the temporary filesystem
     args << "-n" << (QCoreApplication::applicationDirPath() + "/../..") << newAppImg.fileName();
     QProcess *appImgProc = new QProcess(this);
-    appImgProc->start( s_appImageTool, args);
+    appImgProc->start( _appImageTool, args);
     if ( !appImgProc->waitForFinished( 30000))
         _err = tr("Repackaging of AppImage timed out!");
     delete appImgProc;
@@ -118,15 +111,15 @@ void AppUpdater::_repackageApp()
     if ( _err.isEmpty())
     {
         // Copy the newly repackaged AppImage to the original location.
-        if ( !QFile::remove( s_appExe))
-            _err = tr("Unable to remove \"%1\" to perform update").arg( s_appExe);
+        if ( !QFile::remove( _appExe))
+            _err = tr("Unable to remove \"%1\" to perform update").arg( _appExe);
         else
         {
             newAppImg.setAutoRemove(false);
-            if ( !newAppImg.rename( s_appExe))
+            if ( !newAppImg.rename( _appExe))
                 _err = tr("Failed to rename newly repackaged AppImage!");
             else
-                QFile( s_appExe).setPermissions( s_appExePermissions);  // Reset permissions
+                QFile( _appExe).setPermissions( _appExePermissions);  // Reset permissions
         }   // end if
     }   // end if
 }   // end _repackageApp
@@ -137,15 +130,18 @@ namespace {
 QString now2OldThenNew2Now( const QString &oldRoot, const QString &nowRoot, const QString &newRoot)
 {
     QString err;
-    const QStringList dirEntries = QDir(newRoot).entryList( QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
-    for ( const QString &name : dirEntries)
+    const QStringList entries = QDir(newRoot).entryList( QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
+    for ( const QString &name : entries)
     {
         const QString oldpath = oldRoot + "/" + name;
         const QString nowpath = nowRoot + "/" + name;
-        const QString newpath = newRoot + "/" + name;  // Exists already
+        const QString newpath = newRoot + "/" + name;  // Exists (the temp location of extracted file)
 
         if ( QFileInfo(newpath).isDir()) // Recurse if directory
+        {
+            QDir().mkpath(nowpath); // Ensuring it exists in the current path
             err = now2OldThenNew2Now( oldpath, nowpath, newpath);
+        }   // end if
         else
         {
             QFile newfile(newpath);
@@ -200,6 +196,7 @@ bool AppUpdater::_extractFiles()
         const bool extractedOkay = flst.size() > 0;
         if ( !extractedOkay)
         {
+            std::cerr << "Failed to extract archive!" << std::endl;
             _err = tr("Failed to extract archive!");
             return false;
         }   // end if

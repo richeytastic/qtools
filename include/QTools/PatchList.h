@@ -49,7 +49,7 @@ private:
 class QTools_EXPORT PatchMeta
 {
 public:
-    PatchMeta();
+    PatchMeta( int major=0, int minor=0, int patch=0);
     PatchMeta( const PatchMeta&) = default;
     PatchMeta& operator=( const PatchMeta&) = default;
 
@@ -84,7 +84,8 @@ public:
     // Construct and return the full patch URL for this patch for this platform.
     QUrl patchUrl() const;
 
-    void setManifest( const PatchFiles &v) { _platform = v;}
+    void setFiles( const PatchFiles &v) { _platform = v;}
+    const PatchFiles &files() const { return _platform;}
 
 private:
     int _major, _minor, _patch;
@@ -101,20 +102,28 @@ public:
     PatchList( const PatchList&) = default;
     PatchList& operator=( const PatchList&) = default;
 
-    // Returns true iff there are patches in this list.
+    // Set the baseline version. Only patches greater are used.
+    // Note that it's not possible to set to a lower version
+    // than the one already set. This function also clears the
+    // internal state discarding all previously parsed patches.
+    // Returns true iff the current version for this object was
+    // set to match the given version.
+    bool setCurrentVersion( int major, int minor, int patch);
+    bool setCurrentVersion( const PatchMeta&);
+
+    // Returns the highest version patch available which is either
+    // the current version, or the highest available in the list.
+    const PatchMeta& highestVersion() const;
+
+    // Returns true iff there are patches available.
     bool hasPatches() const { return !_patches.empty();}
 
-    // Returns true iff there's at least one patch available that will bring
-    // the app (with version as given by the parameters) to a higher version.
-    bool isPatchAvailable( int major, int minor, int patch) const;
-
     // Returns a description of the patch as a concatenation of descriptions
-    // from all of the patches that are a higher version than the given version.
-    QString patchDescription( int major, int minor, int patch) const;
+    // from all of the patches that are a higher version than given.
+    QString patchDescription() const;
 
     // Return a list of the patch URLs needed with the most recent first.
-    // Returns all patches by default (all patches have versions > 0.0.0).
-    QList<QUrl> patchURLs( int major=0, int minor=0, int patch=0) const;
+    QList<QUrl> patchURLs() const;
 
     // Try to parse the given array returning true iff succeeded.
     // On return of false, call error() to return the error string.
@@ -134,9 +143,11 @@ private:
     QString _appName;
     QString _appTgtDir;
     QString _err;
+    PatchMeta _currv;
     QList<PatchMeta> _patches;
     bool _parsePatchMeta( const boost::property_tree::ptree&);
     bool _parsePatchFiles( PatchMeta&, const boost::property_tree::ptree&);
+    void _cullForDuplicateFiles();
 };  // end class
 
 }   // end namespace
