@@ -70,8 +70,67 @@ void AppUpdater::setAppTargetDir( const QString &rp) { _relPath = rp;}
 void AppUpdater::setDeleteDir( const QString &oldRoot) { _oldRoot = oldRoot;}
 
 
+namespace {
+#ifdef _WIN32
+#include <Windows.h>
+BOOL isRunningAsAdmin()
+{
+    BOOL fIsRunAsAdmin = FALSE;
+    DWORD dwError = ERROR_SUCCESS;
+    PSID pAdministratorsGroup = nullptr;
+
+    // Allocate and initialize a SID of the administrators group.
+    SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+    if (!AllocateAndInitializeSid(
+        &NtAuthority, 
+        2, 
+        SECURITY_BUILTIN_DOMAIN_RID, 
+        DOMAIN_ALIAS_RID_ADMINS, 
+        0, 0, 0, 0, 0, 0, 
+        &pAdministratorsGroup))
+    {
+        dwError = GetLastError();
+        goto Cleanup;
+    }   // end if
+
+    // Determine whether the SID of administrators group is enabled in 
+    // the primary access token of the process.
+    if (!CheckTokenMembership( nullptr, pAdministratorsGroup, &fIsRunAsAdmin))
+    {
+        dwError = GetLastError();
+        goto Cleanup;
+    }   // end if
+
+Cleanup:
+    // Centralized cleanup for all allocated resources.
+    if (pAdministratorsGroup)
+    {
+        FreeSid(pAdministratorsGroup);
+        pAdministratorsGroup = nullptr;
+    }   // end if
+
+    // Throw the error if something failed in the function.
+    if (ERROR_SUCCESS != dwError)
+        throw dwError;
+
+    return fIsRunAsAdmin;
+}   // end isRunningAsAdmin
+#endif
+
+}   // end namespace
+
 void AppUpdater::run()
 {
+#ifdef _WIN32
+    std::cerr << "App exe: " << _appExe.toStdString() << std::endl;
+    if ( !isRunningAsAdmin() && !_appExe.startsWith( QDir::homePath()))
+    {
+        std::cerr << "App not installed in user's home and user isn't running as administrator!" << std::endl;
+        _err = tr("You must run as administrator to update!");
+        emit onFinished(_err);
+        return;
+    }   // end if
+#endif
     _err = QString();
     // If an old update directory exists, remove it.
     if ( QFileInfo(_oldRoot).exists() && !QDir(_oldRoot).removeRecursively())
