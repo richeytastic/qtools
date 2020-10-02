@@ -17,7 +17,10 @@
 
 #include <QTools/PatchList.h>
 #include <rlib/StringUtil.h>
+#include <quazip5/JlCompress.h>
 #include <boost/property_tree/xml_parser.hpp>
+#include <QTemporaryDir>
+#include <QFile>
 #include <QSet>
 #include <iostream>
 using PTree = boost::property_tree::ptree;
@@ -78,10 +81,42 @@ QList<QUrl> PatchList::patchURLs() const
 }   // end patchURLs
 
 
-bool PatchList::parse( const QByteArray &xmldata)
+namespace {
+std::string extractFile( const QString &zipfile)
+{
+    QTemporaryDir extractDir;
+    QStringList flst = JlCompress::extractDir( zipfile, extractDir.path());
+    const QString xmlpath = flst.size() == 1 ?  flst.first() : "";
+
+    if ( xmlpath.isEmpty() || !xmlpath.endsWith(".xml"))
+    {
+        std::cerr << "Couldn't find XML file in archive!" << std::endl;
+        return "";
+    }   // end if
+
+    QFile file( xmlpath);
+    if ( !file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        std::cerr << "Couldn't open " << xmlpath.toStdString() << " for reading!" << std::endl;
+        return "";
+    }   // end if
+
+    return file.readAll().toStdString();
+}   // end extractFile
+}   // end namespace
+
+
+bool PatchList::parse( const QString &zipfile)
 {
     _err = "";
-    std::istringstream iss( xmldata.toStdString());
+    std::string xmldata = extractFile( zipfile);
+    if ( xmldata.empty())
+    {
+        _err = "Unable to read data from archive's XML file!";
+        return false;
+    }   // end if
+
+    std::istringstream iss( xmldata);
     PTree tree;
 
     try

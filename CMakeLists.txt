@@ -103,4 +103,4 @@ qt5_add_resources( RESOURCE_FILE "${RCC_FILE}")
 
 add_library( ${PROJECT_NAME} ${SRC_FILES} ${QOBJECT_MOCS} ${INCLUDE_FILES} ${FORM_HEADERS} ${FORMS} ${RESOURCE_FILE} ${RCC_FILE})
 include( "cmake/LinkLibs.cmake")
-install( FILES "${PROJECT_SOURCE_DIR}/appimagetool-x86_64.AppImage" DESTINATION "bin")
+install( FILES "${PROJECT_SOURCE_DIR}/appimageupdatetool-x86_64.AppImage" DESTINATION "bin")

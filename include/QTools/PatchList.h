@@ -20,7 +20,6 @@
 
 #include "QTools_Export.h"
 #include <boost/property_tree/ptree.hpp>
-#include <QByteArray>
 #include <QMap>
 #include <QUrl>
 #include <list>
@@ -125,9 +124,10 @@ public:
     // Return a list of the patch URLs needed with the most recent first.
     QList<QUrl> patchURLs() const;
 
-    // Try to parse the given array returning true iff succeeded.
-    // On return of false, call error() to return the error string.
-    bool parse( const QByteArray&);
+    // Try to parse the given zip file containing XML data returning
+    // true iff succeeded. On return of false, call error() to return
+    // the error string which is empty if this function returns false.
+    bool parse( const QString &filename);
 
     // Return the parse error.
     const QString &error() const { return _err;}

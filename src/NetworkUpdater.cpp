@@ -35,11 +35,8 @@ NetworkUpdater::NetworkUpdater( const QUrl &url, const QString &olddir, int tmse
     _templateReq.setMaximumRedirectsAllowed( mr);
     _templateReq.setTransferTimeout( tmsecs);
 
-    _updater.recordAppExe();
     _updater.setDeleteDir( olddir);
-    connect( &_updater, &AppUpdater::onStartedExtraction, this, &NetworkUpdater::onStartedExtractingUpdates);
-    connect( &_updater, &AppUpdater::onStartedMovingFiles, this, &NetworkUpdater::onStartedUpdatingFiles);
-    connect( &_updater, &AppUpdater::onStartedRepackaging, this, &NetworkUpdater::onStartedRepackagingApp);
+    connect( &_updater, &AppUpdater::onAppImageUpdatePercent, this, &NetworkUpdater::onDownloadProgress);
     connect( &_updater, &AppUpdater::onFinished, this, &NetworkUpdater::_doOnFinishedUpdating);
 }   // end ctor
 
@@ -47,6 +44,7 @@ NetworkUpdater::NetworkUpdater( const QUrl &url, const QString &olddir, int tmse
 NetworkUpdater::~NetworkUpdater() { delete _nman;}
 
 
+bool NetworkUpdater::isPrivileged() const { return _updater.isPrivileged();}
 bool NetworkUpdater::isBusy() const { return !_nconns.isEmpty() || _updater.isRunning();}
 
 
@@ -58,46 +56,31 @@ bool NetworkUpdater::refreshManifest( int mj, int mn, int pt)
         return false;
     }   // end if
 
+    if ( !isPrivileged())
+    {
+        _err = tr("User has insufficient privileges!");
+        return false;
+    }   // end if
+
     _plist.setCurrentVersion( mj, mn, pt);  // Can't be set lower
+    _resetDownloads();
     _isManifest = true;
-    _deleteFiles();
     _nconns.push_back( _startConnection( _manifestUrl, false/*don't emit progress updates*/));
+    _files.push_back( nullptr);  // Corresponding position of the file
     return true;
 }   // end refreshManifest
 
 
 bool NetworkUpdater::isUpdateAvailable() const { return _plist.hasPatches();}
 
-QString NetworkUpdater::updateDescription() const { return _plist.patchDescription();}
 
-
-bool NetworkUpdater::downloadUpdates()
+QString NetworkUpdater::updateDescription() const
 {
-    if ( isBusy())
-    {
-        _err = tr("Updater is busy!");
-        return false;
-    }   // end if
-
-    if ( !isUpdateAvailable())
-    {
-        _err = tr("No update is available!");
-        return false;
-    }   // end if
-
-    _deleteFiles();
-    const QList<QUrl> urls = _plist.patchURLs();
-    for ( const QUrl &url : urls)
-    {
-        _nconns.push_back( _startConnection( url, true/*emit progress updates*/));
-        _files.push_back( nullptr);  // Corresponding position of the file
-    }   // end for
-
-    return true;
-}   // end downloadUpdates
+    return _plist.patchDescription();
+}   // end updateDescription
 
 
-void NetworkUpdater::_deleteFiles()
+void NetworkUpdater::_resetDownloads()
 {
     for ( QTemporaryFile *tfile : _files)
     {
@@ -108,7 +91,17 @@ void NetworkUpdater::_deleteFiles()
         }   // end if
     }   // end for
     _files.clear();
-}   // end _deleteFiles
+    _resetConnections();
+}   // end _resetDownloads
+
+
+void NetworkUpdater::_resetConnections()
+{
+    _isManifest = false;
+    for ( QNetworkReply *nr : _nconns)
+        nr->deleteLater();
+    _nconns.clear();
+}   // end _resetConnections
 
 
 QNetworkReply *NetworkUpdater::_startConnection( const QUrl &url, bool emitProgress)
@@ -138,7 +131,10 @@ void NetworkUpdater::_doOnDownloadProgress( QNetworkReply *nconn)
         if ( totalBytes >= 0)
             totalBytes += tbs;
     }   // end for
-    emit onDownloadProgress( bytesRecv, totalBytes);
+    double pcnt = -1;
+    if ( totalBytes > 0)
+        pcnt = 100.0 * double(bytesRecv) / totalBytes;
+    emit onDownloadProgress( pcnt);
 }   // end _doOnDownloadProgress
 
 
@@ -176,15 +172,6 @@ bool NetworkUpdater::_allRepliesFinished() const
 }   // end _allRepliesFinished
 
 
-void NetworkUpdater::_deleteConnections()
-{
-    _isManifest = false;
-    for ( QNetworkReply *nr : _nconns)
-        nr->deleteLater();
-    _nconns.clear();
-}   // end _deleteConnections
-
-
 void NetworkUpdater::_doOnReplyFinished( QNetworkReply *nconn)
 {
     bool ok = _err.isEmpty() && nconn->bytesAvailable() > 0;
@@ -192,9 +179,13 @@ void NetworkUpdater::_doOnReplyFinished( QNetworkReply *nconn)
     {
         if ( _isManifest)
         {
-            ok = _plist.parse( nconn->readAll());
-            _err = _plist.error();  // Will be empty if ok
-            _deleteConnections();
+            ok = _writeDataToFile( nconn);
+            if ( ok)
+            {
+                ok = _plist.parse( _files.first()->fileName());
+                _err = _plist.error();  // Will be empty if ok
+            }   // end if
+            _resetDownloads();
             if (ok)
             {
                 _updater.setAppTargetDir( _plist.appTargetDir());
@@ -205,9 +196,12 @@ void NetworkUpdater::_doOnReplyFinished( QNetworkReply *nconn)
         {
             for ( QNetworkReply *nc : _nconns)
                 ok |= _writeDataToFile( nc);
-            _deleteConnections();
+            _resetConnections();
             if ( ok)
-                emit onFinishedDownloadingUpdates();
+            {
+                emit onFinishedDownloading();
+                _startAppUpdater();
+            }   // end if
         }   // end else if
     }   // end if
 
@@ -215,7 +209,7 @@ void NetworkUpdater::_doOnReplyFinished( QNetworkReply *nconn)
     {
         if ( _err.isEmpty())
             _err = tr("Unable to connect to resource!");
-        _deleteConnections();
+        _resetDownloads();
         emit onError(_err);
     }   // end if
 }   // end _doOnReplyFinished
@@ -230,7 +224,7 @@ bool NetworkUpdater::_allUpdatesDownloaded() const
 }   // end _allUpdatesDownloaded
 
 
-bool NetworkUpdater::updateApp( const QString &appImageToolPath)
+bool NetworkUpdater::updateApp()
 {
     if ( isBusy())
     {
@@ -238,16 +232,46 @@ bool NetworkUpdater::updateApp( const QString &appImageToolPath)
         return false;
     }   // end if
 
-    if ( !_allUpdatesDownloaded())
+    if ( !isUpdateAvailable())
     {
-        _err = tr("Updates not yet downloaded!");
+        _err = tr("No update is available!");
         return false;
     }   // end if
 
-    // Note that this will prevent updating if running through a debugger...
-    if ( _updater.isAppImage() && !_updater.setAppImageToolPath( appImageToolPath))
+    _resetDownloads();
+
+    // If this is an AppImage app then immediately start downloading AND updating.
+    if ( _updater.isAppImage())
+        return _startAppUpdater();
+
+    // Otherwise we have to download all the updates first and start the updater later.
+    const QList<QUrl> urls = _plist.patchURLs();
+    for ( const QUrl &url : urls)
     {
-        _err = tr("Invalid appimagetool path given!");
+        _nconns.push_back( _startConnection( url, true/*emit progress updates*/));
+        _files.push_back( nullptr);  // Corresponding position of the file
+    }   // end for
+    return true;
+}   // end updateApp
+
+
+bool NetworkUpdater::_startAppUpdater()
+{
+    if ( !_updater.isPrivileged())
+    {
+        _err = tr("You don't have sufficient privileges to update!");
+        return false;
+    }   // end if
+
+    if ( isBusy())
+    {
+        _err = tr("Updater is busy!");
+        return false;
+    }   // end if
+
+    if ( !_allUpdatesDownloaded() && !_updater.isAppImage())
+    {
+        _err = tr("Updates not yet downloaded!");
         return false;
     }   // end if
 
@@ -257,16 +281,18 @@ bool NetworkUpdater::updateApp( const QString &appImageToolPath)
     _updater.setFiles( fnames);
     _updater.start();
     return true;
-}   // end updateApp
+}   // end _startAppUpdater
 
 
 void NetworkUpdater::_doOnFinishedUpdating( const QString &err)
 {
-    _deleteFiles();
+    _resetDownloads();
     if ( !err.isEmpty())
         emit onError( err);
     else
     {
+        if ( _updater.isAppImage())
+            emit onFinishedDownloading();
         _plist.setCurrentVersion( _plist.highestVersion());
         emit onFinishedUpdating();
     }   // end else

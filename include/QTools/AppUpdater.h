@@ -19,7 +19,6 @@
 #define QTOOLS_APP_UPDATER_H
 
 #include "QTools_Export.h"
-#include <QFileDevice>
 #include <QThread>
 
 namespace QTools {
@@ -27,52 +26,54 @@ namespace QTools {
 class AppUpdater : public QThread
 { Q_OBJECT
 public:
+    // Upon construction, records the application exe's path. Since later code
+    // may change the current working directory, this object should be instatiated
+    // as early as possible. By recording the application exe's path and comparing
+    // it on Linux to the execution environment we can tell if this application
+    // is an app image.
+    AppUpdater();
+    ~AppUpdater() override;
+
+    // Returns true if the user is allowed to update the app given their privileges.
+    bool isPrivileged() const;
+
+    // Returns true iff the running app is an AppImage.
+    bool isAppImage() const;
+
     // Provide a list of update/patch archive files. Files in archives
     // later in the list that are in earlier archives are ignored.
+    // Not necessary if the app is in AppImage format.
     void setFiles( const QStringList &files);
 
     // Set the directory to be updating specified as relative to
     // the application's directory path.
+    // Not necessary if the app is in AppImage format.
     void setAppTargetDir( const QString &relpath);
 
     // Specify the location where the original versions of files that
     // are being updated are moved to in the filesystem.
+    // Not necessary if the app is in AppImage format.
     void setDeleteDir( const QString &backStore);
 
-    // Record the path to the application exe. This should be done as
-    // early as possible in the execution of the application since its
-    // possible later code may change the PWD environment variable (on Linux).
-    // This function is used to record the command line executed application
-    // name (as opposed to the current file deemed the executable). This is
-    // so that we can determine later if this is being run from an AppImage.
-    bool recordAppExe();
-
-    // Set the path to the appimagetool used for repackaging updated AppImage.
-    // Returns true iff the given path is to an existing executable file.
-    bool setAppImageToolPath( const QString &filepath);
-
-    // Returns true iff the running app is an AppImage.
-    bool isAppImage();
-
 signals:
-    void onStartedExtraction();
-    void onStartedMovingFiles();
-    void onStartedRepackaging();    // Only emitted for AppImage versions.
-    void onFinished( const QString&);
+    void onAppImageUpdatePercent( double) const;
+    void onFinished( const QString&) const;
 
 private:
     void run() override;
 
-    bool _extractFiles();
-    void _repackageApp();
+    bool _updateFiles();
+    void _updateAppImage();
+    void _informProgress( double) const;
+
+    QString _appExe;
+    class AppImgUpdater;
+    AppImgUpdater *_appImgUpdater;
 
     QStringList _fpaths;
     QString _relPath;
     QString _oldRoot;
     QString _err;
-    QString _appImageTool;
-    QString _appExe;
-    QFileDevice::Permissions _appExePermissions;
 };  // end class
 
 }   // end namespace
