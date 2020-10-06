@@ -16,6 +16,8 @@ include_directories( ${INCLUDE_F})
 include_directories( ${INCLUDE_DIR})
 include_directories( ${PROJECT_BINARY_DIR}) # Req. for generated Qt form headers
 
+add_subdirectory("tools/rmv")
+
 set( SRC_FILES
     "${SRC_DIR}/AppUpdater.cpp"
     "${SRC_DIR}/ColourMappingWidget.cpp"
@@ -31,7 +33,6 @@ set( SRC_FILES
     "${SRC_DIR}/PluginUIPoints.cpp"
     "${SRC_DIR}/PolyDrawer.cpp"
     "${SRC_DIR}/QImageTools.cpp"
-    #"${SRC_DIR}/QProgressUpdater.cpp"
     "${SRC_DIR}/QUtils.cpp"
     "${SRC_DIR}/RangeMinMax.cpp"
     "${SRC_DIR}/RangeSlider.cpp"
@@ -59,7 +60,6 @@ set( QOBJECTS
     "${INCLUDE_F}/PluginsDialog.h"
     "${INCLUDE_F}/PluginsLoader.h"
     "${INCLUDE_F}/PolyDrawer.h"
-    #"${INCLUDE_F}/QProgressUpdater.h"
     "${INCLUDE_F}/RangeMinMax.h"
     "${INCLUDE_F}/RangeSlider.h"
     "${INCLUDE_F}/TreeComboBox.h"
@@ -103,4 +103,7 @@ qt5_add_resources( RESOURCE_FILE "${RCC_FILE}")
 
 add_library( ${PROJECT_NAME} ${SRC_FILES} ${QOBJECT_MOCS} ${INCLUDE_FILES} ${FORM_HEADERS} ${FORMS} ${RESOURCE_FILE} ${RCC_FILE})
 include( "cmake/LinkLibs.cmake")
-install( FILES "${PROJECT_SOURCE_DIR}/appimageupdatetool-x86_64.AppImage" DESTINATION "bin")
+
+if(UNIX)
+    install( PROGRAMS "${PROJECT_SOURCE_DIR}/appimagetool-x86_64.AppImage" DESTINATION "bin")
+endif()

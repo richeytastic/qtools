@@ -1,39 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <PatchList version="1.0">
-    <Application>MyApp</Application>    <!-- Name of the application being patched -->
-    <TargetDir>..</TargetDir>           <!-- Target directory for updates relative to application dir -->
+    <Application>MyApp</Application>
+    <TargetDir>..</TargetDir>
+    <Patches>
 
-    <Patch major="1" minor="0" patch="0">   <!-- Metadata for a single patch --> 
+        <Patch major="5" minor="2" patch="4">
+            <BaseURL>https://github.com/richeytastic/qtools/releases/download/v0.0.1</BaseURL>
+            <Description>
+                #### Version 5.2.4
+                - Testing patching mechanism with even newer files
+                - Some test text here
+                - And some more!
+            </Description>
+            <Platforms>
+                <Platform name="Linux">
+                    <Archive>patch_NEW.zip</Archive>
+                    <Modify>
+                        <File>patchdir/a/one/ax.txt</File>
+                        <File>patchdir/a/somefile.txt</File>
+                        <File>patchdir/a/two/az.txt</File>
+                        <File>patchdir/c/test.txt</File>
+                        <File>patchdir/d/newfile.txt</File>
+                        <File>patchdir/rawfile.txt</File>
+                    </Modify>
+                    <Remove>
+                    </Remove>
+                </Platform>
+            </Platforms>
+        </Patch>
 
-        <!-- Archive files specified for each platform use this as the base URL -->
-        <BaseURL>https://github.com/richeytastic/MyApp/releases/download/v1.0.0</BaseURL>
-    
-        <!-- Description of changes in this patch only -->
-        <Description>
-            ## Version 1.0.0
-            ### New Features
-            - Blah
-            ### Bug Fixes
-            - Blah
-        </Description>
+        <Patch major="5" minor="2" patch="3">
+            <BaseURL>https://github.com/richeytastic/qtools/releases/download/v0.0.1</BaseURL>
+            <Description>
+                #### Version 5.2.3
+                - Testing patching mechanism with new files
+                - Other test text
+                - Yet more text
+            </Description>
+            <Platforms>
+                <Platform name="Linux">
+                    <Archive>patch_OLD.zip</Archive>
+                    <Modify>
+                        <File>patchdir/a/one/ax.txt</File>
+                        <File>patchdir/a/one/ay.txt</File>
+                        <File>patchdir/a/somefile.txt</File>
+                        <File>patchdir/a/two/az.txt</File>
+                        <File>patchdir/b/somefile_b.txt</File>
+                        <File>patchdir/b/three/bx.txt</File>
+                        <File>patchdir/c/test.txt</File>
+                        <File>patchdir/rawfile.txt</File>
+                    </Modify>
+                    <Remove>
+                    </Remove>
+                </Platform>
+            </Platforms>
+        </Patch>
 
-        <Platform name="Linux">                         <!-- Platform to patch -->
-            <Archive>MyApp-x86_64.AppImage</Archive>    <!-- The archive containing patch files -->
-            <Manifest>                                  <!-- Files contained in the patch -->
-                <File>bin/myapp</File>
-            </Manifest>
-        </Platform>
-
-        <Platform name="Windows">
-            <Archive>patch-win32-x64.zip</Archive>
-            <Manifest>
-                <File>bin/myapp.exe</File>
-            </Manifest>
-        </Platform>
-
-    </Patch>
-
-    <!-- Patch versions can be in any order, but better if earlier patches are further down the file -->
-
+    </Patches>
 </PatchList>
-

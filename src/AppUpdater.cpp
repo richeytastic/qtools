@@ -22,9 +22,21 @@
 #include <QProcess>
 #include <iostream>
 using QTools::AppUpdater;
-#define APPIMAGEUPDATETOOL "appimageupdatetool-x86_64.AppImage"
+
+// To check file permissions on Windows
+#ifdef _WIN32
+extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
+#endif
+
+// static definitions
+QString AppUpdater::s_appImageTool = "";
+QString AppUpdater::s_fileMoveTool = "";
+void AppUpdater::setAppImageTool( const QString &v) { s_appImageTool = v;}
+void AppUpdater::setFileMoveTool( const QString &v) { s_fileMoveTool = v;}
+
 
 namespace {
+/*
 #ifdef _WIN32
 #include <Windows.h>
 BOOL isRunningAsAdmin()
@@ -82,186 +94,238 @@ bool isRoot()
 #endif
     return isr;
 }   // end isRoot
+*/
 
 
-QString now2OldThenNew2Now( const QString &oldRoot, const QString &nowRoot, const QString &newRoot)
+QString toolPath( const QString &atool)
 {
-    QString err;
-    const QStringList entries = QDir(newRoot).entryList( QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
-    for ( const QString &name : entries)
-    {
-        const QString oldpath = oldRoot + "/" + name;
-        const QString nowpath = nowRoot + "/" + name;
-        const QString newpath = newRoot + "/" + name;  // Exists (the temp location of extracted file)
-
-        if ( QFileInfo(newpath).isDir()) // Recurse if directory
-        {
-            QDir().mkpath(nowpath); // Ensuring it exists in the current path
-            err = now2OldThenNew2Now( oldpath, nowpath, newpath);
-        }   // end if
-        else
-        {
-            QFile newfile(newpath);
-            QFile nowfile(nowpath);
-
-            std::cerr << "Updating \"" << nowpath.toLocal8Bit().toStdString() << "\" ... ";
-
-            // If file exists, move to within the old directory since can't delete immediately
-            if ( nowfile.exists())
-            {
-                const QDir olddir(QFileInfo(oldpath).path());
-                if ( !olddir.exists() && !olddir.mkpath(olddir.path()))
-                {
-                    std::cerr << "FAILED (A)!" << std::endl;
-                    return QString("Couldn't create \"%1\"").arg(olddir.path());
-                }   // end if
-
-                if ( !nowfile.rename(oldpath))
-                {
-                    std::cerr << "FAILED (B)!" << std::endl;
-                    return QString("Couldn't move \"%1\" to \"%2\"").arg(nowpath).arg(oldpath);
-                }   // end if
-            }   // end if
-
-            if ( !newfile.rename(nowpath))
-            {
-                std::cerr << "FAILED (C)!" << std::endl;
-                return QString("Couldn't move \"%1\" to \"%2\"").arg(newpath).arg(nowpath);
-            }   // end if
-
-            std::cerr << "done" << std::endl;
-        }   // end else
-    }   // end for
-    return err;
-}   // end now2OldThenNew2Now
-}   // end namespace
+    const QFileInfo file(atool);
+    return file.exists( atool) && file.isExecutable() ? file.canonicalFilePath() : "";
+}   // end toolPath
 
 
-namespace QTools {
-
-#ifndef __linux__
-class AppUpdater::AppImgUpdater
+bool moveFilesAsRoot( const QString &tool, const QString &src, const QString &dst, const QString &bck)
 {
-public:
-    bool isAppImage() const { return false;}
-    bool onHomePath() const { return false;}
-    QString update() const { return "";}
-};  // end class
-#else
-class AppUpdater::AppImgUpdater
-{
-public:
-    AppImgUpdater()
-    {
-        QString appImg = qEnvironmentVariable("_");
-        // On Linux, recording the information below will give the location
-        // of the AppImage if the application is in that format while
-        // QCoreApplication::applicationFilePath() will return the exe
-        // in the temporary filesystem mounted by the AppImage.
-        if ( appImg[0] == ".")
-            appImg = qEnvironmentVariable("PWD") + "/" + appImg;
-        _appImgPath = QFileInfo(appImg).canonicalFilePath();
-    }   // end ctor
+    QString program = toolPath(tool);
+    if ( program.isEmpty())
+        return false;
 
-    const QString &appImagePath() const { return _appImgPath;}
-
-    QString update( AppUpdater *parent) const
-    {
-        QStringList args;
-        args << "-O" << "-r" << _appImgPath;
-        QProcess *uproc = new QProcess(parent);
-        uproc->start( APPIMAGEUPDATETOOL, args);
-        int pcnt = 0;
-        while ( uproc->state() != QProcess::NotRunning)
-        {
-            parent->_informProgress( pcnt);
-            pcnt = std::min( pcnt+1, 99);
-            uproc->waitForFinished( 200);
-        }   // end while
-        parent->_informProgress( 100.0);
-        QString err;
-        if ( uproc->exitStatus() != QProcess::NormalExit || uproc->exitCode() != 0)
-            err = QObject::tr("Unable to finish updating with appimageupdatetool!");
-        delete uproc;
-        return err;
-    }   // end update
-
-private:
-    QString _appImgPath;
-};  // end class
+    QStringList args;
+#ifdef __linux__
+    args << program << src << dst << bck;
+    program = "pkexec";
+#elif _WIN32
+    args << "-Command" << "Start-Process"
+         << QString("'%1'").arg(program)
+         << QString("'\"%1\" \"%2\" \"%3\"'").arg(src).arg(dst).arg(bck)
+         << "-Verb" << "runAs";
+    program = "powershell";
 #endif
+    return QProcess::execute( program, args) == 0;
+}   // end moveFilesAsRoot
+
+
+bool repackAppImage( const QString &tool, const QString &appDir, const QString &outAppImage)
+{
+    const QString appImgTool = toolPath(tool);
+    if ( appImgTool.isEmpty())
+        return false;
+
+    QTemporaryDir tdir;
+    if ( !tdir.isValid())
+        return false;
+
+    const QString repackfile = tdir.filePath("repacked.AppImage");
+
+    QStringList args;
+    args << "-n" << appDir << repackfile;
+    if ( QProcess::execute( appImgTool, args) != 0)
+        return false;
+
+    return QFile( repackfile).rename( outAppImage);
+}   // end repackAppImage
 }   // end namespace
 
 
-AppUpdater::AppUpdater() : _appImgUpdater( new AppUpdater::AppImgUpdater)
+AppUpdater::AppUpdater()
 {
-    _appExe = QFileInfo(QCoreApplication::applicationFilePath()).canonicalFilePath();
+    _appFilePath = QCoreApplication::applicationFilePath();
+    // On Linux, recording the information below will give the location
+    // of the AppImage if the application is in that format while
+    // QCoreApplication::applicationFilePath() returns the exe
+    // in the temporary filesystem mounted by the AppImage.
+    // This gives a method to check if the application is AppImage.
+#ifdef __linux__
+    QString appImg = qEnvironmentVariable("_");
+    if ( appImg[0] == ".")
+        appImg = qEnvironmentVariable("PWD") + "/" + appImg;
+    _appFilePath = QFileInfo(appImg).canonicalFilePath();
+    //std::cerr << "AppFilePath: " << _appFilePath.toLocal8Bit().toStdString() << std::endl;
+#endif
 }   // end ctor
 
 
-AppUpdater::~AppUpdater() { delete _appImgUpdater;}
-
-
-bool AppUpdater::isAppImage() const { return _appImgUpdater->appImagePath() != _appExe;}
-
-
-void AppUpdater::setFiles( const QStringList &fns) { _fpaths = fns;}
-void AppUpdater::setAppTargetDir( const QString &rp) { _relPath = rp;}
-void AppUpdater::setDeleteDir( const QString &oldRoot) { _oldRoot = oldRoot;}
-
-
-bool AppUpdater::isPrivileged() const
+bool AppUpdater::_isAppImage() const
 {
-    const QString &app = isAppImage() ? _appImgUpdater->appImagePath() : _appExe;
-    return app.startsWith( QDir::homePath()) || isRoot();
-}   // end isPrivileged
+#ifdef _WIN32
+    return false;
+#endif
+    return QCoreApplication::applicationFilePath() != _appFilePath;
+}   // end _isAppImage
 
 
-void AppUpdater::_informProgress( double pcnt) const
+void AppUpdater::setAppPatchDir( const QString &rp) { _relPath = rp;}
+
+
+bool AppUpdater::update( const QStringList &fns)
 {
-    emit onAppImageUpdatePercent( pcnt);
-}   // end _informProgress
+    if ( _isAppImage() && toolPath(s_appImageTool).isEmpty())
+    {
+        _err = tr("Missing AppImageTool!");
+        return false;
+    }   // end if
+
+    _fpaths = fns;
+    if ( _fpaths.isEmpty())
+    {
+        _err = tr("No update files provided!");
+        return false;
+    }   // end if
+
+    start();
+    return true;
+}   // end update
 
 
 void AppUpdater::run()
 {
-    _err = QString();
-    // Always remove old update directories if they exist.
-    if ( QFileInfo(_oldRoot).exists() && !QDir(_oldRoot).removeRecursively())
-        _err = tr("Couldn't delete \"%1\"!").arg(_oldRoot);
-    if ( _err.isEmpty())
+    emit onExtracting();
+    QTemporaryDir extractDir;
+    if ( !extractDir.isValid())
+        return _failFinish( "Unable to create temporary directory for extraction!");
+
+    const QString extractPath = extractDir.path();
+    std::cerr << "Extracting archives..." << std::endl;
+    if ( !_extractFiles( extractPath))
+        return _failFinish( "Failed to extract archive!");
+
+    emit onUpdating();
+
+    // If this is an AppImage the application files are mounted as a read-only filesystem
+    // so we have to copy everything to a new location to update there before repackaging.
+    QString appDir = QCoreApplication::applicationDirPath();
+
+    QTemporaryDir *newAppDir = nullptr;
+    QString newAppDirPath;
+    if ( _isAppImage())
     {
-        if ( isAppImage())
-            _err = _appImgUpdater->update( this);
-        else
-            _updateFiles();
+        newAppDir = new QTemporaryDir;
+        if ( !newAppDir->isValid())
+        {
+            delete newAppDir;
+            return _failFinish( "Unable to create temporary directory for new AppDir!");
+        }   // end if
+
+        newAppDirPath = newAppDir->path();
+
+        const QString appImgDir = QDir( appDir + "/../..").canonicalPath();
+        std::cerr << "Copying " << appImgDir.toStdString() << " to " << newAppDirPath.toStdString() << std::endl;
+        if ( QProcess::execute( "cp", {"-r", appImgDir, newAppDirPath}) != 0)
+        {
+            delete newAppDir;
+            return _failFinish( "Failed to copy app dir to temp dir!");
+        }   // end if
+        appDir = QDir( newAppDirPath + "/usr/bin").canonicalPath();
+        std::cerr << "New binary directory: " << appDir.toLocal8Bit().toStdString() << std::endl;
     }   // end if
+
+    const QString patchDir = QDir( appDir + "/" + _relPath).canonicalPath();
+
+    static const QString appName = QCoreApplication::applicationName();
+    static const QString backupPath = QDir::tempPath() + QString("/%1_update_backup").arg(appName);
+    QDir( backupPath).removeRecursively();  // Remove this directory if present
+
+    std::cerr << "Patching directory: " << patchDir.toLocal8Bit().toStdString() << std::endl;
+
+    // Write into the application patch directory if we have permission.
+    // Otherise invoke via detached process to allow OS to request permission.
+    if ( QFile::permissions( patchDir) & QFileDevice::WriteUser)
+    {
+        if ( !moveFiles( extractPath, patchDir, backupPath))
+        {
+            moveFiles( backupPath, patchDir, extractPath);   // Restore
+            return _failFinish( "Failed to update files!");
+        }   // end if
+    }   // end if
+    else
+    {
+        std::cerr << "No permissions - invoking " << s_fileMoveTool.toLocal8Bit().toStdString() << std::endl;
+        if ( !moveFilesAsRoot( s_fileMoveTool, extractPath, patchDir, backupPath))
+            return _failFinish( "Failed to update files in separate process!");
+    }   // end else
+
+    emit onRepacking();
+
+    // Repackage the updated application directory as an AppImage?
+    if ( _isAppImage())
+    {
+        std::cerr << "Repacking AppImage..." << std::endl;
+        if ( !repackAppImage( s_appImageTool, newAppDirPath, _appFilePath))
+        {
+            delete newAppDir;
+            return _failFinish( "Failed to repack AppImage!");
+        }   // end if
+        delete newAppDir;
+    }   // end if
+
+    std::cerr << "Finished" << std::endl;
+
     emit onFinished( _err);
 }   // end run
 
 
-bool AppUpdater::_updateFiles()
+void AppUpdater::_failFinish( const char *err)
+{
+    _err = tr(err);
+    emit onFinished(err);
+}   // end _failFinish
+
+
+bool AppUpdater::_extractFiles( const QString &extractDir) const
 {
     // Extract all files from each archive into the same temporary directory
     // in reverse order. This ensures that the newer files with the same names
     // clobber the older files with the same names.
-    QTemporaryDir newRoot;
-    std::cerr << "Extracting archives..." << std::endl;
     for ( int i = _fpaths.size() - 1; i >= 0; --i)
     {
-        QStringList flst = JlCompress::extractDir( _fpaths.at(i), newRoot.path());
-        const bool extractedOkay = flst.size() > 0;
-        if ( !extractedOkay)
-        {
-            std::cerr << "Failed to extract archive!" << std::endl;
-            _err = tr("Failed to extract archive!");
+        const QStringList flst = JlCompress::extractDir( _fpaths.at(i), extractDir);
+        if ( flst.size() == 0)
             return false;
-        }   // end if
     }   // end for
+    return true;
+}   // end _extractFiles
 
-    std::cerr << "Moving files..." << std::endl;
-    const QString nowRoot = QFileInfo( QCoreApplication::applicationDirPath() + "/" + _relPath).canonicalFilePath();
-    _err = now2OldThenNew2Now( _oldRoot, nowRoot, newRoot.path());
-    return _err.isEmpty();
-}   // end _updateFiles
+
+bool QTools::moveFiles( const QString &src, const QString &dst, const QString &bck)
+{
+    bool ok = true;
+    if ( QFileInfo(src).isDir())
+    {
+        QDir().mkpath(dst); // Does nothing if already exists
+        QDir().mkpath(bck); // Does nothing if already exists
+        for ( const QString &nm : QDir(src).entryList( QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot))
+            if ( !(ok = moveFiles( src + "/" + nm, dst + "/" + nm, bck + "/" + nm)))
+                break;
+        if ( ok)
+            ok = QDir().rmdir(src); // Remove the source directory
+    }   // end if
+    else
+    {
+        if ( QFileInfo::exists(dst))
+            ok = QFile(dst).rename(bck);
+        if ( ok)
+            ok = QFile(src).rename(dst);
+    }   // end else
+    return ok;
+}   // end moveFiles
 

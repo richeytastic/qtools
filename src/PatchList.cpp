@@ -90,14 +90,14 @@ std::string extractFile( const QString &zipfile)
 
     if ( xmlpath.isEmpty() || !xmlpath.endsWith(".xml"))
     {
-        std::cerr << "Couldn't find XML file in archive!" << std::endl;
+        std::cerr << "[WARNING] QTools::PatchList: Couldn't find XML file in archive!" << std::endl;
         return "";
     }   // end if
 
     QFile file( xmlpath);
     if ( !file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        std::cerr << "Couldn't open " << xmlpath.toStdString() << " for reading!" << std::endl;
+        std::cerr << "[WARNING] QTools::PatchList: Couldn't open " << xmlpath.toStdString() << " for reading!" << std::endl;
         return "";
     }   // end if
 
@@ -208,7 +208,7 @@ void PatchList::_cullForDuplicateFiles()
         // in the existing fileset from more recent patches.
         if ( fileset.size() > fsize)
         {
-            std::cerr << "Using patch " << pm.major() << "." << pm.minor() << "." << pm.patch() << std::endl;
+            std::cerr << "[INFO] QTools::PatchList: Using patch " << pm.major() << "." << pm.minor() << "." << pm.patch() << std::endl;
             npatches.push_back(pm);
         }   // end if
     }   // end for
@@ -266,7 +266,7 @@ bool PatchList::_parsePatchMeta( const PTree &pnode)
     // If the parsed patch version is <= than current, just return true.
     if ( meta <= _currv)
     {
-        std::cerr << QString("Ignoring patch %1.%2.%3")
+        std::cerr << QString("[INFO] QTools::PatchList: Ignoring patch %1.%2.%3")
                 .arg(meta.major()).arg(meta.minor()).arg(meta.patch()).toStdString() << std::endl;
         return true;
     }   // end if

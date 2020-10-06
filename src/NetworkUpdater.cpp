@@ -25,7 +25,7 @@ using QTools::NetworkUpdater;
 using PTree = boost::property_tree::ptree;
 
 
-NetworkUpdater::NetworkUpdater( const QUrl &url, const QString &olddir, int tmsecs, int mr)
+NetworkUpdater::NetworkUpdater( const QUrl &url, int tmsecs, int mr)
     : _manifestUrl(url), _nman( nullptr), _isManifest(false)
 {
     _nman = new QNetworkAccessManager(this);
@@ -35,8 +35,6 @@ NetworkUpdater::NetworkUpdater( const QUrl &url, const QString &olddir, int tmse
     _templateReq.setMaximumRedirectsAllowed( mr);
     _templateReq.setTransferTimeout( tmsecs);
 
-    _updater.setDeleteDir( olddir);
-    connect( &_updater, &AppUpdater::onAppImageUpdatePercent, this, &NetworkUpdater::onDownloadProgress);
     connect( &_updater, &AppUpdater::onFinished, this, &NetworkUpdater::_doOnFinishedUpdating);
 }   // end ctor
 
@@ -44,7 +42,6 @@ NetworkUpdater::NetworkUpdater( const QUrl &url, const QString &olddir, int tmse
 NetworkUpdater::~NetworkUpdater() { delete _nman;}
 
 
-bool NetworkUpdater::isPrivileged() const { return _updater.isPrivileged();}
 bool NetworkUpdater::isBusy() const { return !_nconns.isEmpty() || _updater.isRunning();}
 
 
@@ -56,11 +53,13 @@ bool NetworkUpdater::refreshManifest( int mj, int mn, int pt)
         return false;
     }   // end if
 
+    /*
     if ( !isPrivileged())
     {
         _err = tr("User has insufficient privileges!");
         return false;
     }   // end if
+    */
 
     _plist.setCurrentVersion( mj, mn, pt);  // Can't be set lower
     _resetDownloads();
@@ -188,7 +187,7 @@ void NetworkUpdater::_doOnReplyFinished( QNetworkReply *nconn)
             _resetDownloads();
             if (ok)
             {
-                _updater.setAppTargetDir( _plist.appTargetDir());
+                _updater.setAppPatchDir( _plist.appTargetDir());
                 emit onRefreshedManifest();
             }   // end else
         }   // end if
@@ -240,10 +239,6 @@ bool NetworkUpdater::updateApp()
 
     _resetDownloads();
 
-    // If this is an AppImage app then immediately start downloading AND updating.
-    if ( _updater.isAppImage())
-        return _startAppUpdater();
-
     // Otherwise we have to download all the updates first and start the updater later.
     const QList<QUrl> urls = _plist.patchURLs();
     for ( const QUrl &url : urls)
@@ -257,11 +252,13 @@ bool NetworkUpdater::updateApp()
 
 bool NetworkUpdater::_startAppUpdater()
 {
+    /*
     if ( !_updater.isPrivileged())
     {
         _err = tr("You don't have sufficient privileges to update!");
         return false;
     }   // end if
+    */
 
     if ( isBusy())
     {
@@ -269,7 +266,7 @@ bool NetworkUpdater::_startAppUpdater()
         return false;
     }   // end if
 
-    if ( !_allUpdatesDownloaded() && !_updater.isAppImage())
+    if ( !_allUpdatesDownloaded())
     {
         _err = tr("Updates not yet downloaded!");
         return false;
@@ -278,8 +275,7 @@ bool NetworkUpdater::_startAppUpdater()
     QStringList fnames;
     for ( const QTemporaryFile *file : _files)
         fnames.append( file->fileName());
-    _updater.setFiles( fnames);
-    _updater.start();
+    _updater.update( fnames);
     return true;
 }   // end _startAppUpdater
 
@@ -291,8 +287,6 @@ void NetworkUpdater::_doOnFinishedUpdating( const QString &err)
         emit onError( err);
     else
     {
-        if ( _updater.isAppImage())
-            emit onFinishedDownloading();
         _plist.setCurrentVersion( _plist.highestVersion());
         emit onFinishedUpdating();
     }   // end else

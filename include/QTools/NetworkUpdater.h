@@ -29,16 +29,11 @@ class QTools_EXPORT NetworkUpdater : public QObject
 { Q_OBJECT
 public:
     /**
-     * Provide the URL of the patch list manifest to use, and where old files
-     * are moved to when performing an update. Default network timeout is
-     * 10 seconds and a maximum of 5 redirects are allowed.
+     * Provide the URL of the patch list manifest to use.
+     * Default network timeout is 10 seconds and a maximum of 5 redirects are allowed.
      */
-    NetworkUpdater( const QUrl& manifestUrl, const QString &oldDirPath,
-                    int timeoutMsecs=10000, int maxRedirects=5);
+    NetworkUpdater( const QUrl& manifestUrl, int timeoutMsecs=10000, int maxRedirects=5);
     ~NetworkUpdater() override;
-
-    // Returns true iff user has sufficient privileges to perform update.
-    bool isPrivileged() const;
 
     // Returns true iff a network connection is active or an update is ongoing.
     bool isBusy() const;
