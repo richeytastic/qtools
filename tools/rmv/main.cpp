@@ -19,7 +19,7 @@
 #include <QFileInfo>
 #include <iostream>
 
-
+namespace {
 bool moveFiles( const QString &src, const QString &dst, const QString &bck)
 {
     bool ok = true;
@@ -44,13 +44,31 @@ bool moveFiles( const QString &src, const QString &dst, const QString &bck)
 }   // end moveFiles
 
 
+void printHelp()
+{
+    std::cerr << "Use this tool ONLY with QTools::FileIO::moveFilesAsRoot." << std::endl;
+    std::cerr << "Set QTools::FileIO::FILE_MOVE_TOOL with this tool's path." << std::endl;
+}   // end printHelp
+
+
+// Validity checking string to ensure we have the right tool
+bool isValidChk( const QString &chk)
+{
+    return chk == ",.afdf63,f803c,,3b[]()";
+}   // end isValidChk
+}   // end namespace
+
+
 int main( int argc, char *argv[])
 {
-    if ( argc < 3)
+    if ( argc >= 2 && std::string(argv[1]) == "--help")
     {
-        std::cerr << "Pass in source and destination and optionally, a backup location!" << std::endl;
+        printHelp();
         return EXIT_FAILURE;
     }   // end if
+
+    if ( argc != 5 || !isValidChk( argv[4]))
+        return EXIT_FAILURE;
 
     const QString src = argv[1];
     if (!QFileInfo::exists(src))
@@ -59,25 +77,20 @@ int main( int argc, char *argv[])
         return EXIT_FAILURE;
     }   // end if
 
-    int exitCode = EXIT_SUCCESS;
     const QString dst = argv[2];
 
-    QTemporaryDir tmpBckDir;    // Default backup location
-    QString bck = tmpBckDir.path();
-    if ( argc > 3)  // User specified backup location?
+    const QString bck = argv[3];
+    if (QFileInfo::exists(bck))
     {
-        bck = argv[3];
-        if (QFileInfo::exists(bck))
-        {
-            std::cerr << "Specified backup location must not already exist!" << std::endl;
-            return EXIT_FAILURE;
-        }   // end if
+        std::cerr << "Backup location must not already exist!" << std::endl;
+        return EXIT_FAILURE;
     }   // end if
 
+    int exitCode = EXIT_SUCCESS;
     if ( !moveFiles( src, dst, bck))
     {
         exitCode = EXIT_FAILURE;
-        std::cerr << "Move failed! Restoring..." << std::endl;
+        std::cerr << "Restoring failed move!" << std::endl;
         if (!moveFiles( bck, dst, src))
         {
             std::cerr << "Restore failed!" << std::endl;
@@ -87,3 +100,4 @@ int main( int argc, char *argv[])
 
     return exitCode;
 }   // end main
+

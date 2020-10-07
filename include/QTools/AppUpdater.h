@@ -23,15 +23,6 @@
 
 namespace QTools {
 
-// Recursively move files and directories from src to dst placing any
-// existing destination files in the given backup location (bck).
-// Returns true on successful move of src files to dst and the files
-// at the backup location may be discarded. If this function returns
-// false, call this function again with the src and bck parameters
-// swapped to effect restoration.
-QTools_EXPORT bool moveFiles( const QString &src, const QString &dst, const QString &bck);
-
-
 class QTools_EXPORT AppUpdater : public QThread
 { Q_OBJECT
 public:
@@ -51,28 +42,23 @@ public:
     // Returns immediately and will fire onFinished when updating is complete.
     bool update( const QStringList &files);
 
-    // Set the path to the appimagetool-x86_64.AppImage
-    static void setAppImageTool( const QString&);
-    // Set the path to the file move tool (rmv)
-    static void setFileMoveTool( const QString&);
-
 signals:
     void onExtracting() const;
     void onUpdating() const;
-    void onRepacking() const; // Only for AppImage versions
+    void onRepacking() const; // Only emitted for AppImage versions
     void onFinished( const QString&) const;
 
 private:
     void run() override;
     bool _isAppImage() const;
     bool _extractFiles( const QString&) const;
+    bool _updateFiles( const QString&, const QString&, const QString&) const;
+    bool _repackAppImage( const QString&, const QString&, const QString&) const;
     void _failFinish( const char*);
     QString _appFilePath;
     QStringList _fpaths;
     QString _relPath;
     QString _err;
-    static QString s_appImageTool;
-    static QString s_fileMoveTool;
 };  // end class
 
 }   // end namespace

@@ -21,6 +21,7 @@ add_subdirectory("tools/rmv")
 set( SRC_FILES
     "${SRC_DIR}/AppUpdater.cpp"
     "${SRC_DIR}/ColourMappingWidget.cpp"
+    "${SRC_DIR}/FileIO.cpp"
     "${SRC_DIR}/HelpAssistant.cpp"
     "${SRC_DIR}/HelpBrowser.cpp"
     #"${SRC_DIR}/ImagerWidget.cpp"
@@ -72,6 +73,7 @@ set( QOBJECTS
 set( INCLUDE_FILES
     "${QOBJECTS}"
     "${INCLUDE_F}.h"
+    "${INCLUDE_F}/FileIO.h"
     "${INCLUDE_F}/HelpAssistant.h"
     "${INCLUDE_F}/KeyPressHandler.h"
     "${INCLUDE_F}/PatchList.h"
