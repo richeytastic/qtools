@@ -19,6 +19,8 @@
 #include <QProcess>
 #include <QFileInfo>
 #include <QTemporaryDir>
+#include <QTemporaryFile>
+#include <QTextStream>
 #include <iostream>
 
 #ifdef __linux__    // For getuid and geteuid
@@ -90,6 +92,39 @@ bool _copyFiles( const QString &src, const QString &dst, QList<QFileInfo> &symLi
     return ok;
 }   // end _copyFiles
 
+/*
+void _writeTestFile( const QStringList &slst)
+{
+    QFile tfile( QDir( QDir::home()).filePath( "test_file.txt"));
+    tfile.remove();
+    tfile.open( QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream out(&tfile);
+    for ( const QString &s : slst)
+        out << s << Qt::endl;
+    out.flush();
+    tfile.close();
+}   // end _writeTestFile
+*/
+
+
+QString _checkSwapFiles( const QString &fnew, const QString &fcur, const QString &fold)
+{
+    /*
+    _writeTestFile( {QString( "FNEW: %1").arg(fnew),
+                    QString( "FCUR: %1").arg(fcur),
+                    QString( "FOLD: %1").arg(fold)});
+    */
+
+    if ( QFileInfo::exists( fold))
+        return "Rename path already exists!";
+    if ( !QFileInfo::exists( fcur))
+        return "Current file path does not exist!";
+    if ( !QFileInfo::exists( fnew))
+        return "New file path does not exist!";
+    return "";
+}   // end _checkSwapFiles
+
+
 }   // end namespace
 
 
@@ -108,11 +143,17 @@ bool QTools::FileIO::copyFiles( const QString &src, const QString &dst, bool noc
     for ( const QFileInfo &sinfo : symLinks)
     {
         QString lnkSrc = sinfo.absoluteFilePath();
+        QString lnkTgt = sinfo.symLinkTarget();
+
         lnkSrc.replace( sAbsPth, dAbsPth);  // lnkSrc will end with ".lnk" on Windows
 
         // The link target may not be inside src - if so this replacement has no effect.
-        QString lnkTgt = QFileInfo( sinfo.symLinkTarget()).absoluteFilePath();
+        // lnkTgt is assumed to be inside src, but the target path might include src
+        // so replace. This will have no effect if src is not in the target path.
         lnkTgt.replace( sAbsPth, dAbsPth);
+
+        // Finally, ensure the target is relative to the destination.
+        lnkTgt = QDir( dAbsPth).relativeFilePath( lnkTgt);
 
         if ( !QFile::link( lnkTgt, lnkSrc))
             return false;
@@ -147,6 +188,59 @@ bool QTools::FileIO::moveFiles( const QString &src, const QString &dst, const QS
 
     return ok;
 }   // end moveFiles
+
+
+QString QTools::FileIO::swapOverFiles( const QString &fnew, const QString &fcur, const QString &fold)
+{
+    const QString err = _checkSwapFiles( fnew, fcur, fold);
+    if ( !err.isEmpty())
+        return err;
+    if ( !QFile::rename( fcur, fold))
+        return "Failed to move current file to old!";
+    if ( !QFile::rename( fnew, fcur))
+        return "Failed to move new to current!";
+    return "";
+}   // end swapOverFiles
+
+
+QString QTools::FileIO::swapOverFilesAsRoot( const QString &fnew, const QString &fcur, const QString &fold)
+{
+#ifdef _WIN32
+    return "FUNCTION DEFINED ONLY FOR LINUX!";
+#endif
+
+    const QString err = _checkSwapFiles( fnew, fcur, fold);
+    if ( !err.isEmpty())
+        return err;
+
+    // Create a temporary bash script to perform the shuffle
+    QTemporaryDir tdir;
+    if ( !tdir.isValid())
+        return "Unable to create temporary directory!";
+
+    QFile tfile( tdir.filePath("swapfiles.sh"));
+    if ( !tfile.open(QIODevice::WriteOnly | QIODevice::Text))
+        return "Unable to open script file!";
+
+    const QString afnew = QFileInfo( fnew).absoluteFilePath();
+    const QString afcur = QFileInfo( fcur).absoluteFilePath();
+    const QString afold = QFileInfo( fold).absoluteFilePath();
+
+    QTextStream out(&tfile);
+    out << "#!/usr/bin/env sh" << Qt::endl;
+    out << "mv " << afcur << " " << afold << Qt::endl;
+    out << "mv " << afnew << " " << afcur << Qt::endl;
+    out << "exit 0" << Qt::endl;
+    out.flush();
+    tfile.close();
+
+    if ( !tfile.setPermissions( tfile.permissions() | QFileDevice::ExeOwner | QFileDevice::ExeOther | QFileDevice::ExeGroup))
+        return "Unable to set executable permissions on temporary file for script!";
+
+    const QString scriptFile = QFileInfo( tfile.fileName()).absoluteFilePath();
+    const bool ok = QProcess::execute( "pkexec", {scriptFile}) == 0;
+    return ok ? "" : "Process execution failed!";
+}   // end swapOverFilesAsRoot
 
 
 namespace {
@@ -221,10 +315,77 @@ bool QTools::FileIO::isRoot()
 }   // end isRoot
 
 
-bool QTools::FileIO::canWrite( const QString &path)
+QString QTools::FileIO::username()
 {
-    return QFileInfo::exists( path) && (QFile::permissions(path) & QFileDevice::WriteUser);
-}   // end canWrite
+    QString user;
+    // Use the following methods which are more reliable than
+    // accessing environment variables user (UNIX) or username (Windows)
+#ifdef _WIN32
+    char wuname[256];
+    DWORD nuname = sizeof(wuname);
+    if (GetUserName(wuname, &nuname))
+        user = wuname;
+#elif __linux__
+    QProcess process;
+    process.setProcessChannelMode( QProcess::MergedChannels);
+    process.start("whoami");
+    if ( process.waitForFinished(-1))
+        user = process.readAllStandardOutput();
+#endif
+    return user.trimmed();
+}   // end username
+
+
+bool QTools::FileIO::inHomeDir( const QString &path)
+{
+    return QFileInfo(path).canonicalFilePath().startsWith( QDir::homePath());
+}   // end inHomeDir
+
+
+namespace {
+void appendPermChar( QString &fper, QChar c,
+        const QFileDevice::Permissions p, const QFileDevice::Permissions ps)
+{
+    if ( ps & p)
+        fper.append(c);
+    else
+        fper.append('-');
+}   // end appendPermChar
+}   // end namespace
+
+
+QString QTools::FileIO::permissionsString( const QString &path)
+{
+    const QFileDevice::Permissions perms = QFile::permissions(path);
+    QString fper;
+    appendPermChar( fper, 'r', QFileDevice::ReadOwner, perms);
+    appendPermChar( fper, 'w', QFileDevice::WriteOwner, perms);
+    appendPermChar( fper, 'x', QFileDevice::ExeOwner, perms);
+    appendPermChar( fper, 'r', QFileDevice::ReadGroup, perms);
+    appendPermChar( fper, 'w', QFileDevice::WriteGroup, perms);
+    appendPermChar( fper, 'x', QFileDevice::ExeGroup, perms);
+    appendPermChar( fper, 'r', QFileDevice::ReadOther, perms);
+    appendPermChar( fper, 'w', QFileDevice::WriteOther, perms);
+    appendPermChar( fper, 'x', QFileDevice::ExeOther, perms);
+    return fper;
+}   // end permissionsString
+
+
+bool QTools::FileIO::packAppImage( const QString &appDir, const QString &repackfile)
+{
+    const QString appImgTool = toolPath(APP_IMAGE_TOOL);
+    if ( appImgTool.isEmpty())
+        return false;
+
+    QStringList args;
+    args << "-n" << appDir << repackfile;
+    QProcess proc;
+    proc.setStandardOutputFile( QProcess::nullDevice());
+    //proc.setProcessChannelMode( QProcess::ForwardedChannels);
+    proc.start( appImgTool, args);
+    return proc.waitForFinished(-1);
+    //const int oval = QProcess::execute( appImgTool, args);
+}   // end packAppImage
 
 
 bool QTools::FileIO::moveFilesAsRoot( const QString &src, const QString &dst, const QString &bck)
@@ -250,14 +411,3 @@ bool QTools::FileIO::moveFilesAsRoot( const QString &src, const QString &dst, co
 
     return QProcess::execute( program, args) == 0;
 }   // end moveFilesAsRoot
-
-
-bool QTools::FileIO::packAppImage( const QString &appDir, const QString &repackfile)
-{
-    const QString appImgTool = toolPath(APP_IMAGE_TOOL);
-    if ( appImgTool.isEmpty())
-        return false;
-    QStringList args;
-    args << "-n" << appDir << repackfile;
-    return QProcess::execute( appImgTool, args) == 0;
-}   // end packAppImage

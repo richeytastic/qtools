@@ -22,22 +22,72 @@
 #include <iostream>
 using QTools::AppUpdater;
 
+namespace {
+
+using namespace QTools;
+/*
+void _printFileInfo( const QString &pth)
+{
+    const QFileInfo finfo( pth);
+    const QString owner = finfo.owner();
+    const QString group = finfo.group();
+    const QString rights = FileIO::permissionsString( pth);
+    std::cerr << "FilePath:    " << pth.toLocal8Bit().toStdString() << std::endl;
+    std::cerr << "   Owner:    " << owner.toStdString() << std::endl;
+    std::cerr << "   Group:    " << group.toStdString() << std::endl;
+    std::cerr << "   Rights:   " << rights.toStdString() << std::endl;
+    std::cerr << "   In home:  " << std::boolalpha << FileIO::inHomeDir( pth) << std::endl;
+    std::cerr << "   Is owner: " << std::boolalpha << (owner == FileIO::username()) << std::endl;
+}   // end _printFileInfo
+*/
+
+bool _isFileAllowed( const QString &f, const QString &username)
+{
+    return FileIO::inHomeDir(f) || (QFileInfo(f).owner() == username);
+}   // end _isAllowed
+
+
+bool _isAllowed( const QStringList &flist)
+{
+    const QString username = FileIO::username();
+    for ( const QString &f : flist)
+        if ( !_isFileAllowed( f, username))
+            return false;
+    return true;
+}   // end _isAllowed
+
+
+bool _updateFiles( const QString &src, const QString &tgt, const QString &bck)
+{
+    std::cerr << "[INFO] QTools::AppUpdater: Updating \"" << tgt.toLocal8Bit().toStdString() << "\"" << std::endl;
+    // Write directly directory if we have permission. Otherwise
+    // invoke via process to allow OS to request permissions.
+    bool ok = true;
+    if ( FileIO::isRoot() || _isAllowed( {src, tgt}))
+        ok = FileIO::moveFiles( src, tgt, bck);
+    else
+        ok = FileIO::moveFilesAsRoot( src, tgt, bck);
+
+    if ( !ok)
+        std::cerr << "[WARNING] QTools::AppUpdater: Unable to update - file locks?" << std::endl;
+    return ok;
+}   // end _updateFiles
+}   // end namespace
+
 
 AppUpdater::AppUpdater()
 {
     _appFilePath = QCoreApplication::applicationFilePath();
-    // On Linux, recording the information below will give the location
-    // of the AppImage if the application is in that format while
-    // QCoreApplication::applicationFilePath() returns the exe
-    // in the temporary filesystem mounted by the AppImage.
+    // On Linux, recording the information below gives the location of the AppImage
+    // if the application is in that format while QCoreApplication::applicationFilePath()
+    // returns the exe in the temporary filesystem mounted by the AppImage.
     // This gives a method to check if the application is AppImage.
 #ifdef __linux__
-    QString appImg = qEnvironmentVariable("_");
-    if ( appImg[0] == ".")
-        appImg = qEnvironmentVariable("PWD") + "/" + appImg;
-    _appFilePath = QFileInfo(appImg).canonicalFilePath();
-    //std::cerr << "AppFilePath: " << _appFilePath.toLocal8Bit().toStdString() << std::endl;
+    QFile cmdline("/proc/self/cmdline");
+    if ( cmdline.open(QIODevice::ReadOnly | QIODevice::Text))
+        _appFilePath = QFileInfo( QString( cmdline.readAll()).trimmed()).canonicalFilePath();
 #endif
+    //std::cerr << "AppFilePath: " << _appFilePath.toLocal8Bit().toStdString() << std::endl;
 }   // end ctor
 
 
@@ -77,12 +127,13 @@ void AppUpdater::run()
 {
     // Create the scratch directory and required entries
     static const QString APP_NAME = QCoreApplication::applicationName();
-    static const QString SCRATCH_DIR = QDir::tempPath() + QString("/%1_safe_to_delete").arg(APP_NAME);
+    // The scratch directory has the application and the username since
+    // if multiple users have their own version of the application this
+    // allows different backup directories to exist alongside each other.
+    static const QString SCRATCH_DIR = QDir::tempPath() + QString("/%1_%2_safe_to_delete").arg(APP_NAME).arg(FileIO::username());
     static const QString BACKUPS_DIR = SCRATCH_DIR + "/Backups";
     static const QString EXTRACT_DIR = SCRATCH_DIR + "/Extract";
     static const QString NEW_APP_DIR = SCRATCH_DIR + "/AppDir";
-    static const QString NEW_APP_IMG = SCRATCH_DIR + QString("/%1-NEW.AppImage").arg(APP_NAME);
-    static const QString OLD_APP_IMG = SCRATCH_DIR + QString("/%1-OLD.AppImage").arg(APP_NAME);
     QDir( SCRATCH_DIR).removeRecursively();  // Remove this directory if present from previous runs
 
     emit onExtracting();
@@ -111,8 +162,9 @@ void AppUpdater::run()
     if ( _isAppImage())
     {
         emit onRepacking();
-        if ( !_repackAppImage( NEW_APP_DIR, NEW_APP_IMG, OLD_APP_IMG))
-            return _failFinish( "Unable to repack new AppImage!");
+        static const QString NEW_APP_IMG = SCRATCH_DIR + QString("/%1-NEW.AppImage").arg(APP_NAME);
+        static const QString OLD_APP_IMG = SCRATCH_DIR + QString("/%1-OLD.AppImage").arg(APP_NAME);
+        _err = _repackAppImage( NEW_APP_DIR, NEW_APP_IMG, OLD_APP_IMG);
     }   // end if
 
     std::cerr << "[INFO] QTools::AppUpdater: Finished" << std::endl;
@@ -129,12 +181,12 @@ void AppUpdater::_failFinish( const char *err)
 
 bool AppUpdater::_extractFiles( const QString &xdir) const
 {
-    std::cerr << "[INFO] QTools::AppUpdater: Extracting archives..." << std::endl;
     // Extract all files from each archive into the same temporary directory
     // in reverse order. This ensures that the newer files with the same names
     // clobber the older files with the same names.
     for ( int i = _fpaths.size() - 1; i >= 0; --i)
     {
+        std::cerr << "[INFO] QTools::AppUpdater: Extracting " << _fpaths.at(i).toLocal8Bit().toStdString() << std::endl;
         const QStringList flst = JlCompress::extractDir( _fpaths.at(i), xdir);
         if ( flst.size() == 0)
             return false;
@@ -143,52 +195,18 @@ bool AppUpdater::_extractFiles( const QString &xdir) const
 }   // end _extractFiles
 
 
-bool AppUpdater::_updateFiles( const QString &xdir, const QString &pdir, const QString &bdir) const
+QString AppUpdater::_repackAppImage( const QString &NEW_APP_DIR, const QString &NEW_APP_IMG, const QString &OLD_APP_IMG) const
 {
-    std::cerr << "[INFO] QTools::AppUpdater: Updating files in \""
-        << pdir.toLocal8Bit().toStdString() << "\"" << std::endl;
-    bool ok = true;
-    // Write into the application patch directory if we have permission.
-    // Otherise invoke via detached process to allow OS to request permission.
-    if ( FileIO::canWrite( pdir))
-        ok = FileIO::moveFiles( xdir, pdir, bdir);
-    else if ( !FileIO::isRoot())
-        ok = FileIO::moveFilesAsRoot( xdir, pdir, bdir);
-    else
-    {
-        std::cerr << "[WARNING] QTools::AppUpdater: Unable to update - file locks?" << std::endl;
-        ok = false;
-    }   // end else
-    return ok;
-}   // end _updateFiles
-
-
-bool AppUpdater::_repackAppImage( const QString &NEW_APP_DIR,
-                                  const QString &NEW_APP_IMG,
-                                  const QString &OLD_APP_IMG) const
-{
-    static const std::string WRNSTR = "[WARNING] QTools::AppUpdater: Failed to ";
-
     std::cerr << "[INFO] QTools::AppUpdater: Repacking AppImage..." << std::endl;
     if ( !FileIO::packAppImage( NEW_APP_DIR, NEW_APP_IMG))
-    {
-        std::cerr << WRNSTR << "repack AppImage!" << std::endl;
-        return false;
-    }   // end if
+        return tr("Failed to repack AppImage!");
 
     // Swap the new AppImage for the existing one. Since the existing one
     // is locked, move it to scratch before replacing with the new one.
-    if ( !QFile::rename( _appFilePath, OLD_APP_IMG))
-    {
-        std::cerr << WRNSTR << "move existing AppImage to scratch!" << std::endl;
-        return false;
-    }   // end if
-
-    if ( !QFile::rename( NEW_APP_IMG, _appFilePath))
-    {
-        std::cerr << WRNSTR << "move fresh AppImage to original location!" << std::endl;
-        return false;
-    }   // end if
-
-    return true;
+    QString err;
+    if ( FileIO::isRoot() || _isAllowed( {NEW_APP_IMG, _appFilePath}))
+        err = FileIO::swapOverFiles( NEW_APP_IMG, _appFilePath, OLD_APP_IMG);
+    else
+        err = FileIO::swapOverFilesAsRoot( NEW_APP_IMG, _appFilePath, OLD_APP_IMG);  // LINUX ONLY!
+    return err;
 }   // end _repackAppImage

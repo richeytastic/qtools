@@ -52,8 +52,7 @@ private:
     void run() override;
     bool _isAppImage() const;
     bool _extractFiles( const QString&) const;
-    bool _updateFiles( const QString&, const QString&, const QString&) const;
-    bool _repackAppImage( const QString&, const QString&, const QString&) const;
+    QString _repackAppImage( const QString&, const QString&, const QString&) const;
     void _failFinish( const char*);
     QString _appFilePath;
     QStringList _fpaths;

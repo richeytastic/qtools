@@ -41,6 +41,14 @@ QTools_EXPORT bool moveFilesAsRoot( const QString &src, const QString &dst, cons
 // files at dst already exist otherwise set noclobber false to overwrite.
 QTools_EXPORT bool copyFiles( const QString &src, const QString &dst, bool noclobber=true);
 
+// Move file f1 to f2, then move file f0 to f1.
+// File f2 must not already exist and files f0 and f1 must exist.
+// Returns an empty string on success otherwise it contains the error.
+QTools_EXPORT QString swapOverFiles( const QString &f0, const QString &f1, const QString &f2);
+
+// As above but execute as root (LINUX ONLY CURRENTLY!)
+QTools_EXPORT QString swapOverFilesAsRoot( const QString &f0, const QString &f1, const QString &f2);
+
 // Run the AppImage packaging process on the given appDir to produce the
 // given destination appImageFile. Runs as a separate process with current
 // user privileges. Requires the APP_IMAGE_TOOL path to be set.
@@ -51,8 +59,14 @@ QTools_EXPORT bool packAppImage( const QString &appDir, const QString &appImageF
 // effective user ID is different from the actual user ID).
 QTools_EXPORT bool isRoot();
 
-// Returns true iff the given path exists and can be written to.
-QTools_EXPORT bool canWrite( const QString &path);
+// Reliably returns the username.
+QTools_EXPORT QString username();
+
+// Is the given path within the user's home directory?
+QTools_EXPORT bool inHomeDir( const QString &path);
+
+// Returns a UNIX style permissions string with rwx flags for owner, group, and other.
+QTools_EXPORT QString permissionsString( const QString &path);
 
 QTools_EXPORT extern QString APP_IMAGE_TOOL; // Path to the appimagetool-x86_64.AppImage.
 QTools_EXPORT extern QString FILE_MOVE_TOOL; // Path to the file move tool (bin/rmv).
