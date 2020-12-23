@@ -188,32 +188,29 @@ bool PatchList::parse( const QString &zipfile)
 
     // Now cull the list of patches based on the files they include (only care about
     // the latest version of a given file).
-    _cullForDuplicateFiles();
+    _consolidateFiles();
 
     return _err.isEmpty();
 }   // end parse
 
 
-void PatchList::_cullForDuplicateFiles()
+void PatchList::_consolidateFiles()
 {
-    QSet<QString> fileset;
+    QSet<QString> mfiles;   // Files to modify
     QList<PatchMeta> npatches;
     for ( const PatchMeta &pm : _patches)
     {
-        const int fsize = fileset.size();
+        const int msize = mfiles.size();
         const PatchFiles &pfiles = pm.files();
-        for ( const QString &file : pfiles.files())
-            fileset.insert(file);
+        for ( const QString &f : pfiles.mfiles())
+            mfiles.insert(f);
         // This patch is used if there's at least one file not
         // in the existing fileset from more recent patches.
-        if ( fileset.size() > fsize)
-        {
-            std::cerr << "[INFO] QTools::PatchList: Using patch " << pm.major() << "." << pm.minor() << "." << pm.patch() << std::endl;
+        if ( mfiles.size() > msize)
             npatches.push_back(pm);
-        }   // end if
     }   // end for
     _patches = npatches;   // Replace
-}   // end _cullForDuplicateFiles
+}   // end _consolidateFiles
 
 
 namespace {
@@ -266,8 +263,8 @@ bool PatchList::_parsePatchMeta( const PTree &pnode)
     // If the parsed patch version is <= than current, just return true.
     if ( meta <= _currv)
     {
-        std::cerr << QString("[INFO] QTools::PatchList: Ignoring patch %1.%2.%3")
-                .arg(meta.major()).arg(meta.minor()).arg(meta.patch()).toStdString() << std::endl;
+        //std::cerr << QString("[INFO] QTools::PatchList: Ignoring patch %1.%2.%3")
+        //        .arg(meta.major()).arg(meta.minor()).arg(meta.patch()).toStdString() << std::endl;
         return true;
     }   // end if
 
@@ -353,14 +350,28 @@ bool PatchList::_parsePatchFiles( PatchMeta &meta, const PTree &pnode)
     for ( const PTree::value_type &fval : mnode)
     {
         const std::string fname = rlib::trim( fval.second.get_value<std::string>());
-        if ( !pfiles.addFile( QString::fromStdString( fname)))
+        if ( !pfiles.addFileToModify( QString::fromStdString( fname)))
         {
-            _err = "Invalid File in Platform!";
+            _err = "Invalid Modify File in Platform!";
             break;
         }   // end if
     }   // end for
 
-    if ( pfiles.files().isEmpty() && _err.isEmpty())
+    if ( pnode.count("Remove") != 0)
+    {
+        const PTree &rnode = pnode.get_child("Remove");
+        for ( const PTree::value_type &fval : rnode)
+        {
+            const std::string fname = rlib::trim( fval.second.get_value<std::string>());
+            if ( !pfiles.addFileToRemove( QString::fromStdString( fname)))
+            {
+                _err = "Invalid Remove File in Platform!";
+                break;
+            }   // end if
+        }   // end for
+    }   // end if
+
+    if ( pfiles.mfiles().isEmpty() && _err.isEmpty())
         _err = "No files given in patch manifest!";
 
     if ( _err.isEmpty())
@@ -384,13 +395,22 @@ bool PatchFiles::setArchive( const QString &v)
 }   // end setArchive
 
 
-bool PatchFiles::addFile( const QString &f)
+bool PatchFiles::addFileToModify( const QString &f)
 {
     if ( f.isEmpty())
         return false;
-    _files.push_back(f);
+    _mfiles.push_back(f);
     return true;
-}   // end addFile
+}   // end addFileToModify
+
+
+bool PatchFiles::addFileToRemove( const QString &f)
+{
+    if ( f.isEmpty())
+        return false;
+    _rfiles.push_back(f);
+    return true;
+}   // end addFileToRemove
 
 
 /************************************/

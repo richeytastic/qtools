@@ -65,7 +65,8 @@ void PluginsDialog::addPlugins( const PluginsLoader& ploader)
                 {
                     QTreeWidgetItem *iitem = new QTreeWidgetItem(pluginItem);
                     const QString cname = iface->metaObject()->className();
-                    iitem->setText(0, iface->displayName() + " (" + cname + ")");
+                    //iitem->setText(0, iface->displayName() + " (" + cname + ")");
+                    iitem->setText(0, iface->displayName());
                     iitem->setIcon(0, *iface->icon());
                     QFont font = iitem->font(0);
                     font.setItalic(true);

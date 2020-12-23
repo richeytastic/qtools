@@ -72,6 +72,30 @@ bool _updateFiles( const QString &src, const QString &tgt, const QString &bck)
         std::cerr << "[WARNING] QTools::AppUpdater: Unable to update - file locks?" << std::endl;
     return ok;
 }   // end _updateFiles
+
+
+void _removeFiles( const QStringList &rpaths, const QString &tgt)
+{
+    const QString username = FileIO::username();
+    const bool isRoot = FileIO::isRoot();
+    for ( const QString &pth : rpaths)
+    {
+        bool ok = false;
+        const QString fpath = QFileInfo( tgt + "/" + pth).canonicalFilePath();
+        if ( isRoot || _isFileAllowed( fpath, username))
+            ok = QFile::remove( fpath);
+        else
+            ok = FileIO::removeFileAsRoot( fpath);
+
+        if (!ok)
+        {
+            std::cerr << "[WARNING] QTools::AppUpdater: Unable to remove \""
+                      << fpath.toLocal8Bit().toStdString() << "\"" << std::endl;
+        }   // end if
+    }   // end for
+}   // end _removeFiles
+
+
 }   // end namespace
 
 
@@ -103,7 +127,7 @@ bool AppUpdater::_isAppImage() const
 void AppUpdater::setAppPatchDir( const QString &rp) { _relPath = rp;}
 
 
-bool AppUpdater::update( const QStringList &fns)
+bool AppUpdater::update( const QStringList &fns, const QStringList &rpaths)
 {
     if ( _isAppImage() && FileIO::APP_IMAGE_TOOL.isEmpty())
     {
@@ -117,6 +141,8 @@ bool AppUpdater::update( const QStringList &fns)
         _err = tr("No update files provided!");
         return false;
     }   // end if
+
+    _rpaths = rpaths;
 
     start();
     return true;
@@ -158,6 +184,9 @@ void AppUpdater::run()
     if ( !_updateFiles( EXTRACT_DIR, PATCH_DIR, BACKUPS_DIR))
         return _failFinish( "Failed to update files!");
 
+    // Don't fail if files aren't removed.
+    _removeFiles( _rpaths, PATCH_DIR);
+
     // Repackage the updated application directory as an AppImage?
     if ( _isAppImage())
     {
@@ -186,7 +215,7 @@ bool AppUpdater::_extractFiles( const QString &xdir) const
     // clobber the older files with the same names.
     for ( int i = _fpaths.size() - 1; i >= 0; --i)
     {
-        std::cerr << "[INFO] QTools::AppUpdater: Extracting " << _fpaths.at(i).toLocal8Bit().toStdString() << std::endl;
+        std::cerr << "[INFO] QTools::AppUpdater: Extracting \"" << _fpaths.at(i).toLocal8Bit().toStdString() << "\"" << std::endl;
         const QStringList flst = JlCompress::extractDir( _fpaths.at(i), xdir);
         if ( flst.size() == 0)
             return false;

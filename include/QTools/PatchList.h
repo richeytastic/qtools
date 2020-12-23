@@ -36,12 +36,16 @@ public:
     bool setArchive( const QString&);
     const QString &archive() const { return _archive;}
 
-    bool addFile( const QString&);
-    const QStringList &files() const { return _files;}
+    bool addFileToModify( const QString&);
+    const QStringList &mfiles() const { return _mfiles;}
+
+    bool addFileToRemove( const QString&);
+    const QStringList &rfiles() const { return _rfiles;}
 
 private:
     QString _archive;
-    QStringList _files;
+    QStringList _mfiles;    // Files to modify
+    QStringList _rfiles;    // Files to remove
 };  // end class
 
 
@@ -147,7 +151,7 @@ private:
     QList<PatchMeta> _patches;
     bool _parsePatchMeta( const boost::property_tree::ptree&);
     bool _parsePatchFiles( PatchMeta&, const boost::property_tree::ptree&);
-    void _cullForDuplicateFiles();
+    void _consolidateFiles();
 };  // end class
 
 }   // end namespace

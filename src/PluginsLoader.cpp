@@ -89,6 +89,7 @@ size_t PluginsLoader::loadPlugins( const std::string& appcode)
                     << "Qt dynamically loaded plugin does not implement QTools::PluginInterface so skipping it!" << std::endl;
         }   // end else
 
+        // Warn about being unable to load the plugin
         if ( !plugin || !pluginInterface)
         {
             emit loadedPlugin( nullptr, fpath);
@@ -97,10 +98,13 @@ size_t PluginsLoader::loadPlugins( const std::string& appcode)
             continue;
         }   // end if
 
-        // Check for matching application code
+        // Check for matching application code. Those that don't match are silently ignored.
         if ( QString::fromStdString(pluginInterface->applicationCode()).toLower() != appCode)
         {
-            std::cerr << "Rejected plugin with mismatching application compatibility code." << std::endl;
+#ifndef NDEBUG
+            std::cerr << "[WARNING] QTools::PluginsLoader::loadPlugins: "
+                << "Rejected plugin with mismatching application compatibility code." << std::endl;
+#endif
             continue;
         }   // end if
 

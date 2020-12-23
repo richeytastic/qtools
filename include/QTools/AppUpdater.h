@@ -39,8 +39,10 @@ public:
 
     // Provide the update/patch archive files - typically locations of temporary files.
     // Files in archives later in the list that are in earlier archives are ignored.
-    // Returns immediately and will fire onFinished when updating is complete.
-    bool update( const QStringList &files);
+    // Optionally specify paths to files to remove (rfiles) which are given relative
+    // to the application patch directory. Returns immediately and fires onFinished
+    // when updating is complete.
+    bool update( const QStringList &files, const QStringList &rfiles=QStringList());
 
 signals:
     void onExtracting() const;
@@ -56,6 +58,7 @@ private:
     void _failFinish( const char*);
     QString _appFilePath;
     QStringList _fpaths;
+    QStringList _rpaths;
     QString _relPath;
     QString _err;
 };  // end class

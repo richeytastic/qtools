@@ -252,14 +252,6 @@ bool NetworkUpdater::updateApp()
 
 bool NetworkUpdater::_startAppUpdater()
 {
-    /*
-    if ( !_updater.isPrivileged())
-    {
-        _err = tr("You don't have sufficient privileges to update!");
-        return false;
-    }   // end if
-    */
-
     if ( isBusy())
     {
         _err = tr("Updater is busy!");
@@ -272,10 +264,17 @@ bool NetworkUpdater::_startAppUpdater()
         return false;
     }   // end if
 
+    // Collect the downloaded temporary patch archives into a string list
     QStringList fnames;
     for ( const QTemporaryFile *file : _files)
         fnames.append( file->fileName());
-    _updater.update( fnames);
+
+    // Files to remove (specified only from the latest patch!)
+    const QStringList &rfiles = _plist.highestVersion().files().rfiles();
+
+    // Run the update in a separate thread.
+    _updater.update( fnames, rfiles);
+
     return true;
 }   // end _startAppUpdater
 

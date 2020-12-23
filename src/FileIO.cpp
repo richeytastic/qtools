@@ -411,3 +411,28 @@ bool QTools::FileIO::moveFilesAsRoot( const QString &src, const QString &dst, co
 
     return QProcess::execute( program, args) == 0;
 }   // end moveFilesAsRoot
+
+
+bool QTools::FileIO::removeFileAsRoot( const QString &fl)
+{
+    QString program = toolPath(FILE_MOVE_TOOL);
+    if ( program.isEmpty())
+        return false;
+
+    // Validity checking string to ensure we have the right tool
+    static const QString chk = ",.afdf63,f803c,,3b[]()";
+
+    QStringList args;
+#ifdef __linux__
+    args << program << fl << chk;
+    program = "pkexec";
+#elif _WIN32
+    args << "-Command" << "Start-Process"
+         << QString("'%1'").arg(program)
+         << QString("'\"%1\" \"%2\"'").arg(fl).arg(chk)
+         << "-Verb" << "runAs";
+    program = "powershell";
+#endif
+
+    return QProcess::execute( program, args) == 0;
+}   // end removeFileAsRoot

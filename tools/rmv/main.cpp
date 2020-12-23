@@ -44,6 +44,35 @@ bool moveFiles( const QString &src, const QString &dst, const QString &bck)
 }   // end moveFiles
 
 
+int doMove( const QString &src, const QString &dst, const QString &bck)
+{
+    if (!QFileInfo::exists(src))
+    {
+        std::cerr << "Source does not exist!" << std::endl;
+        return EXIT_FAILURE;
+    }   // end if
+
+    if (QFileInfo::exists(bck))
+    {
+        std::cerr << "Backup location must not already exist!" << std::endl;
+        return EXIT_FAILURE;
+    }   // end if
+
+    int rv = EXIT_SUCCESS;
+    if ( !moveFiles( src, dst, bck))
+    {
+        rv = EXIT_FAILURE;
+        std::cerr << "Restoring failed move!" << std::endl;
+        if (!moveFiles( bck, dst, src))
+        {
+            std::cerr << "Restore failed!" << std::endl;
+            rv = EXIT_FAILURE;
+        }   // end if
+    }   // end if
+    return rv;
+}   // end doMove
+
+
 void printHelp()
 {
     std::cerr << "Use this tool ONLY with QTools::FileIO::moveFilesAsRoot." << std::endl;
@@ -56,6 +85,7 @@ bool isValidChk( const QString &chk)
 {
     return chk == ",.afdf63,f803c,,3b[]()";
 }   // end isValidChk
+
 }   // end namespace
 
 
@@ -67,36 +97,19 @@ int main( int argc, char *argv[])
         return EXIT_FAILURE;
     }   // end if
 
-    if ( argc != 5 || !isValidChk( argv[4]))
+    if ( !isValidChk( argv[argc-1]))
         return EXIT_FAILURE;
 
     const QString src = argv[1];
-    if (!QFileInfo::exists(src))
-    {
-        std::cerr << "Source does not exist!" << std::endl;
-        return EXIT_FAILURE;
-    }   // end if
-
-    const QString dst = argv[2];
-
-    const QString bck = argv[3];
-    if (QFileInfo::exists(bck))
-    {
-        std::cerr << "Backup location must not already exist!" << std::endl;
-        return EXIT_FAILURE;
-    }   // end if
-
     int exitCode = EXIT_SUCCESS;
-    if ( !moveFiles( src, dst, bck))
+    if (argc == 5)  // Move files?
     {
-        exitCode = EXIT_FAILURE;
-        std::cerr << "Restoring failed move!" << std::endl;
-        if (!moveFiles( bck, dst, src))
-        {
-            std::cerr << "Restore failed!" << std::endl;
-            exitCode = EXIT_FAILURE;
-        }   // end if
+        const QString dst = argv[2];
+        const QString bck = argv[3];
+        exitCode = doMove( src, dst, bck);
     }   // end if
+    else if ( !QFile::remove(src))
+        exitCode = EXIT_FAILURE;
 
     return exitCode;
 }   // end main

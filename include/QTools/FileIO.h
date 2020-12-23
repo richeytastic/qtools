@@ -37,6 +37,9 @@ QTools_EXPORT bool moveFiles( const QString &src, const QString &dst, const QStr
 // the user to provide administrator (root) privileges.
 QTools_EXPORT bool moveFilesAsRoot( const QString &src, const QString &dst, const QString &bck="");
 
+// Remove the given file using external tool (FILE_MOVE_TOOL).
+QTools_EXPORT bool removeFileAsRoot( const QString&);
+
 // Recursively copy files from src to dst. By default, fails if any
 // files at dst already exist otherwise set noclobber false to overwrite.
 QTools_EXPORT bool copyFiles( const QString &src, const QString &dst, bool noclobber=true);
