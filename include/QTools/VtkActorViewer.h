@@ -64,8 +64,8 @@ public:
     inline size_t getHeight() const { return _ren->GetSize()[1];}
     inline cv::Size getSize() const { return cv::Size( (int)getWidth(), (int)getHeight());}
 
-    cv::Mat_<float> getRawZBuffer() const; // Grab snapshot of the raw Z buffer from the viewer.
-    cv::Mat_<cv::Vec3b> getColourImg() const; // Grab snapshot of whatever's currently displayed (3 byte BGR order)
+    cv::Mat_<float> getRawZBuffer();    // Grab snapshot of the raw Z buffer from the viewer.
+    cv::Mat_<cv::Vec3b> getColourImg(); // Grab snapshot of whatever's currently displayed (3 byte BGR order)
 
     // Adding and removing props will cause a re-rendering of the scene if auto-rendering is on.
     void add( vtkProp*);

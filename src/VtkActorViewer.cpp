@@ -75,10 +75,18 @@ void VtkActorViewer::setSize( size_t w, size_t h)
 }   // end setSize
 
 
-cv::Mat_<float> VtkActorViewer::getRawZBuffer() const { return r3dvis::extractZBuffer( _rwin);}
+cv::Mat_<float> VtkActorViewer::getRawZBuffer()
+{
+    updateRender();
+    return r3dvis::extractZ( _rwin);
+}   // end getRawZBuffer();
 
 
-cv::Mat_<cv::Vec3b> VtkActorViewer::getColourImg() const { return r3dvis::extractImage( _rwin);}
+cv::Mat_<cv::Vec3b> VtkActorViewer::getColourImg()
+{
+    updateRender();
+    return r3dvis::extractBGR( _rwin);
+}   // end getColourImg
 
 
 void VtkActorViewer::add( vtkProp* prop)
