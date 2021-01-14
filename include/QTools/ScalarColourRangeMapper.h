@@ -48,7 +48,7 @@ public:
     // Rebuild the lookup table: call after updating with fns setRangeLimits, setColours, setNumColours.
     void rebuild();
 
-    vtkLookupTable* lookupTable( const vtkRenderer* ren) { return _ltable.vtk(ren);}
+    const vtkLookupTable* lookupTable( const vtkRenderer *ren) const { return _ltable.vtk(ren);}
 
     // Get the visible limits.
     const std::pair<float,float>& visibleLimits() const { return _visl;}
@@ -68,7 +68,7 @@ private:
     size_t _ncols;                  // Number of colours
     std::pair<float,float> _visl;   // Visible range
     cv::Vec3b _cols[3];             // min, mid, and max colours
-    r3dvis::LookupTable _ltable;    // The lookup table that does the actual mapping
+    mutable r3dvis::LookupTable _ltable;    // The lookup table that does the actual mapping
 
     ScalarColourRangeMapper( const ScalarColourRangeMapper&) = delete;
     void operator=( const ScalarColourRangeMapper&) = delete;
