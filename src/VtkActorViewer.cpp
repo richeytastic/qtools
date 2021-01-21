@@ -35,6 +35,7 @@ using r3d::Vec3f;
 VtkActorViewer::VtkActorViewer( QWidget *parent)
     : QVTKOpenGLNativeWidget( parent), _autoUpdateRender(false)
 {
+    _rwin->SetMultiSamples(0);
     _rwin->SetPointSmoothing( false);
     _rwin->SetStereoCapableWindow(1);
     _rwin->SetStereoTypeToRedBlue();

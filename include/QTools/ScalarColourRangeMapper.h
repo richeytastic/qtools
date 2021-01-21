@@ -48,7 +48,7 @@ public:
     // Rebuild the lookup table: call after updating with fns setRangeLimits, setColours, setNumColours.
     void rebuild();
 
-    const vtkLookupTable* lookupTable( const vtkRenderer *ren) const { return _ltable.vtk(ren);}
+    inline const vtkLookupTable* lookupTable() const { return _ltable.vtk();}
 
     // Get the visible limits.
     const std::pair<float,float>& visibleLimits() const { return _visl;}
