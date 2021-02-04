@@ -59,6 +59,7 @@ void VtkViewerSwitchInteractor::setTrackballActor( const vtkProp3D *p)
 
 void VtkViewerSwitchInteractor::setTrackballCamera()
 {
+    _allowedProp = nullptr;
     _iuse = _isel = _icam;
 }   // end setTrackballCamera
 
@@ -144,7 +145,6 @@ void VtkViewerSwitchInteractor::_setUseInteractor()
     vtkRenderWindowInteractor *rwi = GetInteractor();
     const int x = rwi->GetEventPosition()[0];
     const int y = rwi->GetEventPosition()[1];
-    bool onProp = false;
 
     _iuse = _icam;
 
@@ -152,10 +152,7 @@ void VtkViewerSwitchInteractor::_setUseInteractor()
     {
         _iact->SetInteractor(rwi);
         _iact->FindPokedRenderer(x,y);
-        onProp = _iact->findPickedActor(x,y);   // Could be true if on any prop
-        if ( _allowedProp != nullptr)
-            onProp = _iact->prop() == _allowedProp;
-        if ( onProp)
+        if ( _allowedProp && _iact->findPickedActor(x,y) && _iact->prop() == _allowedProp)
             _iuse = _iact;
     }   // end if
 

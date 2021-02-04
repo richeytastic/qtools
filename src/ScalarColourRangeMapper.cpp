@@ -22,9 +22,9 @@ using QTools::ScalarColourRangeMapper;
 ScalarColourRangeMapper::ScalarColourRangeMapper()
     : _ncols(100), _visl(0.0f,1.0f)
 {
-    _cols[0] = cv::Vec3b(0,  0,  255);  // Red (BGR)
-    _cols[1] = cv::Vec3b(255,255,255);  // White (BGR)
-    _cols[2] = cv::Vec3b(255,  0,  0);  // Blue (BGR)
+    _cols[0] = cv::Vec3b(255,  0,  0);  // Red (RGB)
+    _cols[1] = cv::Vec3b(255,255,255);  // White (RGB)
+    _cols[2] = cv::Vec3b(0,  0,  255);  // Blue (RGB)
     rebuild();
 }   // end ctor
 
