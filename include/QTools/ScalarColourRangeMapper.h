@@ -18,10 +18,6 @@
 #ifndef QTOOLS_SCALAR_COLOUR_RANGE_MAPPER_H
 #define QTOOLS_SCALAR_COLOUR_RANGE_MAPPER_H
 
-/**
- * Store and manage scalar colours via lookup table.
- */
-
 #include "QTools_Export.h"
 #include <QColor>
 #include <r3dvis/LookupTable.h>
@@ -45,10 +41,8 @@ public:
 
     void setNumColours( size_t);
 
-    // Rebuild the lookup table: call after updating with fns setRangeLimits, setColours, setNumColours.
-    void rebuild();
-
-    inline const vtkLookupTable* lookupTable() const { return _ltable.vtk();}
+    // Build and return the VTK lookup table. Call after updating colours etc.
+    vtkSmartPointer<vtkLookupTable> build();
 
     // Get the visible limits.
     const std::pair<float,float>& visibleLimits() const { return _visl;}
@@ -68,10 +62,7 @@ private:
     size_t _ncols;                  // Number of colours
     std::pair<float,float> _visl;   // Visible range
     cv::Vec3b _cols[3];             // min, mid, and max colours
-    mutable r3dvis::LookupTable _ltable;    // The lookup table that does the actual mapping
-
-    ScalarColourRangeMapper( const ScalarColourRangeMapper&) = delete;
-    void operator=( const ScalarColourRangeMapper&) = delete;
+    r3dvis::LookupTable _ltable;    // The lookup table that does the actual mapping
 };  // end class
 
 }   // end namespace

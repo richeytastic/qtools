@@ -25,7 +25,6 @@ ScalarColourRangeMapper::ScalarColourRangeMapper()
     _cols[0] = cv::Vec3b(255,  0,  0);  // Red (RGB)
     _cols[1] = cv::Vec3b(255,255,255);  // White (RGB)
     _cols[2] = cv::Vec3b(0,  0,  255);  // Blue (RGB)
-    rebuild();
 }   // end ctor
 
 
@@ -77,7 +76,7 @@ QColor ScalarColourRangeMapper::midColour() const { return QColor( _cols[1][0], 
 QColor ScalarColourRangeMapper::maxColour() const { return QColor( _cols[2][0], _cols[2][1], _cols[2][2]);}
 
 
-void ScalarColourRangeMapper::rebuild()
+vtkSmartPointer<vtkLookupTable> ScalarColourRangeMapper::build()
 {
     if ( _visl.second <= 0)
         _ltable.setColours( _cols[0], _cols[1], _ncols);
@@ -85,5 +84,6 @@ void ScalarColourRangeMapper::rebuild()
         _ltable.setColours( _cols[1], _cols[2], _ncols);
     else
         _ltable.setColours( _cols[0], _cols[1], _cols[2], _ncols);
-}   // end rebuild
+    return _ltable.toVTK();
+}   // end build
 
