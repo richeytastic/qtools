@@ -44,6 +44,9 @@ public:
     // Build and return the VTK lookup table. Call after updating colours etc.
     vtkSmartPointer<vtkLookupTable> build();
 
+    // Only call after having called build() at least once.
+    const std::vector<r3d::Colour> &colours() const { return _ltable.colours();}
+
     // Get the visible limits.
     const std::pair<float,float>& visibleLimits() const { return _visl;}
     float minVisible() const { return _visl.first;}
