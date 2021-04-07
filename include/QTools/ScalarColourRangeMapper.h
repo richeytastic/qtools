@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2021 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ public:
     vtkSmartPointer<vtkLookupTable> build();
 
     // Only call after having called build() at least once.
-    const std::vector<r3d::Colour> &colours() const { return _ltable.colours();}
+    const std::vector<rimg::Colour> &colours() const { return _ltable.colours();}
 
     // Get the visible limits.
     const std::pair<float,float>& visibleLimits() const { return _visl;}

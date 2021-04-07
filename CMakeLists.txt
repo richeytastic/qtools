@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 project( QTools)
 
 set( WITH_QT TRUE)
-set( WITH_RLIB TRUE)
+set( WITH_RIMG TRUE)
 set( WITH_R3DVIS TRUE)
 set( WITH_QUAZIP TRUE)
 include( "cmake/FindLibs.cmake")
