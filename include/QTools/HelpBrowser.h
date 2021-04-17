@@ -66,8 +66,8 @@ private:
     QSplitter *_splitter;
     QTreeView *_tview;
     QTextBrowser *_tbrowser;
-    //QToolButton *_backButton;
-    //QToolButton *_fwrdButton;
+    QToolButton *_backButton;
+    QToolButton *_fwrdButton;
 
     class TreeView;
     void _setContent( const QString&);

@@ -180,10 +180,7 @@ HelpAssistant::HelpAssistant( const QString& hdir, QWidget *prnt) : _dialog(new 
 }   // end ctor
 
 
-HelpAssistant::~HelpAssistant()
-{
-    delete _dialog;
-}   // end dtor
+HelpAssistant::~HelpAssistant() { delete _dialog;}
 
 
 void HelpAssistant::_initTempHtmlDir( const QString& srcDir)
@@ -281,12 +278,12 @@ QString HelpAssistant::addContent( const QString& subdir, const QString& content
 }   // end addContent
 
 
-bool HelpAssistant::refreshContents( const QString& tocXmlFile)
+void HelpAssistant::refreshContents( const QString& tocXmlFile)
 {
     // Read in the toc.xml file if it exists
     TreeModel *toc = readTableOfContents( _workdir.path(), tocXmlFile);
     _dialog->setTableOfContents(toc);
-    return _dialog->setContent( "index.html");
+    //return _dialog->setContent( "index.html");
 }   // end refreshContents
 
 
@@ -295,10 +292,6 @@ bool HelpAssistant::show( const QString& token)
     const QString hfile = token.isEmpty() ? "index.html" : token;
     const bool showing = _dialog->setContent(hfile);
     if ( showing)
-    {
-        _dialog->show();
-        _dialog->raise();
-        _dialog->activateWindow();
-    }   // end if
+        _dialog->setVisible(true);
     return showing;
 }   // end show

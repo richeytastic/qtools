@@ -36,14 +36,14 @@ public:
     TreeView( HelpBrowser* hd) : QTreeView(hd), _hd(hd) {}
 
 protected:
-    void currentChanged( const QModelIndex& current, const QModelIndex& previous) override
+    void currentChanged( const QModelIndex& crnt, const QModelIndex& prvs) override
     {
-        if ( current.isValid() && current.internalPointer() != previous.internalPointer())
-        {
-            const QString htmlfile = static_cast<QTools::TreeItem*>(current.internalPointer())->data(1).toString();
-            if ( !htmlfile.isEmpty())
-                _hd->_setContent(htmlfile);
-        }   // end if
+        QTreeView::currentChanged( crnt, prvs);
+        QString htmlfile;
+        if ( crnt.isValid() && crnt.internalPointer() != prvs.internalPointer())
+            htmlfile = static_cast<QTools::TreeItem*>(crnt.internalPointer())->data(1).toString();
+        if ( !htmlfile.isEmpty())
+            _hd->_setContent(htmlfile);
     }   // end currentChanged
 
 private:
@@ -106,19 +106,17 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QMainWindow(parent)
     connect( closeButton, &QPushButton::clicked, this, &HelpBrowser::close);
     closeButton->setSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum);
 
-    /*
     QToolButton *homeButton = makeToolButton( this, ":/icons/HOME");
     connect( homeButton, &QToolButton::clicked, [this](){ _tbrowser->home();});
     _backButton = makeToolButton( this, ":/icons/GO_BACK");
     connect( _backButton, &QToolButton::clicked, [this](){ _tbrowser->backward();});
     _fwrdButton = makeToolButton( this, ":/icons/GO_FWRD");
     connect( _fwrdButton, &QToolButton::clicked, [this](){ _tbrowser->forward();});
-    */
 
     QHBoxLayout *hlayout = new QHBoxLayout;
-    //hlayout->addWidget( _backButton);
-    //hlayout->addWidget( _fwrdButton);
-    //hlayout->addWidget( homeButton);
+    hlayout->addWidget( _backButton);
+    hlayout->addWidget( _fwrdButton);
+    hlayout->addWidget( homeButton);
     hlayout->insertStretch(3);
     hlayout->addWidget( closeButton);
 
@@ -134,7 +132,10 @@ HelpBrowser::HelpBrowser( QWidget *parent) : QMainWindow(parent)
 }   // end ctor
 
 
-void HelpBrowser::setRootDir( const QString& rdir) { _rootDir = rdir;}
+void HelpBrowser::setRootDir( const QString& rdir)
+{
+    _rootDir = rdir + "/";
+}   // end setRootDir
 
 
 void HelpBrowser::setTableOfContents( TreeModel *tm, bool delExisting)
@@ -164,24 +165,32 @@ bool HelpBrowser::setContent( const QString& htmlfile)
         _tview->setCurrentIndex( idx); // Ensure corresponding entry in TOC is highlighted.
         ok = true;
     }   // end if
+    //std::cerr << "setContent( " << htmlfile.toStdString() << ") --> " << std::boolalpha << ok << std::endl;
     return ok;
 }   // end setContent
 
 
 void HelpBrowser::_setContent( const QString& htmlfile)
 {
-    const QString src = _rootDir + "/" + htmlfile;
     QSignalBlocker blocker(_tbrowser);
-    _tbrowser->setSource( QUrl::fromLocalFile( src), QTextDocument::HtmlResource);
+    _tbrowser->setSource( QUrl::fromLocalFile( _rootDir + htmlfile), QTextDocument::HtmlResource);
     setWindowTitle( _wprfx + " | " + _tbrowser->documentTitle());
-    //_backButton->setEnabled( _tbrowser->isBackwardAvailable());
-    //_fwrdButton->setEnabled( _tbrowser->isForwardAvailable());
+    _backButton->setEnabled( _tbrowser->isBackwardAvailable());
+    _fwrdButton->setEnabled( _tbrowser->isForwardAvailable());
+    //std::cerr << "_setContent( " << htmlfile.toStdString() << ")" << std::endl;
 }   // end _setContent
 
 
+// This function called if links clicked in the page
 void HelpBrowser::_doOnSourceChanged( const QUrl &src)
 {
-    const QModelIndex idx = static_cast<const TreeModel*>(_tview->model())->find( src.fileName(), 1);
+    QString path = QDir::fromNativeSeparators( src.path());
+    path.remove(_rootDir);
+    if ( path.startsWith('/'))
+        path = path.right( path.size()-1);
+    const QModelIndex idx = static_cast<const TreeModel*>(_tview->model())->find( path, 1);
     if ( idx.isValid())
-        _tview->setCurrentIndex( idx);
+        _tview->setCurrentIndex( idx);  // Calls _setContent through _tview->currentChanged
+    else
+        std::cerr << "[ERROR] QTools::HelpBrowser::_doOnSourceChanged: Invalid \"" << path.toStdString() << "\"\n";
 }   // end _doOnSourceChanged
