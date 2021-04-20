@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2021 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,10 +30,14 @@
 
 // Definitions for these namespace variables
 QString QTools::FileIO::APP_IMAGE_TOOL;
-QString QTools::FileIO::FILE_MOVE_TOOL;
+QString QTools::FileIO::UPDATE_TOOL;
 
 
 namespace {
+// Validity checking string to ensure we have the right tool
+static const QString CHK_STR = ",.afdf63,f803c,,3b[]()";
+
+
 bool _moveFiles( const QString &src, const QString &dst, const QString &bck)
 {
     bool ok = true;
@@ -91,38 +95,6 @@ bool _copyFiles( const QString &src, const QString &dst, QList<QFileInfo> &symLi
 
     return ok;
 }   // end _copyFiles
-
-/*
-void _writeTestFile( const QStringList &slst)
-{
-    QFile tfile( QDir( QDir::home()).filePath( "test_file.txt"));
-    tfile.remove();
-    tfile.open( QIODevice::WriteOnly | QIODevice::Text);
-    QTextStream out(&tfile);
-    for ( const QString &s : slst)
-        out << s << Qt::endl;
-    out.flush();
-    tfile.close();
-}   // end _writeTestFile
-*/
-
-
-QString _checkSwapFiles( const QString &fnew, const QString &fcur, const QString &fold)
-{
-    /*
-    _writeTestFile( {QString( "FNEW: %1").arg(fnew),
-                    QString( "FCUR: %1").arg(fcur),
-                    QString( "FOLD: %1").arg(fold)});
-    */
-
-    if ( QFileInfo::exists( fold))
-        return "Rename path already exists!";
-    if ( !QFileInfo::exists( fcur))
-        return "Current file path does not exist!";
-    if ( !QFileInfo::exists( fnew))
-        return "New file path does not exist!";
-    return "";
-}   // end _checkSwapFiles
 
 
 }   // end namespace
@@ -190,6 +162,43 @@ bool QTools::FileIO::moveFiles( const QString &src, const QString &dst, const QS
 }   // end moveFiles
 
 
+namespace {
+
+void _writeTestFile( const QStringList &slst)
+{
+    QFile tfile( QDir::temp().filePath( "qtools_fileio_checkSwapFiles.txt"));
+    tfile.remove();
+    tfile.open( QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream out(&tfile);
+    for ( const QString &s : slst)
+        out << s << Qt::endl;
+    out.flush();
+    tfile.close();
+    std::cerr << "Error details at: " << QFileInfo(tfile).absoluteFilePath().toStdString() << std::endl;
+}   // end _writeTestFile
+
+
+QString _checkSwapFiles( const QString &fnew, const QString &fcur, const QString &fold)
+{
+    QString errMsg = "";
+    if ( QFileInfo::exists( fold))
+        errMsg = "Rename path already exists!";
+    else if ( !QFileInfo::exists( fcur))
+        errMsg = "Current file path does not exist!";
+    else if ( !QFileInfo::exists( fnew))
+        errMsg = "New file path does not exist!";
+    if ( !errMsg.isEmpty())
+    {
+        _writeTestFile( {QString( "FNEW: %1").arg(fnew),
+                        QString( "FCUR: %1").arg(fcur),
+                        QString( "FOLD: %1").arg(fold)});
+    }   // end if
+    return errMsg;
+}   // end _checkSwapFiles
+
+}   // end namespace
+
+
 QString QTools::FileIO::swapOverFiles( const QString &fnew, const QString &fcur, const QString &fold)
 {
     const QString err = _checkSwapFiles( fnew, fcur, fold);
@@ -228,8 +237,8 @@ QString QTools::FileIO::swapOverFilesAsRoot( const QString &fnew, const QString 
 
     QTextStream out(&tfile);
     out << "#!/usr/bin/env sh" << Qt::endl;
-    out << "mv " << afcur << " " << afold << Qt::endl;
-    out << "mv " << afnew << " " << afcur << Qt::endl;
+    out << "mv -f " << afcur << " " << afold << Qt::endl;
+    out << "mv -f " << afnew << " " << afcur << Qt::endl;
     out << "exit 0" << Qt::endl;
     out.flush();
     tfile.close();
@@ -377,34 +386,34 @@ bool QTools::FileIO::packAppImage( const QString &appDir, const QString &repackf
     if ( appImgTool.isEmpty())
         return false;
 
+    qputenv( "ARCH", "x86_64");
     QStringList args;
     args << "-n" << appDir << repackfile;
     QProcess proc;
     proc.setStandardOutputFile( QProcess::nullDevice());
     //proc.setProcessChannelMode( QProcess::ForwardedChannels);
     proc.start( appImgTool, args);
-    return proc.waitForFinished(-1);
+    const bool finOkay = proc.waitForFinished(-1);
     //const int oval = QProcess::execute( appImgTool, args);
+    qunsetenv( "ARCH");
+    return finOkay && QFileInfo::exists( repackfile);
 }   // end packAppImage
 
 
 bool QTools::FileIO::moveFilesAsRoot( const QString &src, const QString &dst, const QString &bck)
 {
-    QString program = toolPath(FILE_MOVE_TOOL);
+    QString program = toolPath(UPDATE_TOOL);
     if ( program.isEmpty())
         return false;
 
-    // Validity checking string to ensure we have the right tool
-    static const QString chk = ",.afdf63,f803c,,3b[]()";
-
     QStringList args;
 #ifdef __linux__
-    args << program << src << dst << bck << chk;
+    args << program << CHK_STR << "move" << src << dst << bck;
     program = "pkexec";
 #elif _WIN32
     args << "-Command" << "Start-Process"
          << QString("'%1'").arg(program)
-         << QString("'\"%1\" \"%2\" \"%3\" \"%4\"'").arg(src).arg(dst).arg(bck).arg(chk)
+         << QString("'\"%1\" \"%2\" \"%3\" \"%4\" \"%5\"'").arg(CHK_STR).arg("move").arg(src).arg(dst).arg(bck)
          << "-Verb" << "runAs";
     program = "powershell";
 #endif
@@ -413,26 +422,34 @@ bool QTools::FileIO::moveFilesAsRoot( const QString &src, const QString &dst, co
 }   // end moveFilesAsRoot
 
 
-bool QTools::FileIO::removeFileAsRoot( const QString &fl)
+bool QTools::FileIO::removeFileAsRoot( const QString &fl) { return removeFilesAsRoot( {fl});}
+
+
+bool QTools::FileIO::removeFilesAsRoot( const QStringList &fls)
 {
-    QString program = toolPath(FILE_MOVE_TOOL);
+    QString program = toolPath(UPDATE_TOOL);
     if ( program.isEmpty())
         return false;
 
-    // Validity checking string to ensure we have the right tool
-    static const QString chk = ",.afdf63,f803c,,3b[]()";
-
     QStringList args;
 #ifdef __linux__
-    args << program << fl << chk;
+    args << program << CHK_STR << "remove";
+    for ( const QString &fl : fls)
+        args << fl;
     program = "pkexec";
 #elif _WIN32
     args << "-Command" << "Start-Process"
          << QString("'%1'").arg(program)
-         << QString("'\"%1\" \"%2\"'").arg(fl).arg(chk)
-         << "-Verb" << "runAs";
+         << QString("'\"%1\" \"remove\"").arg(CHK_STR);
+
+    const int N = fls.size();
+    for ( int i = 0; i < N-1; ++i)
+        args << QString(" \"%1\"").arg(fls.at(i));
+    args << QString(" \"%1\"'").arg(fls.last());
+
+    args << "-Verb" << "runAs";
     program = "powershell";
 #endif
 
     return QProcess::execute( program, args) == 0;
-}   // end removeFileAsRoot
+}   // end removeFilesAsRoot

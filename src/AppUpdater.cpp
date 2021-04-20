@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2021 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,14 +44,14 @@ void _printFileInfo( const QString &pth)
 bool _isFileAllowed( const QString &f, const QString &username)
 {
     return FileIO::inHomeDir(f) || (QFileInfo(f).owner() == username);
-}   // end _isAllowed
+}   // end _isFileAllowed
 
 
 bool _isAllowed( const QStringList &flist)
 {
     const QString username = FileIO::username();
     for ( const QString &f : flist)
-        if ( !_isFileAllowed( f, username))
+        if ( QFileInfo::exists( f) && !_isFileAllowed( f, username))
             return false;
     return true;
 }   // end _isAllowed
@@ -78,14 +78,19 @@ void _removeFiles( const QStringList &rpaths, const QString &tgt)
 {
     const QString username = FileIO::username();
     const bool isRoot = FileIO::isRoot();
+
+    QStringList filesToRemoveWithPermission;
     for ( const QString &pth : rpaths)
     {
-        bool ok = false;
         const QString fpath = QFileInfo( tgt + "/" + pth).canonicalFilePath();
+        if ( !QFileInfo::exists(fpath))
+            continue;
+
+        bool ok = false;
         if ( isRoot || _isFileAllowed( fpath, username))
             ok = QFile::remove( fpath);
         else
-            ok = FileIO::removeFileAsRoot( fpath);
+            filesToRemoveWithPermission << fpath;
 
         if (!ok)
         {
@@ -93,6 +98,10 @@ void _removeFiles( const QStringList &rpaths, const QString &tgt)
                       << fpath.toLocal8Bit().toStdString() << "\"" << std::endl;
         }   // end if
     }   // end for
+
+    if ( !filesToRemoveWithPermission.empty())
+        if ( !FileIO::removeFilesAsRoot( filesToRemoveWithPermission))
+            std::cerr << "[WARNING] QTools::AppUpdater: Unable to remove files as root!" << std::endl;
 }   // end _removeFiles
 
 
@@ -231,7 +240,7 @@ QString AppUpdater::_repackAppImage( const QString &NEW_APP_DIR, const QString &
         return tr("Failed to repack AppImage!");
 
     // Swap the new AppImage for the existing one. Since the existing one
-    // is locked, move it to scratch before replacing with the new one.
+    // is locked, move it to OLD_APP_IMG before replacing with the new one.
     QString err;
     if ( FileIO::isRoot() || _isAllowed( {NEW_APP_IMG, _appFilePath}))
         err = FileIO::swapOverFiles( NEW_APP_IMG, _appFilePath, OLD_APP_IMG);

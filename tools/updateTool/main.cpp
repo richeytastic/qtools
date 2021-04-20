@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2021 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,44 +72,39 @@ int doMove( const QString &src, const QString &dst, const QString &bck)
     return rv;
 }   // end doMove
 
-
-void printHelp()
-{
-    std::cerr << "Use this tool ONLY with QTools::FileIO::moveFilesAsRoot." << std::endl;
-    std::cerr << "Set QTools::FileIO::FILE_MOVE_TOOL with this tool's path." << std::endl;
-}   // end printHelp
-
-
-// Validity checking string to ensure we have the right tool
-bool isValidChk( const QString &chk)
-{
-    return chk == ",.afdf63,f803c,,3b[]()";
-}   // end isValidChk
-
 }   // end namespace
 
 
 int main( int argc, char *argv[])
 {
-    if ( argc >= 2 && std::string(argv[1]) == "--help")
+    if ( argc < 2 || ",.afdf63,f803c,,3b[]()" != std::string(argv[1]))
     {
-        printHelp();
+        std::cerr << "Use programmatically only." << std::endl;
+        std::cerr << "Set QTools::FileIO::UPDATE_TOOL with this tool's path." << std::endl;
         return EXIT_FAILURE;
     }   // end if
 
-    if ( !isValidChk( argv[argc-1]))
-        return EXIT_FAILURE;
+    const std::string cmd = argv[2];
 
-    const QString src = argv[1];
     int exitCode = EXIT_SUCCESS;
-    if (argc == 5)  // Move files?
+    if ( cmd == "move")
     {
-        const QString dst = argv[2];
-        const QString bck = argv[3];
-        exitCode = doMove( src, dst, bck);
+        if ( argc != 6)
+            return EXIT_FAILURE;
+        exitCode = doMove( argv[3], argv[4], argv[5]);
     }   // end if
-    else if ( !QFile::remove(src))
+    else if ( cmd == "remove")
+    {
+        if ( argc < 4)
+            return EXIT_FAILURE;
+        for ( int i = 3; i < argc; ++i)
+            QFile::remove( argv[i]);
+    }   // end else if
+    else
+    {
+        std::cerr << "Invalid update command! Use \"move\" or \"remove\" only." << std::endl;
         exitCode = EXIT_FAILURE;
+    }   // end else
 
     return exitCode;
 }   // end main

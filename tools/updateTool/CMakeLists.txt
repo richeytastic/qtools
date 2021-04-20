@@ -1,4 +1,4 @@
-PROJECT(rmv)
+PROJECT(updateTool)
 
 add_executable(${PROJECT_NAME} main.cpp)
  

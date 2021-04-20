@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2021 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 #define QTOOLS_FILE_IO_H
 
 #include "QTools_Export.h"
-#include <QString>
+#include <QStringList>
 
 namespace QTools {
 namespace FileIO {
@@ -39,6 +39,9 @@ QTools_EXPORT bool moveFilesAsRoot( const QString &src, const QString &dst, cons
 
 // Remove the given file using external tool (FILE_MOVE_TOOL).
 QTools_EXPORT bool removeFileAsRoot( const QString&);
+
+// Remove the given files using an external tool
+QTools_EXPORT bool removeFilesAsRoot( const QStringList&);
 
 // Recursively copy files from src to dst. By default, fails if any
 // files at dst already exist otherwise set noclobber false to overwrite.
@@ -72,7 +75,7 @@ QTools_EXPORT bool inHomeDir( const QString &path);
 QTools_EXPORT QString permissionsString( const QString &path);
 
 QTools_EXPORT extern QString APP_IMAGE_TOOL; // Path to the appimagetool-x86_64.AppImage.
-QTools_EXPORT extern QString FILE_MOVE_TOOL; // Path to the file move tool (bin/rmv).
+QTools_EXPORT extern QString UPDATE_TOOL;    // Path to the external update tool (bin/updateTool).
 
 }}   // end namespaces
      

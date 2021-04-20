@@ -16,7 +16,7 @@ include_directories( ${INCLUDE_F})
 include_directories( ${INCLUDE_DIR})
 include_directories( ${PROJECT_BINARY_DIR}) # Req. for generated Qt form headers
 
-add_subdirectory("tools/rmv")
+add_subdirectory("tools/updateTool")
 
 set( SRC_FILES
     "${SRC_DIR}/AppUpdater.cpp"
