@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2021 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,13 +90,13 @@ public:
 
     // Given a 2D render window (with TOP LEFT origin), find the actor from the given list being pointed to.
     // If no actors from the list are being pointed to, returns null.
-    vtkActor* pickActor( const cv::Point&, const std::vector<vtkActor*>& pactors) const;
-    vtkActor* pickActor( const QPoint&, const std::vector<vtkActor*>& pactors) const;
+    const vtkActor* pickActor( const cv::Point&, const std::vector<const vtkProp*>& pactors) const;
+    const vtkActor* pickActor( const QPoint&, const std::vector<const vtkProp*>& pactors) const;
 
     // Given a 2D render window (with TOP LEFT origin), find the actor being pointed to
     // If no actor is found, return null.
-    vtkActor* pickActor( const cv::Point&) const;
-    vtkActor* pickActor( const QPoint&) const;
+    const vtkActor* pickActor( const cv::Point&) const;
+    const vtkActor* pickActor( const QPoint&) const;
 
     // Find an actor's cell addressed by a 2D point (using TOP LEFT origin).
     // If no actor cell is found (no actor is pointed to), -1 is returned.
@@ -106,15 +106,19 @@ public:
     // Given a vector of 2D points (using TOP LEFT origin) and an actor (cannot be null), set cellIds with
     // the indices of the cells intercepted by the points. Duplicate cellIds are ignored. Returns the number
     // of cell IDs appended to cellIds.
-    int pickActorCells( const std::vector<cv::Point>& points, vtkActor* actor, std::vector<int>& cellIds) const;
-    int pickActorCells( const std::vector<QPoint>& points, vtkActor* actor, std::vector<int>& cellIds) const;
+    int pickActorCells( const std::vector<cv::Point>& points, const vtkProp* actor, std::vector<int>& cellIds) const;
+    int pickActorCells( const std::vector<QPoint>& points, const vtkProp* actor, std::vector<int>& cellIds) const;
 
     // Find the position in 3D world space from a 2D point using TOP LEFT origin.
-    Vec3f pickWorldPosition( const cv::Point&) const;
-    Vec3f pickWorldPosition( const QPoint&) const;
+    // This returns the point that intersects the first pickable actor along the ray.
+    // Note that this ALWAYS returns a valid position!
+    Vec3f pickPosition( const cv::Point&) const;
+    Vec3f pickPosition( const QPoint&) const;
+    Vec3f pickPosition( const cv::Point2f&) const; // Point as proportion of window dims.
 
-    // As above, but specify view coordinates from top left as a proportion of the window dimensions.
-    Vec3f pickWorldPosition( const cv::Point2f&) const;
+    bool pickPosition( const vtkProp*, const cv::Point&, Vec3f&) const;
+    bool pickPosition( const vtkProp*, const QPoint&, Vec3f&) const;
+    bool pickPosition( const vtkProp*, const cv::Point2f&, Vec3f&) const;  // Point as proportion of window dims.
 
     // Find the display position in 2D (using TOP LEFT origin) of a 3D world coordinate point.
     cv::Point projectToDisplay( const Vec3f&) const;

@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2021 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -220,7 +220,7 @@ bool VtkActorViewer::pointedAt( const QPoint& p, const vtkProp* prop) const
 }   // end pointedAt
 
 
-vtkActor* VtkActorViewer::pickActor( const cv::Point& p, const std::vector<vtkActor*>& pactors) const
+const vtkActor* VtkActorViewer::pickActor( const cv::Point& p, const std::vector<const vtkProp*>& pactors) const
 {
     if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1])
         return nullptr;
@@ -229,13 +229,13 @@ vtkActor* VtkActorViewer::pickActor( const cv::Point& p, const std::vector<vtkAc
 }   // end pickActor
 
 
-vtkActor* VtkActorViewer::pickActor( const QPoint& p, const std::vector<vtkActor*>& pactors) const
+const vtkActor* VtkActorViewer::pickActor( const QPoint& p, const std::vector<const vtkProp*>& pactors) const
 {
     return pickActor( cv::Point(p.x(), p.y()), pactors);
 }   // end pickActor
 
 
-vtkActor* VtkActorViewer::pickActor( const cv::Point& p) const
+const vtkActor* VtkActorViewer::pickActor( const cv::Point& p) const
 {
     if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1])
         return nullptr;
@@ -244,7 +244,7 @@ vtkActor* VtkActorViewer::pickActor( const cv::Point& p) const
 }   // end pickActor
 
 
-vtkActor* VtkActorViewer::pickActor( const QPoint& p) const
+const vtkActor* VtkActorViewer::pickActor( const QPoint& p) const
 {
     return pickActor( cv::Point(p.x(), p.y()));
 }   // end pickActor
@@ -265,14 +265,16 @@ int VtkActorViewer::pickCell(const QPoint &p) const
 }   // end pickCell
 
 
-int VtkActorViewer::pickActorCells( const std::vector<cv::Point>& points, vtkActor* actor, std::vector<int>& cellIds) const
+int VtkActorViewer::pickActorCells( const std::vector<cv::Point>& points,
+                                    const vtkProp* actor, std::vector<int>& cellIds) const
 {
     r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
     return picker.pickActorCells( points, actor, cellIds);
 }   // end pickActorCells
 
 
-int VtkActorViewer::pickActorCells( const std::vector<QPoint>& points, vtkActor* actor, std::vector<int>& cellIds) const
+int VtkActorViewer::pickActorCells( const std::vector<QPoint>& points,
+                                    const vtkProp* actor, std::vector<int>& cellIds) const
 {
     std::vector<cv::Point> pts;
     std::for_each( std::begin(points), std::end(points), [&](QPoint p){ pts.push_back(cv::Point(p.x(), p.y()));});
@@ -280,29 +282,54 @@ int VtkActorViewer::pickActorCells( const std::vector<QPoint>& points, vtkActor*
 }   // end pickActorCells
 
 
-Vec3f VtkActorViewer::pickWorldPosition( const cv::Point& p) const
+Vec3f VtkActorViewer::pickPosition( const cv::Point& p) const
 {
     if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1])
         return Vec3f::Zero();
     r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
-    return picker.pickWorldPosition( p);
-}   // end pickWorldPosition
+    return picker.pickPosition( p);
+}   // end pickPosition
 
 
-Vec3f VtkActorViewer::pickWorldPosition( const QPoint& p) const
+Vec3f VtkActorViewer::pickPosition( const QPoint& p) const
 {
-    return pickWorldPosition( cv::Point(p.x(), p.y()));
-}   // end pickWorldPosition
+    return pickPosition( cv::Point(p.x(), p.y()));
+}   // end pickPosition
 
 
-Vec3f VtkActorViewer::pickWorldPosition( const cv::Point2f& p) const
+Vec3f VtkActorViewer::pickPosition( const cv::Point2f& p) const
 {
     const int w = _ren->GetSize()[0];
     const int h = _ren->GetSize()[1];
     const cv::Point np( std::min( int(p.x * w), w-1),
                         std::min( int(p.y * h), h-1));
-    return pickWorldPosition( np);
-}   // end pickWorldPosition
+    return pickPosition( np);
+}   // end pickPosition
+
+
+bool VtkActorViewer::pickPosition( const vtkProp *actor, const cv::Point &p, Vec3f &v) const
+{
+    if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1])
+        return false;
+    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
+    return picker.pickPosition( actor, p, v);
+}   // end pickPosition
+
+
+bool VtkActorViewer::pickPosition( const vtkProp *actor, const QPoint &p, Vec3f &v) const
+{
+    return pickPosition( actor, cv::Point(p.x(), p.y()), v);
+}   // end pickPosition
+
+
+bool VtkActorViewer::pickPosition( const vtkProp *actor, const cv::Point2f &p, Vec3f &v) const
+{
+    const int w = _ren->GetSize()[0];
+    const int h = _ren->GetSize()[1];
+    const cv::Point np( std::min( int(p.x * w), w-1),
+                        std::min( int(p.y * h), h-1));
+    return pickPosition( actor, np, v);
+}   // end pickPosition
 
 
 cv::Point VtkActorViewer::projectToDisplay( const Vec3f& v) const

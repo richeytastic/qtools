@@ -108,7 +108,7 @@ bool VtkViewerInteractorManager::isInteractionLocked() const { return !_lockKeys
 
 namespace {
 
-bool dofunction( const std::unordered_set<VVI*>& vvis, std::function<bool(VVI*)> func)
+bool dofunction( const std::unordered_set<VVI*>& vvis, const std::function<bool(VVI*)> &func)
 {
     bool swallowed = false;
     for ( VVI* vvi : vvis)
@@ -121,7 +121,7 @@ bool dofunction( const std::unordered_set<VVI*>& vvis, std::function<bool(VVI*)>
     return swallowed;
 }   // end dofunction
 
-bool dofunction( const std::unordered_set<VMH*>& vmhs, std::function<bool(VMH*)> func)
+bool dofunction( const std::unordered_set<VMH*>& vmhs, const std::function<bool(VMH*)> &func)
 {
     bool swallowed = false;
     for ( VMH* vmh : vmhs)
@@ -134,7 +134,7 @@ bool dofunction( const std::unordered_set<VMH*>& vmhs, std::function<bool(VMH*)>
     return swallowed;
 }   // end dofunction
 
-void docamera( const std::unordered_set<VVI*>& vvis, std::function<void(VVI*)> func)
+void docamera( const std::unordered_set<VVI*>& vvis, const std::function<void(VVI*)> &func)
 {
     for ( VVI* vvi : vvis)
     {
