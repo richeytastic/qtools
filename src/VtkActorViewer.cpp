@@ -250,38 +250,6 @@ const vtkActor* VtkActorViewer::pickActor( const QPoint& p) const
 }   // end pickActor
 
 
-int VtkActorViewer::pickCell( const cv::Point &p) const
-{
-    if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1])
-        return -1;
-    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
-    return picker.pickCell( p);
-}   // end pickCell
-
-
-int VtkActorViewer::pickCell(const QPoint &p) const
-{
-    return pickCell( cv::Point(p.x(), p.y()));
-}   // end pickCell
-
-
-int VtkActorViewer::pickActorCells( const std::vector<cv::Point>& points,
-                                    const vtkProp* actor, std::vector<int>& cellIds) const
-{
-    r3dvis::RendererPicker picker( _ren, r3dvis::RendererPicker::TOP_LEFT);
-    return picker.pickActorCells( points, actor, cellIds);
-}   // end pickActorCells
-
-
-int VtkActorViewer::pickActorCells( const std::vector<QPoint>& points,
-                                    const vtkProp* actor, std::vector<int>& cellIds) const
-{
-    std::vector<cv::Point> pts;
-    std::for_each( std::begin(points), std::end(points), [&](QPoint p){ pts.push_back(cv::Point(p.x(), p.y()));});
-    return pickActorCells( pts, actor, cellIds);
-}   // end pickActorCells
-
-
 Vec3f VtkActorViewer::pickPosition( const cv::Point& p) const
 {
     if ( p.x < 0 || p.y < 0 || p.x >= _ren->GetSize()[0] || p.y >= _ren->GetSize()[1])

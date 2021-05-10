@@ -98,17 +98,6 @@ public:
     const vtkActor* pickActor( const cv::Point&) const;
     const vtkActor* pickActor( const QPoint&) const;
 
-    // Find an actor's cell addressed by a 2D point (using TOP LEFT origin).
-    // If no actor cell is found (no actor is pointed to), -1 is returned.
-    int pickCell( const cv::Point&) const;
-    int pickCell( const QPoint&) const;
-
-    // Given a vector of 2D points (using TOP LEFT origin) and an actor (cannot be null), set cellIds with
-    // the indices of the cells intercepted by the points. Duplicate cellIds are ignored. Returns the number
-    // of cell IDs appended to cellIds.
-    int pickActorCells( const std::vector<cv::Point>& points, const vtkProp* actor, std::vector<int>& cellIds) const;
-    int pickActorCells( const std::vector<QPoint>& points, const vtkProp* actor, std::vector<int>& cellIds) const;
-
     // Find the position in 3D world space from a 2D point using TOP LEFT origin.
     // This returns the point that intersects the first pickable actor along the ray.
     // Note that this ALWAYS returns a valid position!
