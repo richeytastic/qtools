@@ -22,7 +22,6 @@
 #include <QFileInfo>
 #include <iostream>
 using QTools::NetworkUpdater;
-using PTree = boost::property_tree::ptree;
 
 
 NetworkUpdater::NetworkUpdater( const QUrl &url, int tmsecs, int mr)
