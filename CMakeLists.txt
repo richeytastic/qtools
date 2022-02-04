@@ -34,7 +34,6 @@ set( SRC_FILES
     "${SRC_DIR}/PluginsLoader.cpp"
     "${SRC_DIR}/PluginUIPoints.cpp"
     "${SRC_DIR}/PolyDrawer.cpp"
-    #"${SRC_DIR}/ProcessWrapper.cpp"
     "${SRC_DIR}/QImageTools.cpp"
     "${SRC_DIR}/QUtils.cpp"
     "${SRC_DIR}/RangeMinMax.cpp"
@@ -59,7 +58,6 @@ set( QOBJECTS
     "${INCLUDE_F}/HelpBrowser.h"
     #"${INCLUDE_F}/ImagerWidget.h"
     "${INCLUDE_F}/NetworkUpdater.h"
-    #"${INCLUDE_F}/ProcessWrapper.h"
     "${INCLUDE_F}/VtkActorViewer.h"
     "${INCLUDE_F}/PluginInterface.h"
     "${INCLUDE_F}/PluginsDialog.h"
@@ -107,7 +105,6 @@ qt5_wrap_ui( FORM_HEADERS ${FORMS})
 qt5_wrap_cpp( QOBJECT_MOCS ${QOBJECTS})
 qt5_add_resources( RESOURCE_FILE "${RCC_FILE}")
 
-#cmake_policy( SET CMP0115 OLD)
 add_library( ${PROJECT_NAME} ${SRC_FILES} ${QOBJECT_MOCS} ${INCLUDE_FILES} ${FORM_HEADERS} ${FORMS} ${RESOURCE_FILE} ${RCC_FILE})
 include( "cmake/LinkLibs.cmake")
 
