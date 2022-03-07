@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2021 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 
 #include <FileIO.h>
 #include <QProcess>
-#include <QFileInfo>
 #include <QTemporaryDir>
 #include <QTemporaryFile>
 #include <QTextStream>
@@ -62,7 +61,7 @@ bool _moveFiles( const QString &src, const QString &dst, const QString &bck)
 }   // end _moveFiles
 
 
-bool _copyFiles( const QString &src, const QString &dst, QList<QFileInfo> &symLinks, bool noclobber)
+bool _copyFiles( const QString &src, const QString &dst, QFileInfoList &symLinks, bool noclobber)
 {
     static const std::string WRNSTR = "[WARNING] QTools::FileInfo: Unable to ";
 
@@ -97,12 +96,33 @@ bool _copyFiles( const QString &src, const QString &dst, QList<QFileInfo> &symLi
 }   // end _copyFiles
 
 
+void _recursivelyListFiles( const QDir &dir, const QStringList &nameFilters, QFileInfoList &files)
+{
+    const QFileInfoList fentries = dir.entryInfoList( nameFilters, QDir::Files | QDir::Readable);
+    for ( const QFileInfo &finfo : fentries)
+        files.append(finfo);
+    const QFileInfoList dentries = dir.entryInfoList( QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Readable);
+    for ( const QFileInfo &finfo : dentries)
+    {
+        const QDir dpath( finfo.filePath());
+        _recursivelyListFiles( dpath, nameFilters, files);
+    }   // end for
+}   // end _recursivelyListFiles
+
 }   // end namespace
+
+
+QFileInfoList QTools::FileIO::recursivelyListFiles( const QDir &root, const QStringList &nameFilters)
+{
+    QFileInfoList files;
+    _recursivelyListFiles( root, nameFilters, files);
+    return files;
+}   // end recursivelyListFiles
 
 
 bool QTools::FileIO::copyFiles( const QString &src, const QString &dst, bool noclobber)
 {
-    QList<QFileInfo> symLinks;
+    QFileInfoList symLinks;
     if ( !_copyFiles( src, dst, symLinks, noclobber))
         return false;
 

@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2021 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,10 +19,15 @@
 #define QTOOLS_FILE_IO_H
 
 #include "QTools_Export.h"
+#include <QFileInfoList>
 #include <QStringList>
+#include <QDir>
 
 namespace QTools {
 namespace FileIO {
+
+// Recursively list all files beneath the given root directory matching the given name filters.
+QTools_EXPORT QFileInfoList recursivelyListFiles( const QDir &root, const QStringList &nameFilters={"*.*"});
 
 // Recursively move files and directories from src to dst placing any
 // existing destination files in the given backup location (bck).
