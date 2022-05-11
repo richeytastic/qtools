@@ -21,6 +21,7 @@
 #include "QTools_Export.h"
 #include <QFileInfoList>
 #include <QStringList>
+#include <QThread>
 #include <QDir>
 
 namespace QTools {
@@ -28,6 +29,24 @@ namespace FileIO {
 
 // Recursively list all files beneath the given root directory matching the given name filters.
 QTools_EXPORT QFileInfoList recursivelyListFiles( const QDir &root, const QStringList &nameFilters={"*.*"});
+
+// Recursively list files in a background thread and notify when done with signal onFoundFiles.
+class QTools_EXPORT BackgroundFilesFinder : public QThread
+{ Q_OBJECT
+public:
+    BackgroundFilesFinder( const QDir &root, const QStringList &nameFilters={"*.*"});
+
+signals:
+    void onFoundFiles( QDir, QFileInfoList);
+
+protected:
+    void run() override;
+
+private:
+    const QDir _root;
+    const QStringList _nameFilters;
+};  // end class
+
 
 // Recursively move files and directories from src to dst placing any
 // existing destination files in the given backup location (bck).

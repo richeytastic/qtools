@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 
 #include <QTools/PatchList.h>
 #include <rlib/StringUtil.h>
-#include <quazip5/JlCompress.h>
+#include <quazip/JlCompress.h>
 #include <boost/property_tree/xml_parser.hpp>
 #include <QTemporaryDir>
 #include <QFile>

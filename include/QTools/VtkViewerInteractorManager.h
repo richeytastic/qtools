@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,10 +83,12 @@ public:
 
 private:
     bool doOnLeftButtonDown();
+    bool doOnLeftButtonDoubleClick();
     bool doOnLeftButtonUp();
     bool doOnMiddleButtonDown();
     bool doOnMiddleButtonUp();
     bool doOnRightButtonDown();
+    bool doOnRightButtonDoubleClick();
     bool doOnRightButtonUp();
     bool doOnMouseWheelForward();
     bool doOnMouseWheelBackward();
@@ -114,8 +116,6 @@ private:
     VtkActorViewer *_qviewer;
     bool _lbdown, _rbdown, _mbdown;
     InteractionMode _imode;
-    qint64 _lbDownTime;
-    qint64 _rbDownTime;
     std::minstd_rand0 _rng; // Random number generator for _lockKeys
 
     vtkNew<VtkViewerSwitchInteractor> _iswitch;

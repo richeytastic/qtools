@@ -55,6 +55,7 @@ set( QOBJECTS
     "${INCLUDE_F}/AppUpdater.h"
     "${INCLUDE_F}/ColourMappingWidget.h"
     "${INCLUDE_F}/EventSignaller.h"
+    "${INCLUDE_F}/FileIO.h"
     "${INCLUDE_F}/HelpBrowser.h"
     #"${INCLUDE_F}/ImagerWidget.h"
     "${INCLUDE_F}/NetworkUpdater.h"
@@ -75,7 +76,6 @@ set( QOBJECTS
 set( INCLUDE_FILES
     "${QOBJECTS}"
     "${INCLUDE_F}.h"
-    "${INCLUDE_F}/FileIO.h"
     "${INCLUDE_F}/HelpAssistant.h"
     "${INCLUDE_F}/KeyPressHandler.h"
     "${INCLUDE_F}/PatchList.h"

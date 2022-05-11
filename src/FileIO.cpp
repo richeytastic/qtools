@@ -120,6 +120,18 @@ QFileInfoList QTools::FileIO::recursivelyListFiles( const QDir &root, const QStr
 }   // end recursivelyListFiles
 
 
+QTools::FileIO::BackgroundFilesFinder::BackgroundFilesFinder( const QDir &root, const QStringList &nameFilters)
+    : _root(root), _nameFilters(nameFilters) {}
+
+
+void QTools::FileIO::BackgroundFilesFinder::run()
+{
+    QFileInfoList files;
+    _recursivelyListFiles( _root, _nameFilters, files);
+    emit onFoundFiles( _root, files);
+}   // end run
+
+
 bool QTools::FileIO::copyFiles( const QString &src, const QString &dst, bool noclobber)
 {
     QFileInfoList symLinks;

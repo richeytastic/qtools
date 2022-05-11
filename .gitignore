@@ -34,4 +34,5 @@ test
 testing
 compile_commands.json
 CMakeLists.txt.user*
+custom_quazip.tgz
 .vscode

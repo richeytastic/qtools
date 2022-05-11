@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,10 +39,12 @@ public:
     void OnChar() override {}   // Override VTK key press handling (quit, pick etc)
 
     void OnLeftButtonDown() override;
+    void OnLeftButtonDoubleClick() override;
     void OnLeftButtonUp() override;
     void OnMiddleButtonDown() override;
     void OnMiddleButtonUp() override;
     void OnRightButtonDown() override;
+    void OnRightButtonDoubleClick() override;
     void OnRightButtonUp() override;
     void OnMouseWheelForward() override;
     void OnMouseWheelBackward() override;

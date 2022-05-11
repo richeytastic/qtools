@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2019 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ using QTools::VMH;
 
 
 VtkViewerInteractorManager::VtkViewerInteractorManager( VtkActorViewer *qv)
-    : _qviewer(qv), _lbdown(false), _rbdown(false), _mbdown(false), _lbDownTime(0), _rbDownTime(0),
+    : _qviewer(qv), _lbdown(false), _rbdown(false), _mbdown(false),
       _rng( std::chrono::system_clock::now().time_since_epoch().count())
 {
     assert(qv);
@@ -146,25 +146,21 @@ void docamera( const std::unordered_set<VVI*>& vvis, const std::function<void(VV
 }   // end namespace
 
 
-
 bool VtkViewerInteractorManager::doOnLeftButtonDown()
 {
     _lbdown = true;
-    bool swallowed = false;
-    const qint64 tnow = QDateTime::currentDateTime().currentMSecsSinceEpoch();
-    if ( (tnow - _lbDownTime) < QApplication::doubleClickInterval())    // Check for double click
-    {
-        _lbDownTime = 0;
-        swallowed = dofunction( _vmhs, [](VMH* v){ return v->leftDoubleClick();});
-    }   // end if
-    else
-    {
-        _lbDownTime = tnow;
-        swallowed = dofunction( _vmhs, [](VMH* v){ return v->leftButtonDown();});
-    }   // end else
+    bool swallowed = dofunction( _vmhs, [](VMH* v){ return v->leftButtonDown();});
     _qviewer->updateRender();
     return swallowed;
 }   // end doOnLeftButtonDown
+
+
+bool VtkViewerInteractorManager::doOnLeftButtonDoubleClick()
+{
+    const bool swallowed = dofunction( _vmhs, [](VMH* v){ return v->leftDoubleClick();});
+    _qviewer->updateRender();
+    return swallowed;
+}   // end doOnLeftButtonDoubleClick
 
 
 bool VtkViewerInteractorManager::doOnLeftButtonUp()
@@ -179,21 +175,18 @@ bool VtkViewerInteractorManager::doOnLeftButtonUp()
 bool VtkViewerInteractorManager::doOnRightButtonDown()
 {
     _rbdown = true;
-    bool swallowed = false;
-    const qint64 tnow = QDateTime::currentDateTime().currentMSecsSinceEpoch();
-    if ( (tnow - _lbDownTime) < QApplication::doubleClickInterval())    // Check for double click
-    {
-        _rbDownTime = 0;
-        swallowed = dofunction( _vmhs, [](VMH* v){ return v->rightDoubleClick();});
-    }   // end if
-    else
-    {
-        _rbDownTime = tnow;
-        swallowed = dofunction( _vmhs, [](VMH* v){ return v->rightButtonDown();});
-    }   // end else
+    const bool swallowed = dofunction( _vmhs, [](VMH* v){ return v->rightButtonDown();});
     _qviewer->updateRender();
     return swallowed;
 }   // end doOnRightButtonDown
+
+
+bool VtkViewerInteractorManager::doOnRightButtonDoubleClick()
+{
+    const bool swallowed = dofunction( _vmhs, [](VMH* v){ return v->rightDoubleClick();});
+    _qviewer->updateRender();
+    return swallowed;
+}   // end doOnRightButtonDoubleClick
 
 
 bool VtkViewerInteractorManager::doOnRightButtonUp()

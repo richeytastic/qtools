@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,6 +79,21 @@ void VtkViewerSwitchInteractor::OnLeftButtonDown()
 }   // end OnLeftButtonDown
 
 
+void VtkViewerSwitchInteractor::OnLeftButtonDoubleClick()
+{
+    this->GrabFocus(this->EventCallbackCommand);
+    if ( !_iman->doOnLeftButtonDoubleClick() && !_iman->isInteractionLocked())
+    {
+        if ( GetInteractor()->GetControlKey())
+            _setStartState( VTKIS_DOLLY);
+        else if ( GetInteractor()->GetShiftKey())
+            _setStartState( VTKIS_PAN);
+        else
+            _setStartState( VTKIS_ROTATE);
+    }   // end if
+}   // end OnLeftButtonDoubleClick
+
+
 void VtkViewerSwitchInteractor::OnLeftButtonUp()
 {
     if ( !_iman->isInteractionLocked())
@@ -98,6 +113,19 @@ void VtkViewerSwitchInteractor::OnRightButtonDown()
             _setStartState( VTKIS_PAN);
     }   // end if
 }   // end OnRightButtonDown
+
+
+void VtkViewerSwitchInteractor::OnRightButtonDoubleClick()
+{
+    this->GrabFocus(this->EventCallbackCommand);
+    if ( !_iman->doOnRightButtonDoubleClick() && !_iman->isInteractionLocked())
+    {
+        if ( GetInteractor()->GetControlKey())
+            _setStartState( VTKIS_DOLLY);
+        else
+            _setStartState( VTKIS_PAN);
+    }   // end if
+}   // end OnRightButtonDoubleClick
 
 
 void VtkViewerSwitchInteractor::OnRightButtonUp()
