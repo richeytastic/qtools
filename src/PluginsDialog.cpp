@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,8 @@
 using QTools::PluginsDialog;
 using QTools::PluginsLoader;
 
-PluginsDialog::PluginsDialog(QWidget *parent) : QDialog(parent), ui(new Ui::PluginsDialog)
+PluginsDialog::PluginsDialog(QWidget *parent)
+    : QDialog(parent, Qt::WindowTitleHint), ui(new Ui::PluginsDialog)
 {
     ui->setupUi(this);
     connect( ui->buttonBox, SIGNAL(clicked(QAbstractButton*)), this, SLOT(close()));
