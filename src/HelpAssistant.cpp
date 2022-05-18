@@ -292,6 +292,9 @@ bool HelpAssistant::show( const QString& token)
     const QString hfile = token.isEmpty() ? "index.html" : token;
     const bool showing = _dialog->setContent(hfile);
     if ( showing)
-        _dialog->setVisible(true);
+    {
+        _dialog->show();
+        _dialog->raise();
+    }   // end if
     return showing;
 }   // end show
