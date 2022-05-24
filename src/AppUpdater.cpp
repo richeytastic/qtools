@@ -32,7 +32,7 @@ void _printFileInfo( const QString &pth)
     const QString owner = finfo.owner();
     const QString group = finfo.group();
     const QString rights = FileIO::permissionsString( pth);
-    std::cerr << "FilePath:    " << pth.toLocal8Bit().toStdString() << std::endl;
+    std::cerr << "FilePath:    " << pth.toStdString() << std::endl;
     std::cerr << "   Owner:    " << owner.toStdString() << std::endl;
     std::cerr << "   Group:    " << group.toStdString() << std::endl;
     std::cerr << "   Rights:   " << rights.toStdString() << std::endl;
@@ -59,7 +59,7 @@ bool _isAllowed( const QStringList &flist)
 
 bool _updateFiles( const QString &src, const QString &tgt, const QString &bck)
 {
-    std::cerr << "[INFO] QTools::AppUpdater: Updating \"" << tgt.toLocal8Bit().toStdString() << "\"" << std::endl;
+    std::cerr << "[INFO] QTools::AppUpdater: Updating \"" << tgt.toStdString() << "\"\n";
     // Write directly directory if we have permission. Otherwise
     // invoke via process to allow OS to request permissions.
     bool ok = true;
@@ -69,7 +69,7 @@ bool _updateFiles( const QString &src, const QString &tgt, const QString &bck)
         ok = FileIO::moveFilesAsRoot( src, tgt, bck);
 
     if ( !ok)
-        std::cerr << "[WARNING] QTools::AppUpdater: Unable to update - file locks?" << std::endl;
+        std::cerr << "[WARNING] QTools::AppUpdater: Unable to update - file locks?\n";
     return ok;
 }   // end _updateFiles
 
@@ -93,15 +93,12 @@ void _removeFiles( const QStringList &rpaths, const QString &tgt)
             filesToRemoveWithPermission << fpath;
 
         if (!ok)
-        {
-            std::cerr << "[WARNING] QTools::AppUpdater: Unable to remove \""
-                      << fpath.toLocal8Bit().toStdString() << "\"" << std::endl;
-        }   // end if
+            std::cerr << "[WARNING] QTools::AppUpdater: Unable to remove \"" << fpath.toStdString() << "\"\n";
     }   // end for
 
     if ( !filesToRemoveWithPermission.empty())
         if ( !FileIO::removeFilesAsRoot( filesToRemoveWithPermission))
-            std::cerr << "[WARNING] QTools::AppUpdater: Unable to remove files as root!" << std::endl;
+            std::cerr << "[WARNING] QTools::AppUpdater: Unable to remove files as root!\n";
 }   // end _removeFiles
 
 
@@ -120,7 +117,7 @@ AppUpdater::AppUpdater()
     if ( cmdline.open(QIODevice::ReadOnly | QIODevice::Text))
         _appFilePath = QFileInfo( QString( cmdline.readAll()).trimmed()).canonicalFilePath();
 #endif
-    //std::cerr << "AppFilePath: " << _appFilePath.toLocal8Bit().toStdString() << std::endl;
+    //std::cerr << "AppFilePath: " << _appFilePath.toStdString() << std::endl;
 }   // end ctor
 
 
@@ -205,7 +202,6 @@ void AppUpdater::run()
         _err = _repackAppImage( NEW_APP_DIR, NEW_APP_IMG, OLD_APP_IMG);
     }   // end if
 
-    std::cerr << "[INFO] QTools::AppUpdater: Finished" << std::endl;
     emit onFinished( _err);
 }   // end run
 
@@ -224,7 +220,7 @@ bool AppUpdater::_extractFiles( const QString &xdir) const
     // clobber the older files with the same names.
     for ( int i = _fpaths.size() - 1; i >= 0; --i)
     {
-        std::cerr << "[INFO] QTools::AppUpdater: Extracting \"" << _fpaths.at(i).toLocal8Bit().toStdString() << "\"" << std::endl;
+        std::cerr << "[INFO] QTools::AppUpdater: Extracting \"" << _fpaths.at(i).toStdString() << "\"\n";
         const QStringList flst = JlCompress::extractDir( _fpaths.at(i), xdir);
         if ( flst.size() == 0)
             return false;
@@ -235,7 +231,7 @@ bool AppUpdater::_extractFiles( const QString &xdir) const
 
 QString AppUpdater::_repackAppImage( const QString &NEW_APP_DIR, const QString &NEW_APP_IMG, const QString &OLD_APP_IMG) const
 {
-    std::cerr << "[INFO] QTools::AppUpdater: Repacking AppImage..." << std::endl;
+    std::cerr << "[INFO] QTools::AppUpdater: Repacking AppImage...\n";
     if ( !FileIO::packAppImage( NEW_APP_DIR, NEW_APP_IMG))
         return tr("Failed to repack AppImage!");
 
