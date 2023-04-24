@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 #include <QTools/NetworkUpdater.h>
 #include <QTools/AppUpdater.h>
+//#include <QNetworkConfigurationManager>
 #include <QNetworkReply>
 #include <QDataStream>
 #include <QFileInfo>
@@ -25,20 +26,11 @@ using QTools::NetworkUpdater;
 
 
 NetworkUpdater::NetworkUpdater( const QUrl &url, int tmsecs, int mr)
-    : _manifestUrl(url), _nman( nullptr), _isManifest(false)
+    : _manifestUrl(url), _transferTimeout(tmsecs), _maxRedirects(mr), _nman(nullptr), _isManifest(false)
 {
     _nman = new QNetworkAccessManager(this);
-    //_templateReq.setAttribute( QNetworkRequest::CacheSaveControlAttribute, false);   // Don't cache
-    //_templateReq.setAttribute( QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork); // Refresh
-    _templateReq.setAttribute( QNetworkRequest::FollowRedirectsAttribute, mr > 0);
-    _templateReq.setMaximumRedirectsAllowed( mr);
-    _templateReq.setTransferTimeout( tmsecs);
-
     connect( &_updater, &AppUpdater::onFinished, this, &NetworkUpdater::_doOnFinishedUpdating);
 }   // end ctor
-
-
-NetworkUpdater::~NetworkUpdater() { delete _nman;}
 
 
 bool NetworkUpdater::isBusy() const { return !_nconns.isEmpty() || _updater.isRunning();}
@@ -99,13 +91,22 @@ void NetworkUpdater::_resetConnections()
     for ( QNetworkReply *nr : _nconns)
         nr->deleteLater();
     _nconns.clear();
+    _nman->clearAccessCache();
+    //_nman->clearConnectionCache();
+    //QNetworkConfigurationManager config;
+    //_nman->setConfiguration( config.defaultConfiguration());
 }   // end _resetConnections
 
 
 QNetworkReply *NetworkUpdater::_startConnection( const QUrl &url, bool emitProgress)
 {
-    QNetworkRequest nreq = _templateReq;
-    nreq.setUrl(url);
+    QNetworkRequest nreq;
+    nreq.setAttribute( QNetworkRequest::CacheSaveControlAttribute, false);   // Don't cache
+    nreq.setAttribute( QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork); // Refresh
+    nreq.setAttribute( QNetworkRequest::FollowRedirectsAttribute, _maxRedirects > 0);
+    nreq.setMaximumRedirectsAllowed( _maxRedirects);
+    nreq.setTransferTimeout( _transferTimeout);
+    nreq.setUrl( url);
     QNetworkReply *nr = _nman->get( nreq);
     connect( nr, &QNetworkReply::errorOccurred, [=](){ _err = nr->errorString();});
     connect( nr, &QNetworkReply::finished, [=](){ _doOnReplyFinished( nr);});

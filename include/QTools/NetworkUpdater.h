@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2020 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@ public:
      * Default network timeout is 10 seconds and a maximum of 5 redirects are allowed.
      */
     NetworkUpdater( const QUrl& manifestUrl, int timeoutMsecs=10000, int maxRedirects=5);
-    ~NetworkUpdater() override;
 
     // Returns true iff a network connection is active or an update is ongoing.
     bool isBusy() const;
@@ -84,7 +83,8 @@ private slots:
 
 private:
     const QUrl _manifestUrl;
-    QNetworkRequest _templateReq;
+    const int _transferTimeout;
+    const int _maxRedirects;
     QNetworkAccessManager *_nman;
     bool _isManifest;
     PatchList _plist;

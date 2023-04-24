@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2019 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -198,7 +198,7 @@ void HelpAssistant::_initTempHtmlDir( const QString& srcDir)
         const auto& path = dirEnt.path();
         auto relPathStr = path.string();
         boost::replace_first( relPathStr, src.string(), "");
-        BFS::copy( path, dst / relPathStr);
+        BFS::copy( path, dst / relPathStr, BFS::copy_options::update_existing);
     }   // end for
 }   // end _initTempHtmlDir
 

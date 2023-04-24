@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2017 Richard Palmer
+ * Copyright (C) 2022 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,16 +29,16 @@ PluginsLoader::PluginsLoader( const std::string& pluginsDir)
 {
     if ( !_pluginsDir.exists() || !_pluginsDir.isReadable())
     {
-        std::cerr << "[WARNING] QTools::PluginsLoader: " << pluginsDir << " either doesn't exist, or isn't readable!" << std::endl;
-        std::cerr << "                                 Trying for 'plugins' directory in application root directory..." << std::endl;
+        std::cerr << "[WARNING] QTools::PluginsLoader: " << pluginsDir << " either doesn't exist, or isn't readable!\n";
+        std::cerr << "                                 Trying for 'plugins' directory in application root directory...\n";
         _pluginsDir = QDir(qApp->applicationDirPath());
         _pluginsDir.cd("plugins");
     }   // end if
 
     if ( !_pluginsDir.exists())
-        std::cerr << "[WARNING] QTools::PluginsLoader: " << _pluginsDir.absolutePath().toStdString() << " doesn't exist!" << std::endl;
+        std::cerr << "[WARNING] QTools::PluginsLoader: " << _pluginsDir.absolutePath().toStdString() << " doesn't exist!\n";
     else if ( !_pluginsDir.isReadable())
-        std::cerr << "[WARNING] QTools::PluginsLoader: " << _pluginsDir.absolutePath().toStdString() << " can't be read from!" << std::endl;
+        std::cerr << "[WARNING] QTools::PluginsLoader: " << _pluginsDir.absolutePath().toStdString() << " can't be read from!\n";
 }   // end ctor
 
 
@@ -61,7 +61,7 @@ size_t PluginsLoader::loadPlugins( const std::string& appcode)
         if ( !pluginInterface)
         {
             std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins(): "
-                << "Qt statically loaded plugin does not implement QTools::PluginInterface so skipping it!" << std::endl;
+                << "Qt statically loaded plugin does not implement QTools::PluginInterface so skipping it!\n";
             std::cerr << "Tried to load plugin: " + cname.toStdString() << std::endl;
             emit loadedPlugin( nullptr, cname);
             continue;
@@ -80,13 +80,13 @@ size_t PluginsLoader::loadPlugins( const std::string& appcode)
         QObject *plugin = loader.instance();
         QTools::PluginInterface* pluginInterface = nullptr;
         if ( !plugin)
-            std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins: Qt dynamically loaded plugin is not a QObject (Qt issue?)!" << std::endl;
+            std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins: Qt dynamically loaded plugin is not a QObject!\n";
         else
         {
             pluginInterface = qobject_cast<QTools::PluginInterface*>( plugin);
             if ( !pluginInterface)
                 std::cerr << "[ERROR] QTools::PluginsLoader::loadPlugins: "
-                    << "Qt dynamically loaded plugin does not implement QTools::PluginInterface so skipping it!" << std::endl;
+                    << "Qt dynamically loaded plugin does not implement QTools::PluginInterface so skipping it!\n";
         }   // end else
 
         // Warn about being unable to load the plugin
@@ -103,7 +103,7 @@ size_t PluginsLoader::loadPlugins( const std::string& appcode)
         {
 #ifndef NDEBUG
             std::cerr << "[WARNING] QTools::PluginsLoader::loadPlugins: "
-                << "Rejected plugin with mismatching application compatibility code." << std::endl;
+                << "Rejected plugin with mismatching application compatibility code.\n";
 #endif
             continue;
         }   // end if
