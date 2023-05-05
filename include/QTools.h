@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (C) 2019 Richard Palmer
+ * Copyright (C) 2023 Richard Palmer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 
 #include "QTools/AppUpdater.h"
 #include "QTools/ColourMappingWidget.h"
+#include "QTools/FdToolProcess.h"
 #include "QTools/HelpAssistant.h"
 #include "QTools/HelpBrowser.h"
 #include "QTools/KeyPressHandler.h"
